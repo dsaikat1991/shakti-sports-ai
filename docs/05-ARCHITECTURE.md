@@ -10,30 +10,34 @@ Project: Shakti Sports AI
 
 This document defines the technical architecture of Shakti Sports AI.
 
-The goal is to build a scalable, maintainable, production-ready platform for AI-powered athlete discovery, starting with athletics.
-
-This architecture must support:
-
-- athlete registration
-- coach and scout discovery
-- video upload
-- AI analysis
-- performance reports
-- role-based dashboards
-- future mobile app expansion
-- future multi-sport expansion
+The platform is designed as an AI-powered talent discovery system for athletics, supporting athlete onboarding, video upload, AI analysis, verified performance reports, and discovery by coaches and scouts.
 
 ---
 
-# 2. Core Engineering Philosophy
+# 2. Core Architecture Principles
 
-Shakti Sports AI will follow a feature-first architecture.
+Shakti Sports AI follows these principles:
 
-The application will be organized by product domain, not by generic file type.
+- Feature-first architecture
+- Firebase-first backend
+- Mobile-first user experience
+- AI processing outside the frontend
+- Shared design system
+- Role-based access
+- Secure media handling
+- Scalable document structure
+- Clean separation between product features and shared infrastructure
 
-This avoids large unstructured folders like:
+---
+
+# 3. Root Repository Structure
 
 ```text
-components/
-pages/
-utils/
+shaktisportsai/
+
+├── docs/
+├── frontend/
+├── backend/
+├── README.md
+├── LICENSE
+└── .gitignore
