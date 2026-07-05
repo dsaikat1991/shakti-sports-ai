@@ -1,0 +1,1 @@
+export { default as IndiaMapSection } from "./IndiaMapSection";
