@@ -1,12 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
 @import "tailwindcss";
 
-html,
-body,
-#root{
-  width:100%;
-  min-height:100%;
+html {
+  scroll-behavior: smooth;
 }
 
-body{
-  margin:0;
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background: #ffffff;
+  color: #111827;
+}
+
+* {
+  box-sizing: border-box;
+}
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, calc(var(--float-distance) * -1), 0);
+  }
+}
+
+.floating-card {
+  animation: soft-float 5.5s ease-in-out infinite;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
