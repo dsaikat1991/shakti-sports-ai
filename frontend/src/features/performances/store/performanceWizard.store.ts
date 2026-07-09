@@ -13,11 +13,17 @@ export interface WizardStepProps {
   previousStep?: () => void;
 }
 
+function today() {
+  return new Date().toISOString().split("T")[0];
+}
+
 export const initialWizardState: WizardState = {
   step: 1,
   draft: {
+    performedOn: today(),
     title: "",
     notes: "",
     recording: null,
   },
+  
 };

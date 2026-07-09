@@ -4,6 +4,7 @@ import AuthDivider from "./AuthDivider";
 import GoogleButton from "./GoogleButton";
 import { useAuthActions } from "../hooks/useAuthActions";
 import type { AuthMode } from "../types/auth";
+import { ROUTES } from "../../../constants/routes";
 
 type Props = {
   mode: AuthMode;
@@ -21,14 +22,14 @@ export default function AuthForm({ mode }: Props) {
 
   const isSignIn = mode === "signin";
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setErrorMessage("");
+async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 
-    const { error } = isSignIn
-      ? await signIn(email, password)
-      : await signUp(email, password);
+  setLoading(true);
+  setErrorMessage("");
+
+  if (isSignIn) {
+    const { error } = await signIn(email, password);
 
     setLoading(false);
 
@@ -37,8 +38,21 @@ export default function AuthForm({ mode }: Props) {
       return;
     }
 
-    navigate(isSignIn ? "/console" : "/choose-role");
+    navigate(ROUTES.ATHLETE.HOME);
+    return;
   }
+
+  const { error } = await signUp(email, password);
+
+  setLoading(false);
+
+  if (error) {
+    setErrorMessage(error.message);
+    return;
+  }
+
+  navigate(ROUTES.AUTH.CHOOSE_ROLE);
+}
 
   return (
     <>
@@ -100,7 +114,7 @@ export default function AuthForm({ mode }: Props) {
       <p className="mt-6 text-center text-sm text-gray-600">
         {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
         <Link
-          to={isSignIn ? "/signup" : "/signin"}
+          to={isSignIn ? ROUTES.AUTH.SIGN_UP : ROUTES.AUTH.SIGN_IN}
           className="font-bold text-[#F0600E] hover:underline"
         >
           {isSignIn ? "Create one" : "Sign in"}

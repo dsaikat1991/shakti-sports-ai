@@ -1,8 +1,9 @@
 import { Activity, BarChart3, FileText, Home, Settings, Target, User } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import Logo from "../../../components/shared/Logo";
 import { useAuth } from "../../auth/context/AuthContext";
-
+import { ROUTES } from "../../../constants/routes";
+import UserMenu from "../../../components/layout/UserMenu";
 const navItems = [
   { label: "Home", href: "/console/athlete", icon: Home },
   { label: "Performances", href: "/console/athlete/performances", icon: Activity },
@@ -19,7 +20,9 @@ export default function AthleteLayout() {
   return (
     <div className="min-h-screen bg-[#FAFAF7]">
       <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-gray-200 bg-white px-5 py-6 lg:block">
-        <Logo />
+        <Link to={ROUTES.ATHLETE.HOME}>
+  <Logo />
+</Link>
 
         <nav className="mt-10 space-y-2">
           {navItems.map((item) => {
@@ -65,9 +68,7 @@ export default function AthleteLayout() {
               </p>
             </div>
 
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F0600E] text-sm font-black text-white">
-              {user?.email?.charAt(0).toUpperCase() ?? "A"}
-            </div>
+            <UserMenu />
           </div>
         </header>
 

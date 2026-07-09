@@ -12,14 +12,9 @@ export type PerformanceType =
 
 export interface PerformanceDraft {
   event?: PerformanceEvent;
-
   performanceType?: PerformanceType;
-
+  performedOn: string;
   title: string;
-
   notes: string;
-
-  recordedAt?: string;
-
-  recording?: File | null;
+  recording: File | null;
 }

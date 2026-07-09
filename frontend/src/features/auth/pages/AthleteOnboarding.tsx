@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { ROUTES } from "../../../constants/routes";
 import {
   createAthleteProfile,
   createBaseProfile,
@@ -77,7 +78,7 @@ export default function AthleteOnboarding() {
       return;
     }
 
-    navigate("/console/athlete");
+    navigate(ROUTES.ATHLETE.HOME);
   }
 
   return (
