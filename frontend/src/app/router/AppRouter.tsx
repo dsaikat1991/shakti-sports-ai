@@ -19,6 +19,7 @@ import NewPerformance from "../../features/performances/pages/NewPerformance";
 import PerformanceProcessing from "../../features/performances/pages/PerformanceProcessing";
 
 import PerformanceHistory from "../../features/performances/pages/PerformanceHistory";
+import PerformanceDetail from "../../features/performances/pages/PerformanceDetail";
 
 export default function AppRouter() {
   return (
@@ -51,18 +52,23 @@ export default function AppRouter() {
         {/* ---------------------- */}
 
 <Route element={<ProtectedRoute />}>
-  <Route path="/console/athlete" element={<AthleteLayout />}>
-    <Route index element={<AthleteHome />} />
+<Route path="/console/athlete" element={<AthleteLayout />}>
+  <Route index element={<AthleteHome />} />
 
-    <Route path="performances" element={<PerformanceHistory />} />
+  <Route path="performances" element={<PerformanceHistory />} />
 
-    <Route path="performances/new" element={<NewPerformance />} />
+  <Route path="performances/new" element={<NewPerformance />} />
 
-    <Route
-      path="performances/:performanceId/processing"
-      element={<PerformanceProcessing />}
-    />
-  </Route>
+  <Route
+    path="performances/:performanceId"
+    element={<PerformanceDetail />}
+  />
+
+  <Route
+    path="performances/:performanceId/processing"
+    element={<PerformanceProcessing />}
+  />
+</Route>
 </Route>
       </Routes>
     </BrowserRouter>

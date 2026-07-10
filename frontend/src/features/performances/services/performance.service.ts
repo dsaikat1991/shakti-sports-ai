@@ -33,6 +33,19 @@ async function getEventId(event: PerformanceEvent) {
     .single();
 }
 
+async function getNextPerformanceNumber(athleteId: string) {
+  const { count, error } = await supabase
+    .from("performances")
+    .select("id", { count: "exact", head: true })
+    .eq("athlete_id", athleteId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (count ?? 0) + 1;
+}
+
 export async function createPerformanceRecord(
   athleteId: string,
   draft: PerformanceDraft,
@@ -48,27 +61,32 @@ export async function createPerformanceRecord(
     throw new Error(eventError?.message || "Could not find selected event.");
   }
 
-return supabase
-  .from("performances")
-  .insert({
-    athlete_id: athleteId,
-    event_id: eventData.id,
-    title: draft.title,
-    performance_date: draft.performedOn,
-    attempt_number: 1,
-    video_url: videoPath,
-    upload_status: "uploaded",
-    notes: draft.notes || null,
-  })
-  .select("id")
-  .single();
+  const nextPerformanceNumber = await getNextPerformanceNumber(athleteId);
+
+  return supabase
+    .from("performances")
+    .insert({
+      athlete_id: athleteId,
+      event_id: eventData.id,
+      performance_number: nextPerformanceNumber,
+      title: draft.title,
+      performance_date: draft.performedOn,
+      attempt_number: 1,
+      video_url: videoPath,
+      upload_status: "uploaded",
+      notes: draft.notes || null,
+    })
+    .select("id, performance_number")
+    .single();
 }
+
 export async function getAthletePerformances(athleteId: string) {
   return supabase
     .from("performances")
     .select(
       `
       id,
+      performance_number,
       title,
       performance_date,
       upload_status,
@@ -83,4 +101,27 @@ export async function getAthletePerformances(athleteId: string) {
     )
     .eq("athlete_id", athleteId)
     .order("created_at", { ascending: false });
+}
+
+export async function getPerformanceById(performanceId: string) {
+  return supabase
+    .from("performances")
+    .select(
+      `
+      id,
+      performance_number,
+      title,
+      performance_date,
+      upload_status,
+      video_url,
+      notes,
+      created_at,
+      events (
+        name,
+        category
+      )
+    `,
+    )
+    .eq("id", performanceId)
+    .single();
 }

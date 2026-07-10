@@ -61,7 +61,7 @@ export default function AthleteLayout() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-gray-400">
-                Athlete Console
+                Performance Centre
               </p>
               <p className="mt-1 text-sm font-semibold text-gray-700">
                 {user?.email}
