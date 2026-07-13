@@ -126,6 +126,59 @@ def remove_outliers_mad(
     ]
 
 
+def remove_outliers_local(
+    samples: list[AngleSample],
+    *,
+    window: int = 5,
+    threshold: float = 4.0,
+) -> list[AngleSample]:
+    """
+    Hampel-style local outlier removal.
+
+    A joint-angle series from running is expected to swing widely and
+    periodically (e.g. a knee cycling between near-extension and deep
+    flexion every stride). ``remove_outliers_mad`` compares every sample
+    against the whole clip's median, so the numerically rarer flexion
+    peaks - the exact values cadence/cycle detection needs - get flagged
+    as outliers and removed. Comparing each sample only to its immediate
+    temporal neighbors instead preserves a genuine multi-frame swing
+    (its neighbors move together with it) while still catching an
+    isolated single-frame tracking glitch (which looks inconsistent with
+    both neighbors).
+    """
+    if len(samples) < window:
+        return samples.copy()
+
+    values = np.array(
+        [sample.angle_degrees for sample in samples],
+        dtype=float,
+    )
+    radius = window // 2
+    kept: list[AngleSample] = []
+
+    for index, sample in enumerate(samples):
+        start = max(0, index - radius)
+        end = min(len(samples), index + radius + 1)
+        neighbours = np.delete(values[start:end], index - start)
+
+        if neighbours.size == 0:
+            kept.append(sample)
+            continue
+
+        local_median = float(np.median(neighbours))
+        local_mad = float(np.median(np.abs(neighbours - local_median)))
+
+        if local_mad == 0.0:
+            kept.append(sample)
+            continue
+
+        robust_z = 0.6745 * abs(values[index] - local_median) / local_mad
+        if robust_z <= threshold:
+            kept.append(sample)
+
+    return kept
+
+
 def smooth_angle_series(
     samples: list[AngleSample],
     *,
@@ -160,18 +213,58 @@ def smooth_angle_series(
     return smoothed
 
 
+def prepare_angle_segments(
+    frame_metrics: list[FrameMetrics],
+    angle_name: str,
+) -> list[list[AngleSample]]:
+    """
+    Prepare one smoothed, outlier-cleaned angle series per contiguous
+    time segment.
+
+    Earlier versions kept only the single longest contiguous segment and
+    discarded the rest, which silently threw away real motion data
+    whenever a later, longer stretch of a clip happened to exist -
+    including, in practice, the highest-amplitude flexion/extension
+    cycles when RTMPose confidence dips during fast movement fragment
+    the series into several shorter runs. Callers that must not compare
+    samples across a timing gap (smoothing windows, local-extrema
+    detection) should operate on each segment independently; callers
+    that only need overall coverage/summary statistics can flatten the
+    result.
+
+    Outlier removal uses the local (Hampel-style) filter rather than the
+    whole-clip MAD filter, since a global filter treats genuine flexion
+    peaks - a numeric minority of any running cycle - as outliers.
+    """
+    raw = extract_angle_series(frame_metrics, angle_name)
+    cleaned = remove_outliers_local(raw)
+    segments = split_contiguous_segments(cleaned)
+
+    return [
+        smooth_angle_series(segment, window_size=5)
+        for segment in segments
+        if segment
+    ]
+
+
 def prepare_angle_series(
     frame_metrics: list[FrameMetrics],
     angle_name: str,
 ) -> list[AngleSample]:
-    raw = extract_angle_series(frame_metrics, angle_name)
-    longest = select_longest_segment(raw)
-    filtered = remove_outliers_mad(longest)
+    """Flattened view of all prepared segments, ordered by frame index.
 
-    return smooth_angle_series(
-        filtered,
-        window_size=5,
-    )
+    Suitable for summary statistics (coverage, mean, percentiles) that
+    don't depend on temporal adjacency between samples.
+    """
+    segments = prepare_angle_segments(frame_metrics, angle_name)
+    flattened: list[AngleSample] = [
+        sample
+        for segment in segments
+        for sample in segment
+    ]
+    flattened.sort(key=lambda sample: sample.frame_index)
+
+    return flattened
 
 
 def robust_angle_summary(
