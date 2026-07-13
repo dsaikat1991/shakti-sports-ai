@@ -167,8 +167,8 @@ def build_sprint_biomechanics_preview(
             frame_metrics
         ),
         "signal_processing": {
-            "contiguous_segment_selection": True,
-            "mad_outlier_filtering": True,
+            "multi_segment_extrema_detection": True,
+            "local_hampel_outlier_filtering": True,
             "moving_average_window": 5,
             "summary_percentiles": [5, 95],
         },
