@@ -1,0 +1,29 @@
+{
+  "description": "Manually reviewed ground-truth ground-contact frame labels for examples/my_sprint_2.mp4 (right leg), used to validate/reject ground-contact detection approaches for contact_events.py.",
+  "methodology": "For each of 4 points spread across the clip, reviewed a continuous ~24-frame window (curled-swing -> extended-reach -> curled-swing-again) at high zoom, cropped to the lower body, and estimated the frame where the leg is most extended and the foot is closest to the track surface. This is a best-effort visual estimate, not a precise measurement: motion blur and frame resolution mean individual labels likely carry +/-2-3 frame (40-60ms) uncertainty even before comparing against any detector.",
+  "video": "examples/my_sprint_2.mp4",
+  "fps": 50.0,
+  "side": "right",
+  "labels": [
+    {"estimated_contact_frame": 127, "reviewed_window": [118, 141], "confidence": "medium"},
+    {"estimated_contact_frame": 327, "reviewed_window": [318, 341], "confidence": "medium"},
+    {"estimated_contact_frame": 526, "reviewed_window": [518, 541], "confidence": "medium"},
+    {"estimated_contact_frame": 721, "reviewed_window": [712, 735], "confidence": "low - foot stayed low/extended for ~8 consecutive frames without a single sharp minimum, harder to pin an exact frame"}
+  ],
+  "comparison_results": {
+    "note": "Distances in frames at 50fps (1 frame = 20ms) from each ground-truth label to the nearest candidate event.",
+    "centre_of_mass_y_local_maxima": {
+      "description": "Candidate approach: local maxima in smoothed (5-frame) centre-of-mass y-position, tried as a body-relative alternative to single-limb position/velocity heuristics.",
+      "errors_ms": [140, -100, 140, 100],
+      "mean_absolute_error_ms": 120,
+      "verdict": "Closer in aggregate step count (49 maxima vs ~46 known real steps) than the original detector, but individual-event timing error (100-140ms) is comparable to or larger than real ground-contact duration (60-150ms) - not precise enough to trust contact_time_ms/flight_time/duty_factor."
+    },
+    "original_y_peak_detector": {
+      "description": "The existing (pre-fix) contact_events.py detector: local maxima in image-space foot height.",
+      "errors_ms": [-220, 100, 120, 40],
+      "mean_absolute_error_ms": 120,
+      "verdict": "Confirmed via direct visual inspection (3 separate samples, see contact_events.py docstring) to sometimes land squarely on the swing-phase peak-flexion moment instead of stance. Error is inconsistent across cycles (-220ms to +40ms) rather than a fixable constant offset, which rules out a simple recalibration fix."
+    }
+  },
+  "conclusion": "Neither approach achieves the precision needed (event error << 60-150ms real contact duration) to trust ground_contact/flight_time/duty_factor output. This dataset is a starting point, not a finished validation set - a real fix likely needs many more labeled cycles (ideally across multiple clips/camera angles, labeled with proper frame-scrubbing tooling rather than static image strips) to either calibrate a more robust heuristic or train a small classifier."
+}

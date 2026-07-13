@@ -213,8 +213,14 @@ def _detect_side_contacts(
     ankle/toe velocity local minima (also fires at the swing-apex
     momentary pause, not just true stance), peak-knee-extension timing
     (too sparse - only ~3 events on a 15s clip), centre-of-mass vertical
-    oscillation (closer, but still lands inside the swing sequence on
-    inspection, not confirmed at a genuine weight-bearing moment).
+    oscillation (closer - its ~49 local maxima across the clip nearly
+    matches the ~46 real steps measured independently via cadence - but
+    quantified against 4 manually reviewed gait cycles in
+    tests/fixtures/ground_truth_contact_labels.json, mean absolute
+    timing error was ~120ms for both this detector and the centre-of-
+    mass approach, against a real contact duration of only 60-150ms.
+    That's not a small calibration offset - it's large enough to land
+    in the wrong phase of the cycle.
 
     Do not trust contact_time_ms / ground_contact / flight_time /
     duty_factor for this camera framing until this is properly solved -
