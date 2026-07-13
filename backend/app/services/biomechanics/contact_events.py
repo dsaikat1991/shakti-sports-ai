@@ -195,6 +195,31 @@ def _detect_side_contacts(
     In normalized image coordinates, larger y usually means the foot is
     closer to the ground plane. This is only a proxy and must be calibrated
     against labelled sprint video.
+
+    CONFIRMED ISSUE (ground-truth checked against real footage, not just
+    unit tests): for a low, close, corner-angle camera, a foot curled up
+    behind the body during swing/recovery (heel near the glutes) can
+    project to as large or larger a y-value than the same foot at true
+    ground contact - the heel/toe, pulled up and back toward a low
+    camera, gets foreshortened into appearing "low in frame". Visually
+    confirmed on 3 independent samples spread across a real clip: what
+    this function labels a ground-contact peak is consistently the
+    swing-phase peak-knee-flexion moment instead (the same event
+    detect_knee_cycle_events correctly identifies) - not a calibration
+    error, a wrong signal for this camera geometry.
+
+    Alternatives tried and NOT confirmed as reliable either (each showed
+    partial promise in event count but failed close visual inspection):
+    ankle/toe velocity local minima (also fires at the swing-apex
+    momentary pause, not just true stance), peak-knee-extension timing
+    (too sparse - only ~3 events on a 15s clip), centre-of-mass vertical
+    oscillation (closer, but still lands inside the swing sequence on
+    inspection, not confirmed at a genuine weight-bearing moment).
+
+    Do not trust contact_time_ms / ground_contact / flight_time /
+    duty_factor for this camera framing until this is properly solved -
+    likely needs a labelled dataset across multiple camera angles rather
+    than another single-signal heuristic.
     """
 
     smoothed = _smooth_series(samples)
@@ -396,7 +421,13 @@ def summarize_contact_times(
         },
         "warning": (
             "Ground-contact timing is estimated from image-space foot "
-            "trajectory and is not yet validated against force plates."
+            "trajectory and is not yet validated against force plates. "
+            "CONFIRMED against real footage: for low/close camera angles, "
+            "this detector can fire on the swing-phase peak-flexion moment "
+            "instead of true ground contact (foreshortening makes a "
+            "curled-up recovery foot appear as low in frame as a planted "
+            "one). Treat contact_time_ms, flight_time, and duty_factor as "
+            "unreliable until this is properly fixed, not just uncalibrated."
         ),
     }
 

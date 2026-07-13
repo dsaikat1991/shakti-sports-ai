@@ -174,7 +174,14 @@ def build_sprint_biomechanics_preview(
         },
         "limitations": [
             "Angles remain projected 2D image-plane measurements.",
-            "Cadence, contact and flight metrics remain experimental proxies.",
+            "Cadence (from knee-flexion timing) has been ground-truth "
+            "checked against real footage and is directionally reliable, "
+            "but remains an experimental proxy, not force-plate validated.",
+            "Ground contact, flight time, and duty factor have a CONFIRMED "
+            "issue for low/close camera angles: the detector can fire on "
+            "swing-phase peak flexion instead of true ground contact. Do "
+            "not treat contact_time_ms/flight_time/duty_factor as "
+            "reliable until this is fixed - see contact_events.py.",
             "The centre-of-mass result is a weighted landmark-centre proxy.",
             "Vertical oscillation is reported relative to normalized body height.",
             "These outputs are not laboratory or force-plate validated.",
