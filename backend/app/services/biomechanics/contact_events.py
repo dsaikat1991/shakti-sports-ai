@@ -223,9 +223,24 @@ def _detect_side_contacts(
     in the wrong phase of the cycle.
 
     Do not trust contact_time_ms / ground_contact / flight_time /
-    duty_factor for this camera framing until this is properly solved -
-    likely needs a labelled dataset across multiple camera angles rather
-    than another single-signal heuristic.
+    duty_factor for a low/close/oblique camera framing until this is
+    properly solved - likely needs a labelled dataset across multiple
+    camera angles rather than another single-signal heuristic.
+
+    UPDATE - camera angle, not the algorithm, looks like the real
+    variable: the same heuristic was re-checked against a second real
+    clip shot from a proper side-on, waist-height, adequately-distanced
+    camera (examples/my_sprint_3.mp4) and performed markedly better -
+    3 of 6 visually reviewed samples showed the foot clearly and
+    consistently planted on the ground across several consecutive
+    frames (not the swing-phase heel-curl seen in every sample checked
+    on the low-angle clip), with the other 3 landing on plausible
+    reach/toe-off transitions rather than a clear miss. This supports
+    treating camera framing as a quality-gate problem (guide/reject
+    uploads at uploading time) rather than something this detector
+    needs to be made robust to on its own. Still not independently
+    quantified with frame-level error the way the low-angle clip was -
+    treat as a promising signal, not a closed case.
     """
 
     smoothed = _smooth_series(samples)

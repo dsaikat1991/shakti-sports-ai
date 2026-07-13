@@ -179,8 +179,12 @@ def build_sprint_biomechanics_preview(
             "but remains an experimental proxy, not force-plate validated.",
             "Ground contact, flight time, and duty factor have a CONFIRMED "
             "issue for low/close camera angles: the detector can fire on "
-            "swing-phase peak flexion instead of true ground contact. Do "
-            "not treat contact_time_ms/flight_time/duty_factor as "
+            "swing-phase peak flexion instead of true ground contact. A "
+            "proper side-on, waist-height camera performed markedly "
+            "better in spot checks, suggesting this is a camera-framing "
+            "quality-gate problem more than an algorithm problem, but it "
+            "is not yet independently quantified for good-angle footage. "
+            "Do not treat contact_time_ms/flight_time/duty_factor as "
             "reliable until this is fixed - see contact_events.py.",
             "The centre-of-mass result is a weighted landmark-centre proxy.",
             "Vertical oscillation is reported relative to normalized body height.",
