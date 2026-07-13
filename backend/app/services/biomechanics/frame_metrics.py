@@ -16,3 +16,5 @@ class FrameMetrics:
     camera_view: dict[str, Any]
 
     landmarks: list[Any]
+
+    backend: str = "mediapipe"

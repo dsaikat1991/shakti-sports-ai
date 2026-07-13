@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 
 from app.services.biomechanics.frame_metrics import FrameMetrics
+from app.services.pose.landmark_usability import landmark_is_usable
 
 
 LEFT_HIP = 23
@@ -18,8 +19,6 @@ LEFT_HEEL = 29
 RIGHT_HEEL = 30
 LEFT_FOOT_INDEX = 31
 RIGHT_FOOT_INDEX = 32
-
-MIN_CONFIDENCE = 0.50
 
 
 @dataclass(slots=True, frozen=True)
@@ -52,10 +51,9 @@ def _value(
     return float(getattr(landmark, name, default))
 
 
-def _is_reliable(landmark: Any) -> bool:
+def _is_reliable(landmark: Any, *, backend: str = "mediapipe") -> bool:
     return (
-        _value(landmark, "visibility") >= MIN_CONFIDENCE
-        and _value(landmark, "presence") >= MIN_CONFIDENCE
+        landmark_is_usable(landmark, backend=backend)
         and 0.0 <= _value(landmark, "x") <= 1.0
         and 0.0 <= _value(landmark, "y") <= 1.0
     )
@@ -64,12 +62,14 @@ def _is_reliable(landmark: Any) -> bool:
 def _mean_point(
     landmarks: tuple[Any, ...],
     indices: tuple[int, ...],
+    *,
+    backend: str = "mediapipe",
 ) -> tuple[float, float] | None:
     points = [
         landmarks[index]
         for index in indices
         if index < len(landmarks)
-        and _is_reliable(landmarks[index])
+        and _is_reliable(landmarks[index], backend=backend)
     ]
 
     if not points:
@@ -90,6 +90,7 @@ def _com_y(frame: FrameMetrics) -> float | None:
             LEFT_KNEE,
             RIGHT_KNEE,
         ),
+        backend=getattr(frame, "backend", "mediapipe"),
     )
 
     if torso is None:
@@ -143,6 +144,8 @@ def extract_side_signals(
     previous_timestamp_ms: int | None = None
 
     for frame in frame_metrics:
+        backend = getattr(frame, "backend", "mediapipe")
+
         foot = _mean_point(
             frame.landmarks,
             (
@@ -150,6 +153,7 @@ def extract_side_signals(
                 heel_index,
                 foot_index,
             ),
+            backend=backend,
         )
 
         if foot is None:
@@ -159,7 +163,7 @@ def extract_side_signals(
 
         if (
             hip_index < len(frame.landmarks)
-            and _is_reliable(frame.landmarks[hip_index])
+            and _is_reliable(frame.landmarks[hip_index], backend=backend)
         ):
             hip_y = _value(
                 frame.landmarks[hip_index],

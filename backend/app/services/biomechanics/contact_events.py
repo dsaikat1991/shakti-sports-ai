@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from app.services.biomechanics.frame_metrics import FrameMetrics
+from app.services.pose.landmark_usability import landmark_is_usable
 
 
 LEFT_ANKLE = 27
@@ -15,8 +16,6 @@ LEFT_HEEL = 29
 RIGHT_HEEL = 30
 LEFT_FOOT_INDEX = 31
 RIGHT_FOOT_INDEX = 32
-
-MIN_CONFIDENCE = 0.50
 
 
 @dataclass(slots=True, frozen=True)
@@ -49,10 +48,9 @@ def _value(
     return float(getattr(landmark, name, default))
 
 
-def _is_reliable(landmark: Any) -> bool:
+def _is_reliable(landmark: Any, *, backend: str = "mediapipe") -> bool:
     return (
-        _value(landmark, "visibility") >= MIN_CONFIDENCE
-        and _value(landmark, "presence") >= MIN_CONFIDENCE
+        landmark_is_usable(landmark, backend=backend)
         and 0.0 <= _value(landmark, "x") <= 1.0
         and 0.0 <= _value(landmark, "y") <= 1.0
     )
@@ -61,12 +59,14 @@ def _is_reliable(landmark: Any) -> bool:
 def _foot_height(
     landmarks: tuple[Any, ...],
     indices: tuple[int, int, int],
+    *,
+    backend: str,
 ) -> float | None:
     points = [
         landmarks[index]
         for index in indices
         if index < len(landmarks)
-        and _is_reliable(landmarks[index])
+        and _is_reliable(landmarks[index], backend=backend)
     ]
 
     if len(points) < 2:
@@ -88,6 +88,8 @@ def extract_foot_series(
     }
 
     for frame in frame_metrics:
+        backend = getattr(frame, "backend", "mediapipe")
+
         left_y = _foot_height(
             frame.landmarks,
             (
@@ -95,6 +97,7 @@ def extract_foot_series(
                 LEFT_HEEL,
                 LEFT_FOOT_INDEX,
             ),
+            backend=backend,
         )
 
         right_y = _foot_height(
@@ -104,6 +107,7 @@ def extract_foot_series(
                 RIGHT_HEEL,
                 RIGHT_FOOT_INDEX,
             ),
+            backend=backend,
         )
 
         if left_y is not None:
@@ -203,49 +207,76 @@ def _detect_side_contacts(
     if interval_ms <= 0:
         return []
 
-    values = np.array(
-        [sample.normalized_y for sample in smoothed],
-        dtype=float,
-    )
+    # First pass: every strict turning point relative to its immediate
+    # neighbours. A real ground-contact plateau can span several frames
+    # (a foot dwelling near the ground for ~100ms is 5+ frames at
+    # 50fps), so the peak's *location* is still reliably found this
+    # way even though prominence needs a wider view (below).
+    turning_points: list[tuple[str, int]] = []
 
-    upper_quartile = float(
-        np.percentile(values, 75)
-    )
+    for index in range(1, len(smoothed) - 1):
+        current_y = smoothed[index].normalized_y
+        previous_y = smoothed[index - 1].normalized_y
+        next_y = smoothed[index + 1].normalized_y
+
+        if current_y >= previous_y and current_y > next_y:
+            turning_points.append(("maximum", index))
+        elif current_y <= previous_y and current_y < next_y:
+            turning_points.append(("minimum", index))
 
     events: list[ContactEvent] = []
     last_peak_time = -10_000
 
-    for index in range(2, len(smoothed) - 2):
+    for position, (kind, index) in enumerate(turning_points):
+        if kind != "maximum":
+            continue
+
         current = smoothed[index]
         current_y = current.normalized_y
 
-        local_window = smoothed[index - 2:index + 3]
-        local_minimum = min(
-            item.normalized_y
-            for item in local_window
+        # Prominence relative to the nearer of the two surrounding
+        # minima (or the series' own edge when there isn't one), not a
+        # fixed narrow window - a global top-quartile height gate was
+        # removed for the same reason: it rejects genuine contacts
+        # whenever normal stride-to-stride variation or camera
+        # perspective drift puts their peak below the whole clip's top
+        # 25%, even though they are still clearly local maxima.
+        left_bound = (
+            smoothed[turning_points[position - 1][1]].normalized_y
+            if position > 0
+            else smoothed[0].normalized_y
         )
-
-        is_local_maximum = (
-            current_y >= smoothed[index - 1].normalized_y
-            and current_y > smoothed[index + 1].normalized_y
+        right_bound = (
+            smoothed[turning_points[position + 1][1]].normalized_y
+            if position < len(turning_points) - 1
+            else smoothed[-1].normalized_y
         )
+        prominence = current_y - max(left_bound, right_bound)
 
-        prominence = current_y - local_minimum
-
-        if (
-            not is_local_maximum
-            or current_y < upper_quartile
-            or prominence < minimum_prominence
-        ):
+        if prominence < minimum_prominence:
             continue
 
         # Avoid duplicate peaks from the same stance window.
         if current.timestamp_ms - last_peak_time < 180:
             continue
 
+        # The contact *window width* is sized off a narrow local
+        # prominence (how sharply the signal falls away right around
+        # the peak), not the wide-view prominence above. That wide-view
+        # figure is the whole stride's swing amplitude, and scaling a
+        # tolerance off it would swallow most of the stride into the
+        # "contact" window instead of just the stance plateau.
+        narrow_start = max(0, index - 2)
+        narrow_end = min(len(smoothed), index + 3)
+        local_minimum = min(
+            item.normalized_y
+            for item in smoothed[narrow_start:narrow_end]
+        )
+        local_prominence = current_y - local_minimum
+
         tolerance = max(
             0.004,
-            prominence * 0.40,
+            local_prominence * 0.40,
         )
 
         start_index = index
@@ -283,7 +314,7 @@ def _detect_side_contacts(
             100.0,
             45.0
             + prominence * 2500.0
-            + min(len(local_window), 5) * 3.0,
+            + min(end_index - start_index + 1, 5) * 3.0,
         )
 
         events.append(

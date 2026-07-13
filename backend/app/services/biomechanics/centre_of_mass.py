@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from app.services.biomechanics.frame_metrics import FrameMetrics
+from app.services.pose.landmark_usability import landmark_is_usable
 
 
 LEFT_SHOULDER = 11
@@ -21,8 +22,6 @@ LEFT_KNEE = 25
 RIGHT_KNEE = 26
 LEFT_ANKLE = 27
 RIGHT_ANKLE = 28
-
-MIN_CONFIDENCE = 0.50
 
 
 LANDMARK_WEIGHTS: dict[int, float] = {
@@ -61,10 +60,9 @@ def _value(
     return float(getattr(landmark, name, default))
 
 
-def _is_reliable(landmark: Any) -> bool:
+def _is_reliable(landmark: Any, *, backend: str = "mediapipe") -> bool:
     return (
-        _value(landmark, "visibility") >= MIN_CONFIDENCE
-        and _value(landmark, "presence") >= MIN_CONFIDENCE
+        landmark_is_usable(landmark, backend=backend)
         and 0.0 <= _value(landmark, "x") <= 1.0
         and 0.0 <= _value(landmark, "y") <= 1.0
     )
@@ -95,6 +93,7 @@ def estimate_frame_centre(
     weighted_x = 0.0
     weighted_y = 0.0
     total_weight = 0.0
+    backend = getattr(frame, "backend", "mediapipe")
 
     for index, weight in LANDMARK_WEIGHTS.items():
         if index >= len(frame.landmarks):
@@ -102,7 +101,7 @@ def estimate_frame_centre(
 
         landmark = frame.landmarks[index]
 
-        if not _is_reliable(landmark):
+        if not _is_reliable(landmark, backend=backend):
             continue
 
         weighted_x += _value(landmark, "x") * weight

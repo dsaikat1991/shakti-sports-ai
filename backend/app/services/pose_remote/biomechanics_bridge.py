@@ -73,6 +73,7 @@ def pose_frame_to_frame_metrics(
             backend=frame.backend,
         ),
         landmarks=tuple(landmarks),
+        backend=frame.backend,
     )
 
 
