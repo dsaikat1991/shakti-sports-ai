@@ -1,0 +1,41 @@
+# Python virtual environments
+backend/.venv/
+backend/.venv-rtmpose/
+
+# Python-generated files
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary files
+backend/temp/
+
+# Local environment files
+.env
+.env.*
+backend/.env
+backend/.env.*
+!.env.example
+!backend/.env.example
+!backend/.env.rtmpose-live.example
+
+# Model weights and large generated artifacts
+*.pth
+*.pt
+*.onnx
+*.engine
+
+# OpenMMLab / Torch cache
+.cache/
+backend/.cache/
+
+# IDE and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+backend/models/*.task
+backend/examples/*
