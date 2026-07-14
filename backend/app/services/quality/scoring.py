@@ -6,6 +6,7 @@ import numpy as np
 
 from app.services.quality.frame_quality import (
     score_brightness,
+    score_camera_height,
     score_fps,
     score_sharpness,
 )
@@ -137,6 +138,7 @@ def build_quality_result(
     frame_change_values: list[float],
     occupancy_values: list[float],
     camera_view_results: list[dict[str, Any]],
+    headroom_values: list[float] | None = None,
 ) -> dict[str, Any]:
     """
     Build the Shakti Recording Quality Assessment result.
@@ -218,6 +220,12 @@ def build_quality_result(
         else 0.0
     )
 
+    average_headroom = (
+        float(np.mean(headroom_values))
+        if headroom_values
+        else 0.0
+    )
+
     lighting_score = score_brightness(
         average_brightness
     )
@@ -262,6 +270,12 @@ def build_quality_result(
 
     camera_angle_score = _camera_angle_score(
         dominant_view
+    )
+
+    camera_height_score = (
+        score_camera_height(average_headroom)
+        if headroom_values
+        else None
     )
 
     #
@@ -309,10 +323,25 @@ def build_quality_result(
         full_body_score * 0.30
         + movement_score * 0.20
         + occupancy_score * 0.10
-        + camera_angle_score * 0.25
+        + camera_angle_score * 0.15
+        + (camera_height_score if camera_height_score is not None else 100.0) * 0.10
         + detection_score * 0.10
         + fps_score * 0.05
     )
+
+    if camera_height_score is not None and camera_height_score <= 10.0:
+        # Matches the two known-bad clips (low, upward-tilted camera)
+        # that produced confirmed-wrong ground-contact detection.
+        analysis_readiness_score = min(
+            analysis_readiness_score,
+            40.0,
+        )
+
+    elif camera_height_score is not None and camera_height_score <= 30.0:
+        analysis_readiness_score = min(
+            analysis_readiness_score,
+            60.0,
+        )
 
     if not lower_body_visible or not feet_visible:
         analysis_readiness_score = min(
@@ -352,6 +381,7 @@ def build_quality_result(
         and group_visibility["feet"] >= 70
         and movement_score >= 50
         and dominant_view == "Side View"
+        and (camera_height_score is None or camera_height_score >= 60.0)
     )
 
     readiness_rating = _readiness_rating(
@@ -490,6 +520,18 @@ def build_quality_result(
             "Record the athlete's full body from a clear side-on position."
         )
 
+    if camera_height_score is not None and camera_height_score <= 30.0:
+        warnings.append(
+            "The camera appears to be positioned low and angled upward, "
+            "leaving excess empty space above the athlete."
+        )
+
+        recommendations.append(
+            "Raise the camera to about the athlete's waist-to-shoulder "
+            "height and keep the shot level, rather than shooting up from "
+            "near the ground."
+        )
+
     return {
         # Kept for compatibility with the present response structure.
         "overall_score": recording_quality_score,
@@ -522,6 +564,11 @@ def build_quality_result(
             "camera_angle_score": (
                 round(camera_angle_score, 2)
                 if dominant_view != "Unknown"
+                else None
+            ),
+            "camera_height_score": (
+                round(camera_height_score, 2)
+                if camera_height_score is not None
                 else None
             ),
             "lighting_score": round(
@@ -590,6 +637,11 @@ def build_quality_result(
             "fps": round(
                 fps,
                 2,
+            ),
+            "average_headroom_percent": (
+                round(average_headroom * 100.0, 2)
+                if headroom_values
+                else None
             ),
         },
 

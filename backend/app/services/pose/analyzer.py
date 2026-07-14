@@ -68,6 +68,7 @@ def analyze_video(video_path: str) -> dict[str, Any]:
     frame_change_values: list[float] = []
     pose_movement_values: list[float] = []
     occupancy_values: list[float] = []
+    headroom_values: list[float] = []
     camera_view_results: list[dict[str, Any]] = []
 
     previous_gray = None
@@ -167,6 +168,9 @@ def analyze_video(video_path: str) -> dict[str, Any]:
                         occupancy_values.append(
                             bounding_box["area_percent"]
                         )
+                        headroom_values.append(
+                            bounding_box["y_min"]
+                        )
 
                     pose_movement = calculate_pose_movement(
                         previous_landmarks,
@@ -244,6 +248,7 @@ def analyze_video(video_path: str) -> dict[str, Any]:
         pose_movement_values=pose_movement_values,
         frame_change_values=frame_change_values,
         occupancy_values=occupancy_values,
+        headroom_values=headroom_values,
         camera_view_results=camera_view_results,
     )
 
