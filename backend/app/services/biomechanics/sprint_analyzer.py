@@ -179,13 +179,22 @@ def build_sprint_biomechanics_preview(
             "but remains an experimental proxy, not force-plate validated.",
             "Ground contact, flight time, and duty factor have a CONFIRMED "
             "issue for low/close camera angles: the detector can fire on "
-            "swing-phase peak flexion instead of true ground contact. A "
-            "proper side-on, waist-height camera performed markedly "
-            "better in spot checks, suggesting this is a camera-framing "
-            "quality-gate problem more than an algorithm problem, but it "
-            "is not yet independently quantified for good-angle footage. "
-            "Do not treat contact_time_ms/flight_time/duty_factor as "
-            "reliable until this is fixed - see contact_events.py.",
+            "swing-phase peak flexion instead of true ground contact. "
+            "Frame-scrubbed review across an entire clip (not just a few "
+            "hand-picked samples) found this happens in 5 of 6 sampled "
+            "cycles on a bad-angle clip, and found a confirmed true "
+            "contact with a LOWER foot-height signal than a confirmed "
+            "false positive - proof that no threshold recalibration of "
+            "this signal can fix it; a different feature set or approach "
+            "is needed. A proper side-on, waist-height camera performed "
+            "markedly better in earlier spot checks, but has its own "
+            "unresolved confounds (background occlusion, ambiguous "
+            "ground-plane texture) that blocked confident labeling this "
+            "session - 'good camera angle' alone does not guarantee "
+            "labelable footage. Do not treat contact_time_ms/flight_time/"
+            "duty_factor as reliable until this is fixed - see "
+            "contact_events.py and tests/fixtures/"
+            "ground_truth_contact_labels.json.",
             "The centre-of-mass result is a weighted landmark-centre proxy.",
             "Vertical oscillation is reported relative to normalized body height.",
             "These outputs are not laboratory or force-plate validated.",

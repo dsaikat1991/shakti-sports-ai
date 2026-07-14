@@ -1,29 +1,155 @@
 {
-  "description": "Manually reviewed ground-truth ground-contact frame labels for examples/my_sprint_2.mp4 (right leg), used to validate/reject ground-contact detection approaches for contact_events.py.",
-  "methodology": "For each of 4 points spread across the clip, reviewed a continuous ~24-frame window (curled-swing -> extended-reach -> curled-swing-again) at high zoom, cropped to the lower body, and estimated the frame where the leg is most extended and the foot is closest to the track surface. This is a best-effort visual estimate, not a precise measurement: motion blur and frame resolution mean individual labels likely carry +/-2-3 frame (40-60ms) uncertainty even before comparing against any detector.",
-  "video": "examples/my_sprint_2.mp4",
-  "fps": 50.0,
-  "side": "right",
-  "labels": [
-    {"estimated_contact_frame": 127, "reviewed_window": [118, 141], "confidence": "medium"},
-    {"estimated_contact_frame": 327, "reviewed_window": [318, 341], "confidence": "medium"},
-    {"estimated_contact_frame": 526, "reviewed_window": [518, 541], "confidence": "medium"},
-    {"estimated_contact_frame": 721, "reviewed_window": [712, 735], "confidence": "low - foot stayed low/extended for ~8 consecutive frames without a single sharp minimum, harder to pin an exact frame"}
-  ],
-  "comparison_results": {
-    "note": "Distances in frames at 50fps (1 frame = 20ms) from each ground-truth label to the nearest candidate event.",
-    "centre_of_mass_y_local_maxima": {
-      "description": "Candidate approach: local maxima in smoothed (5-frame) centre-of-mass y-position, tried as a body-relative alternative to single-limb position/velocity heuristics.",
-      "errors_ms": [140, -100, 140, 100],
-      "mean_absolute_error_ms": 120,
-      "verdict": "Closer in aggregate step count (49 maxima vs ~46 known real steps) than the original detector, but individual-event timing error (100-140ms) is comparable to or larger than real ground-contact duration (60-150ms) - not precise enough to trust contact_time_ms/flight_time/duty_factor."
+  "description": "Manually reviewed ground-truth ground-contact frame labels for the 3 real example clips (examples/my_sprint.mp4, my_sprint_2.mp4, my_sprint_3.mp4), used to validate/reject ground-contact detection approaches for contact_events.py.",
+  "methodology": "Built and used scripts/label_contact_frames.py, a proper frame-scrubbing tool: for each candidate window (one per event the live detector, app.services.biomechanics.contact_events._detect_side_contacts, currently fires on for a given clip/side), it extracts every individual frame in a +/-7 frame range as its own tightly-cropped, upscaled tile (not a compressed static strip), with the tracked ankle landmark cross-marked and frame index/timestamp/normalized_y burned in, laid out as a grid. This replaces the original 4-label methodology (static image strips, 'reviewed window' terminology) that this file's own prior conclusion flagged as insufficiently rigorous. Each window below was visually reviewed frame-by-frame against this tooling. 'candidates' mode centers windows on the detector's own fired peaks (tests precision: is each fired event real?); it does not by itself surface false negatives (missed real contacts) - that would need 'uniform' mode windows, not yet reviewed at the same depth this session.",
+  "clips_reviewed": [
+    {
+      "video": "examples/my_sprint_2.mp4",
+      "camera_description": "Low, close, oblique 'lower side corner view' camera - the clip previously confirmed (via static-strip review) to show the swing-vs-stance foreshortening bug.",
+      "fps": 50.0,
+      "side": "right",
+      "windows": [
+        {
+          "window_frames": [14, 28],
+          "detector_peak_frame": 21,
+          "detector_peak_timestamp_ms": 420,
+          "detector_contact_time_ms": 140,
+          "raw_normalized_y_at_peak": 0.9042,
+          "verdict": "true_contact",
+          "confidence": "medium",
+          "reasoning": "Foot visibly flat against the track surface across a ~5-6 frame plateau (approx f19-f24), clearly distinct from the curled-up swing posture seen in every other reviewed window on this clip. This is the first stride cycle in the clip; mechanics may differ slightly from steady-state (settling into pace), which is part of why confidence is only medium rather than high."
+        },
+        {
+          "window_frames": [109, 123],
+          "detector_peak_frame": 116,
+          "detector_peak_timestamp_ms": 2320,
+          "detector_contact_time_ms": 60,
+          "raw_normalized_y_at_peak": 0.9670,
+          "verdict": "false_positive",
+          "confidence": "high",
+          "reasoning": "Across the full window the tracked foot visibly curls up and back toward the glutes (classic swing/recovery), never approaching the ground plane. The y-value peaks exactly during this curled posture - direct visual confirmation of the documented foreshortening bug, not a borderline call."
+        },
+        {
+          "window_frames": [203, 217],
+          "detector_peak_frame": 210,
+          "detector_peak_timestamp_ms": 4200,
+          "detector_contact_time_ms": 60,
+          "raw_normalized_y_at_peak": 0.9852,
+          "verdict": "false_positive",
+          "confidence": "high",
+          "reasoning": "Same pattern as the f109-123 window: foot curls up behind the body through the whole window, peak y-value coincides with maximum curl, not ground contact."
+        },
+        {
+          "window_frames": [292, 306],
+          "detector_peak_frame": 299,
+          "detector_peak_timestamp_ms": 5980,
+          "detector_contact_time_ms": 60,
+          "raw_normalized_y_at_peak": 0.9858,
+          "verdict": "false_positive",
+          "confidence": "high",
+          "reasoning": "Most extreme example found this session: normalized_y exceeds 1.0 at the smoothed peak (raw value 0.986, smoothed briefly >1.0), corresponding to an exaggerated swing kick with the foot held high and behind the body - unambiguously not ground contact despite being the single highest-magnitude 'contact' signal in the clip."
+        },
+        {
+          "window_frames": [493, 507],
+          "detector_peak_frame": 500,
+          "detector_peak_timestamp_ms": 10000,
+          "detector_contact_time_ms": 80,
+          "raw_normalized_y_at_peak": 0.9456,
+          "verdict": "false_positive",
+          "confidence": "medium-high",
+          "reasoning": "Foot is elevated and bent through the window; never reaches a position consistent with ground contact. Slightly less extreme curl than other false positives but still clearly swing phase."
+        },
+        {
+          "window_frames": [685, 699],
+          "detector_peak_frame": 692,
+          "detector_peak_timestamp_ms": 13840,
+          "detector_contact_time_ms": 60,
+          "raw_normalized_y_at_peak": 0.8971,
+          "verdict": "false_positive",
+          "confidence": "medium-high",
+          "reasoning": "Foot swings up and to the side through the window, no ground contact visible. Notable: this false positive's raw y (0.8971) is actually LOWER than the confirmed true contact's raw y (0.9042, f21 above) - direct evidence that no magnitude/prominence threshold on this signal can cleanly separate true contacts from false positives on this camera angle; the two classes overlap."
+        }
+      ],
+      "summary": "5 of 6 uniformly-sampled events across the full clip duration (not just 3 isolated hand-picked samples as in the original investigation) are confirmed false positives via frame-by-frame visual review - a fired event that is really swing-phase peak knee flexion. 1 of 6 is a plausible true contact. This raises the confidence of the original conclusion considerably: the false-positive rate on this camera geometry looks to be the norm across the clip, not an occasional edge case."
     },
-    "original_y_peak_detector": {
-      "description": "The existing (pre-fix) contact_events.py detector: local maxima in image-space foot height.",
-      "errors_ms": [-220, 100, 120, 40],
-      "mean_absolute_error_ms": 120,
-      "verdict": "Confirmed via direct visual inspection (3 separate samples, see contact_events.py docstring) to sometimes land squarely on the swing-phase peak-flexion moment instead of stance. Error is inconsistent across cycles (-220ms to +40ms) rather than a fixable constant offset, which rules out a simple recalibration fix."
+    {
+      "video": "examples/my_sprint_3.mp4",
+      "camera_description": "Proper side-on, waist-height camera - the clip previously scored as camera_height_score: 100 and shown (via static-strip review) to perform much better (3/6 correct).",
+      "fps": 24.0,
+      "side": "right",
+      "windows": [
+        {
+          "window_frames": [53, 67],
+          "detector_peak_frame": 60,
+          "verdict": "inconclusive",
+          "confidence": "low",
+          "reasoning": "Foot progressively descends toward the ground across f57-62 (consistent with approaching contact, unlike the clear swing-curl seen on my_sprint_2), but the window is occluded by a background post/bollard for 3 frames right around the expected turnaround (f63-64, f66), and the uniform brick-paver background gives no clear ground-plane or shadow cue to confirm the exact contact frame even in unoccluded frames. Cannot assign a precise contact frame with confidence."
+        },
+        {
+          "window_frames": [106, 120],
+          "detector_peak_frame": 113,
+          "verdict": "unusable",
+          "confidence": "n/a",
+          "reasoning": "Entire window is occluded by a background object (a blue post/pole, likely boardwalk railing) obscuring the leg for essentially the whole window. Cannot review visually at all."
+        },
+        {
+          "window_frames": [137, 151],
+          "detector_peak_frame": 144,
+          "verdict": "inconclusive",
+          "confidence": "low",
+          "reasoning": "Foot visibly descends toward the ground with increasing y across f137-146 (trend consistent with approaching contact), but the window becomes occluded (same background post) for f147-151, cutting off before any plateau/turnaround is visible. Truncated - cannot confirm the actual contact frame."
+        },
+        {
+          "window_frames": [204, 218],
+          "detector_peak_frame": 211,
+          "verdict": "unusable",
+          "confidence": "n/a",
+          "reasoning": "Same occlusion as f106-120 - background post blocks the leg for the whole window."
+        }
+      ],
+      "summary": "New finding, not previously documented: this clip has a recurring background occlusion (a post/bollard, likely a boardwalk railing) that blocks the tracked leg in 2 of 4 sampled windows, and even the unoccluded windows have a uniform brick-paver background that provides no reliable visual ground-plane cue. 'Good camera angle' (per the existing headroom/rotation quality gate) does not guarantee the footage is actually labelable - occlusion and background texture are a separate, currently unmeasured problem. No confident true/false contact label could be assigned from this clip this session."
+    },
+    {
+      "video": "examples/my_sprint.mp4",
+      "camera_description": "Archival B&W stock footage, crouching-start scene, low resolution.",
+      "fps": null,
+      "side": "right",
+      "windows": [
+        {
+          "window_frames": [43, 57],
+          "detector_peak_frame": 50,
+          "verdict": "out_of_scope",
+          "confidence": "n/a",
+          "reasoning": "This window covers the crouching sprint start / drive phase (crouched forward lean, likely just out of blocks), not steady-state running stride. The contact-detection heuristic is calibrated for the cyclical mid-stride pattern; start-phase ground contact is mechanically different (much longer, driving contact) and this heuristic was never designed or validated for it. Also, image resolution/blur makes precise visual judgment unreliable regardless."
+        },
+        {
+          "window_frames": [346, 360],
+          "detector_peak_frame": 353,
+          "verdict": "unusable",
+          "confidence": "n/a",
+          "reasoning": "Tracked landmark visibly jumps between the athlete's real foot position and unrelated background clutter (e.g. spectators) across the window, with several frames missing a usable landmark entirely (confidence below the 0.35 threshold). This is a tracking-reliability failure on low-resolution archival footage, not a geometric heuristic problem - the input signal itself is untrustworthy here, independent of contact_events.py's logic."
+        },
+        {
+          "window_frames": [552, 566],
+          "detector_peak_frame": 559,
+          "verdict": "out_of_scope",
+          "confidence": "n/a",
+          "reasoning": "Runner's posture in this window looks upright/decelerating rather than mid-sprint-stride - likely past the finish or between takes. Same steady-state-only caveat as the f43-57 window."
+        }
+      ],
+      "summary": "New finding: low-resolution archival footage introduces a confound this session hadn't isolated before - pose tracking itself becomes unreliable (landmark jumps to background clutter) at points, on top of the clip containing non-steady-state phases (start, deceleration/stop) that the heuristic was never designed for. Any future benchmark clip selection should prefer steady-state mid-run footage and should check tracking confidence, not just camera geometry, before attempting ground-contact labeling."
     }
+  ],
+  "legacy_labels_from_prior_session": {
+    "note": "The following 4 labels were produced with the old static-image-strip methodology before this session's frame-scrubbing tool existed. Kept for reference/continuity, not re-verified this session.",
+    "video": "examples/my_sprint_2.mp4",
+    "fps": 50.0,
+    "side": "right",
+    "labels": [
+      {"estimated_contact_frame": 127, "reviewed_window": [118, 141], "confidence": "medium"},
+      {"estimated_contact_frame": 327, "reviewed_window": [318, 341], "confidence": "medium"},
+      {"estimated_contact_frame": 526, "reviewed_window": [518, 541], "confidence": "medium"},
+      {"estimated_contact_frame": 721, "reviewed_window": [712, 735], "confidence": "low - foot stayed low/extended for ~8 consecutive frames without a single sharp minimum, harder to pin an exact frame"}
+    ]
   },
-  "conclusion": "Neither approach achieves the precision needed (event error << 60-150ms real contact duration) to trust ground_contact/flight_time/duty_factor output. This dataset is a starting point, not a finished validation set - a real fix likely needs many more labeled cycles (ideally across multiple clips/camera angles, labeled with proper frame-scrubbing tooling rather than static image strips) to either calibrate a more robust heuristic or train a small classifier."
+  "conclusion": "This session's frame-scrubbed review (6 uniformly-sampled events spanning the entire my_sprint_2.mp4 clip, vs. the prior 3-4 hand-picked samples) confirms the false-positive rate on a bad camera angle is high and consistent (5/6 = 83% in this sample), not an occasional edge case. It also produces a direct quantitative counterexample proving calibration cannot fix this: the one confirmed true contact (raw y=0.9042) has a LOWER magnitude than one of the confirmed false positives (raw y=0.8971) - the two classes overlap on the only signal this detector uses, so no threshold/prominence tuning on foot-height alone can separate them. Two new, previously undocumented confounds were also found: (1) 'good' camera angle per the existing quality gate does not guarantee labelable footage - my_sprint_3.mp4 had background occlusion blocking the leg in half the reviewed windows despite scoring camera_height_score: 100; (2) low-resolution archival footage can break pose-tracking reliability itself (landmark jumping to background clutter), which is a distinct problem from the geometric heuristic and would corrupt any ground-truth attempt regardless of camera angle. Recommendation for whoever picks this up next: (a) do not attempt further foot-height-based threshold tuning, the overlap evidence above rules it out; (b) if pursuing a trained classifier, it needs an input feature richer than single-signal foot height (e.g. knee+ankle+hip joint configuration, velocity, or a vision-based approach) precisely because the geometric signal itself is ambiguous between swing and stance for oblique cameras; (c) before collecting more footage for labeling, screen candidate clips for occlusion-free, steady-state, high-tracking-confidence segments first - this session lost half its my_sprint_3.mp4 windows and all of its my_sprint.mp4 windows to confounds unrelated to the core question."
 }

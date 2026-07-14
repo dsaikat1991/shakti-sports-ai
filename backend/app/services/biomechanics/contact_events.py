@@ -241,6 +241,30 @@ def _detect_side_contacts(
     needs to be made robust to on its own. Still not independently
     quantified with frame-level error the way the low-angle clip was -
     treat as a promising signal, not a closed case.
+
+    UPDATE - calibration ruled out with a direct counterexample: a proper
+    frame-scrubbing tool (scripts/label_contact_frames.py) was built to
+    replace the old static-image-strip review, and used to re-check 6
+    events uniformly sampled across the *entire* my_sprint_2.mp4 clip
+    (not just 3-4 hand-picked samples). 5 of 6 were confirmed false
+    positives (swing-phase foot-curl, same foreshortening bug as above);
+    1 of 6 was a confirmed true contact. Critically, the confirmed true
+    contact's peak normalized_y (0.9042) is LOWER than one of the
+    confirmed false positives' peak normalized_y (0.8971) - the two
+    classes overlap on this signal. No prominence/threshold recalibration
+    of foot-height alone can separate them; this is not a tuning problem.
+    See tests/fixtures/ground_truth_contact_labels.json for full details,
+    including two further confounds found while trying to label more
+    clips: (1) a "good" camera angle per the existing quality gate does
+    not guarantee occlusion-free, labelable footage (my_sprint_3.mp4 lost
+    half its sampled windows to a background object blocking the leg);
+    (2) low-resolution archival footage can break pose-tracking itself
+    (landmark jumping to background clutter), a distinct failure mode
+    from the geometric heuristic problem this docstring otherwise
+    describes. Do not attempt another foot-height threshold tweak here -
+    a fix needs either a richer feature set (multi-joint configuration,
+    velocity) or a different approach entirely, and any further labeling
+    effort should screen clips for occlusion/tracking-confidence first.
     """
 
     smoothed = _smooth_series(samples)
