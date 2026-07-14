@@ -3,6 +3,8 @@ from typing import Any
 import cv2
 import numpy as np
 
+from app.services.pose.landmark_usability import landmark_is_usable
+
 
 MOVEMENT_LANDMARK_INDICES = (
     11,
@@ -42,6 +44,8 @@ def calculate_frame_change(
 def calculate_pose_movement(
     previous_landmarks: list[Any] | None,
     current_landmarks: list[Any],
+    *,
+    backend: str = "mediapipe",
 ) -> float:
     if previous_landmarks is None:
         return 0.0
@@ -58,25 +62,9 @@ def calculate_pose_movement(
         previous = previous_landmarks[index]
         current = current_landmarks[index]
 
-        previous_visibility = float(
-            getattr(previous, "visibility", 0.0)
-        )
-        current_visibility = float(
-            getattr(current, "visibility", 0.0)
-        )
-
-        previous_presence = float(
-            getattr(previous, "presence", 0.0)
-        )
-        current_presence = float(
-            getattr(current, "presence", 0.0)
-        )
-
-        if (
-            previous_visibility < 0.5
-            or current_visibility < 0.5
-            or previous_presence < 0.5
-            or current_presence < 0.5
+        if not (
+            landmark_is_usable(previous, backend=backend)
+            and landmark_is_usable(current, backend=backend)
         ):
             continue
 

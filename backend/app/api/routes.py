@@ -5,7 +5,19 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 
 from app.services.jobs.store import JobStatus, job_store
-from app.services.pose.analyzer import analyze_video
+from app.services.pose.analyzer import analyze_video as analyze_video_mediapipe
+from app.services.pose_remote.live_analyzer import analyze_video as analyze_video_rtmpose
+
+# RTMPose is the live pipeline: multi-person tracking/selection, gap
+# interpolation, and the backend-aware confidence policy make it more
+# robust to real-world footage than the MediaPipe path, which just
+# takes the first detected pose per frame with no tracking. It does
+# require rtmpose_worker to be running separately (GPU-backed) -
+# analyze_video_rtmpose raises a clear, actionable error if it isn't,
+# which _run_analysis_job below turns into a failed job rather than a
+# server crash. analyze_video_mediapipe is kept available, in-process
+# and with no external dependency, as a fallback path if needed.
+analyze_video = analyze_video_rtmpose
 
 router = APIRouter()
 
