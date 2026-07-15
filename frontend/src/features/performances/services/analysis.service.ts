@@ -1,7 +1,23 @@
 import { supabase } from "../../../lib/supabase";
+import { BUCKET_NAME } from "./performance.service";
 import type { AnalysisJob, AnalysisResult } from "../types/analysis";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
+
+// Long enough for the backend to download a large clip over a slow
+// connection; short enough that a leaked URL (logs, browser history)
+// isn't useful for long. The backend also validates the URL's host/path
+// before using it - see backend/app/api/routes.py.
+const SIGNED_URL_EXPIRY_SECONDS = 600;
+
+function requireApiBaseUrl(): string {
+  if (!API_BASE_URL) {
+    throw new Error(
+      "VITE_API_BASE_URL is not configured - cannot reach the analysis backend.",
+    );
+  }
+  return API_BASE_URL;
+}
 
 async function parseErrorDetail(response: Response): Promise<string> {
   try {
@@ -16,21 +32,30 @@ async function parseErrorDetail(response: Response): Promise<string> {
   return `Backend request failed with status ${response.status}.`;
 }
 
-export async function submitVideoForAnalysis(
-  file: File,
-): Promise<{ job_id: string; status: string }> {
-  if (!API_BASE_URL) {
-    throw new Error(
-      "VITE_API_BASE_URL is not configured - cannot reach the analysis backend.",
-    );
+// Mints a short-lived signed URL for a video already sitting in the
+// (private) performance-recordings bucket, so the backend can download it
+// itself instead of the browser re-uploading the same bytes a second
+// time. Storage RLS still gates who can call this - only the owning
+// athlete's session can sign a URL for their own object path.
+export async function createSignedVideoUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUrl(storagePath, SIGNED_URL_EXPIRY_SECONDS);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message || "Could not create a signed video URL.");
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
+  return data.signedUrl;
+}
 
-  const response = await fetch(`${API_BASE_URL}/api/analyze/video`, {
+export async function submitVideoUrlForAnalysis(
+  videoUrl: string,
+): Promise<{ job_id: string; status: string }> {
+  const response = await fetch(`${requireApiBaseUrl()}/api/analyze/video-url`, {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ video_url: videoUrl }),
   });
 
   if (!response.ok) {
@@ -41,13 +66,9 @@ export async function submitVideoForAnalysis(
 }
 
 export async function getAnalysisStatus(jobId: string): Promise<AnalysisJob> {
-  if (!API_BASE_URL) {
-    throw new Error(
-      "VITE_API_BASE_URL is not configured - cannot reach the analysis backend.",
-    );
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/analyze/video/${jobId}`);
+  const response = await fetch(
+    `${requireApiBaseUrl()}/api/analyze/video/${jobId}`,
+  );
 
   if (!response.ok) {
     throw new Error(await parseErrorDetail(response));
@@ -60,7 +81,7 @@ export async function getAnalysisStatus(jobId: string): Promise<AnalysisJob> {
 // which allows exactly: uploaded, analyzing, completed, failed.
 type AnalysisUpdate = {
   upload_status: "analyzing" | "completed" | "failed";
-  analysis_job_id?: string;
+  analysis_job_id?: string | null;
   analysis_result?: AnalysisResult | null;
   analysis_error?: string | null;
 };
@@ -69,6 +90,10 @@ export async function updatePerformanceAnalysis(
   performanceId: string,
   update: AnalysisUpdate,
 ) {
+  // .update() with an explicit column set only ever touches those
+  // columns - video_url, notes, title, etc. on this row are untouched,
+  // and RLS (auth.uid() = athlete_id) still applies to this request same
+  // as any other authenticated client call.
   const result = await supabase
     .from("performances")
     .update(update)
@@ -83,4 +108,14 @@ export async function updatePerformanceAnalysis(
   }
 
   return result;
+}
+
+// Shared by first-time submission (useCreatePerformance) and retry
+// (usePerformance's retry action): mint a signed URL for the given
+// storage path and hand it to the backend, returning the new job id.
+export async function startAnalysisForStoredVideo(
+  storagePath: string,
+): Promise<{ job_id: string; status: string }> {
+  const signedUrl = await createSignedVideoUrl(storagePath);
+  return submitVideoUrlForAnalysis(signedUrl);
 }

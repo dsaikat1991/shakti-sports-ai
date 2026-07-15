@@ -1,7 +1,7 @@
 import { supabase } from "../../../lib/supabase";
 import type { PerformanceDraft, PerformanceEvent } from "../types/performance";
 
-const BUCKET_NAME = "performance-recordings";
+export const BUCKET_NAME = "performance-recordings";
 
 const EVENT_NAME_MAP: Record<PerformanceEvent, string> = {
   "100m": "Sprint",

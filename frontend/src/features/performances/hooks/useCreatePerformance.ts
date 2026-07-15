@@ -4,7 +4,7 @@ import {
   uploadPerformanceRecording,
 } from "../services/performance.service";
 import {
-  submitVideoForAnalysis,
+  startAnalysisForStoredVideo,
   updatePerformanceAnalysis,
 } from "../services/analysis.service";
 import type { PerformanceDraft } from "../types/performance";
@@ -39,7 +39,13 @@ export function useCreatePerformance() {
      }
 
       try {
-        const job = await submitVideoForAnalysis(draft.recording);
+        // Signed-URL submission, not a second browser upload: the video
+        // already sits in Storage from the step above, so the backend
+        // downloads it itself instead of the browser sending the same
+        // bytes twice. This also means the exact same path is reused for
+        // retrying analysis later (see useRetryAnalysis), without needing
+        // the original File object still in memory.
+        const job = await startAnalysisForStoredVideo(uploadData.path);
 
         await updatePerformanceAnalysis(data.id, {
           upload_status: "analyzing",

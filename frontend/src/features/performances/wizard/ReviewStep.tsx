@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
@@ -18,6 +19,14 @@ export default function ReviewStep({
   const { user } = useAuth();
   const createPerformance = useCreatePerformance();
 
+  // createPerformance.isPending only reflects in this component on its
+  // *next* render, so a fast double-click (or a repeated onClick before
+  // React has re-rendered the now-disabled button) can otherwise fire
+  // mutateAsync twice - two Storage uploads, two performances rows, two
+  // backend jobs. This ref is checked and set synchronously, closing that
+  // race regardless of render timing.
+  const hasSubmittedRef = useRef(false);
+
   const { event, performanceType, performedOn, title, notes, recording } =
     wizard.draft;
 
@@ -28,16 +37,21 @@ export default function ReviewStep({
   );
 
   async function handleCreatePerformance() {
-    if (!user) return;
+    if (!user || hasSubmittedRef.current) return;
+    hasSubmittedRef.current = true;
 
-const performance = await createPerformance.mutateAsync({
-  athleteId: user.id,
-  draft: wizard.draft,
-});
+    try {
+      const performance = await createPerformance.mutateAsync({
+        athleteId: user.id,
+        draft: wizard.draft,
+      });
 
-navigate(
-  ROUTES.ATHLETE.PERFORMANCE_PROCESSING(performance.id)
-);
+      navigate(ROUTES.ATHLETE.PERFORMANCE_PROCESSING(performance.id));
+    } catch {
+      // Let the mutation's own error state render (see createPerformance.error
+      // below) and allow a genuine retry from scratch.
+      hasSubmittedRef.current = false;
+    }
   }
 
   return (
