@@ -30,7 +30,7 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="platform" className="bg-white py-24">
+    <section id="how-it-works" className="bg-white py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
