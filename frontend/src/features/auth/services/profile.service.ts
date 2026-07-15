@@ -76,3 +76,16 @@ export async function createAcademyProfile(input: CreateAcademyProfileInput) {
     description: input.description || null,
   });
 }
+
+// Fetches role directly rather than relying on AuthContext's role state,
+// which updates asynchronously off a separate effect - reading it
+// immediately after a sign-in call would risk a stale/null value.
+export async function getUserRole(userId: string): Promise<UserRole | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return (data?.role as UserRole | undefined) ?? null;
+}

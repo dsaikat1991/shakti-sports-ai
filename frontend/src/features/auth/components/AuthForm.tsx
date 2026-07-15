@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthDivider from "./AuthDivider";
 import GoogleButton from "./GoogleButton";
 import { useAuthActions } from "../hooks/useAuthActions";
+import { getUserRole } from "../services/profile.service";
 import type { AuthMode } from "../types/auth";
-import { ROUTES } from "../../../constants/routes";
+import { ROUTES, roleHomeRoute } from "../../../constants/routes";
 
 type Props = {
   mode: AuthMode;
@@ -29,16 +30,18 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
   setErrorMessage("");
 
   if (isSignIn) {
-    const { error } = await signIn(email, password);
-
-    setLoading(false);
+    const { data, error } = await signIn(email, password);
 
     if (error) {
+      setLoading(false);
       setErrorMessage(error.message);
       return;
     }
 
-    navigate(ROUTES.ATHLETE.HOME);
+    const role = data.user ? await getUserRole(data.user.id) : null;
+
+    setLoading(false);
+    navigate(roleHomeRoute(role));
     return;
   }
 

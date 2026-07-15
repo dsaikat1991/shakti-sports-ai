@@ -7,6 +7,7 @@ import HomePage from "../pages/HomePage";
 import NotFound from "../pages/NotFound";
 
 import ProtectedRoute from "./ProtectedRoute";
+import RoleGate from "./RoleGate";
 
 import SignIn from "../../features/auth/pages/SignIn";
 import SignUp from "../../features/auth/pages/SignUp";
@@ -14,6 +15,7 @@ import ChooseRole from "../../features/auth/pages/ChooseRole";
 import AthleteOnboarding from "../../features/auth/pages/AthleteOnboarding";
 import CoachOnboarding from "../../features/auth/pages/CoachOnboarding";
 import AcademyOnboarding from "../../features/auth/pages/AcademyOnboarding";
+import PendingConsole from "../../features/auth/pages/PendingConsole";
 
 import AthleteLayout from "../../features/athlete/components/AthleteLayout";
 import AthleteHome from "../../features/athlete/pages/AthleteHome";
@@ -62,6 +64,7 @@ export default function AppRouter() {
         {/* ---------------------- */}
 
 <Route element={<ProtectedRoute />}>
+<Route element={<RoleGate allow={["athlete"]} />}>
 <Route path="/console/athlete" element={<AthleteLayout />}>
   <Route index element={<AthleteHome />} />
 
@@ -130,6 +133,43 @@ export default function AppRouter() {
   />
 </Route>
 </Route>
+</Route>
+
+        {/* ---------------------- */}
+        {/* Protected Coach / Academy Area */}
+        {/* ---------------------- */}
+        {/* No real console yet - lands on a holding screen. See */}
+        {/* docs/ENGINEERING_HANDOFF.md for status. */}
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<RoleGate allow={["coach"]} />}>
+            <Route element={<MarketingLayout />}>
+              <Route
+                path="/console/coach"
+                element={
+                  <PendingConsole
+                    title="Coach Console"
+                    description="Athlete search, report comparisons, and shortlists are still being built. We'll notify you the moment it's ready."
+                  />
+                }
+              />
+            </Route>
+          </Route>
+
+          <Route element={<RoleGate allow={["academy"]} />}>
+            <Route element={<MarketingLayout />}>
+              <Route
+                path="/console/academy"
+                element={
+                  <PendingConsole
+                    title="Academy Console"
+                    description="Squad management, progress tracking, and reports are still being built. We'll notify you the moment it's ready."
+                  />
+                }
+              />
+            </Route>
+          </Route>
+        </Route>
 
         {/* ---------------------- */}
         {/* Fallback */}
