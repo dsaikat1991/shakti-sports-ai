@@ -9,6 +9,7 @@ import HomePage from "../pages/HomePage";
 import NotFound from "../pages/NotFound";
 import About from "../pages/About";
 import Mission from "../pages/Mission";
+import Contact from "../pages/Contact";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleGate from "./RoleGate";
@@ -45,17 +46,9 @@ export default function AppRouter() {
           <Route path="/about" element={<About />} />
           <Route path="/mission" element={<Mission />} />
 
+          <Route path="/contact" element={<Contact />} />
+
           {/* Content pending - see docs/ENGINEERING_HANDOFF.md */}
-          <Route
-            path="/contact"
-            element={
-              <ComingSoon
-                title="Contact"
-                description="A way to reach the Shakti Sports AI team directly is on its way."
-                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
-              />
-            }
-          />
           <Route
             path="/terms"
             element={
