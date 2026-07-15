@@ -12,6 +12,8 @@ import SignIn from "../../features/auth/pages/SignIn";
 import SignUp from "../../features/auth/pages/SignUp";
 import ChooseRole from "../../features/auth/pages/ChooseRole";
 import AthleteOnboarding from "../../features/auth/pages/AthleteOnboarding";
+import CoachOnboarding from "../../features/auth/pages/CoachOnboarding";
+import AcademyOnboarding from "../../features/auth/pages/AcademyOnboarding";
 
 import AthleteLayout from "../../features/athlete/components/AthleteLayout";
 import AthleteHome from "../../features/athlete/pages/AthleteHome";
@@ -47,6 +49,11 @@ export default function AppRouter() {
           <Route
             path="/onboarding/athlete"
             element={<AthleteOnboarding />}
+          />
+          <Route path="/onboarding/coach" element={<CoachOnboarding />} />
+          <Route
+            path="/onboarding/academy"
+            element={<AcademyOnboarding />}
           />
         </Route>
 

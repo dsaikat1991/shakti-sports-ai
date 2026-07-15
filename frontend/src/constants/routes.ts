@@ -6,6 +6,8 @@ export const ROUTES = {
     SIGN_UP: "/signup",
     CHOOSE_ROLE: "/choose-role",
     ATHLETE_ONBOARDING: "/onboarding/athlete",
+    COACH_ONBOARDING: "/onboarding/coach",
+    ACADEMY_ONBOARDING: "/onboarding/academy",
   },
 
   ATHLETE: {
