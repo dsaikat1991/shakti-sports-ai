@@ -2,7 +2,7 @@
 
 **Read this document fully before touching code.** It assumes zero memory of prior work. Where something is uncertain, unverified, or was deliberately left broken, that is stated explicitly — do not assume silence means "done and correct."
 
-Last updated: 2026-07-15, after commit `2cde8b5` on `main`. **§17 is the most recent work and supersedes anything in §1-§16 that it contradicts** (frontend integration, RLS fixes, coach/academy onboarding, navigation/marketing pages) — read §17 first if you're starting fresh, then the rest for backend/biomechanics depth.
+Last updated: 2026-07-15. Work through commit `2cde8b5` on `main` is described in §1-§17. **§18 (real coach/academy consoles) is the most recent work, done in this same session on top of §17, and is not yet committed** as of this writing — read §18 first if you're starting fresh, then §17, then the rest for backend/biomechanics depth.
 
 ---
 
@@ -612,7 +612,7 @@ Found via a full static sweep (every `Link`/`href`/`navigate` call cross-referen
 - To run the full stack now meaningfully exercises all three services together (§15's steps 1-3 are all required for the frontend's analysis flow to work, not just for manual `curl` testing as previously written).
 - `.claude/launch.json` added — lets the frontend dev server be started via the preview tooling (`name: "frontend"`, port 5173 - **must stay 5173**, the backend's CORS config in `main.py` hardcodes `http://localhost:5173`).
 
-### 17.9 Exact next task (current, supersedes §16)
+### 17.9 Exact next task (historical - "real coach/academy consoles" was picked up; see §18 for what actually happened and the current next task)
 
 No single obvious next step was chosen at the end of this session - the work above was a chain of "fix this, which surfaces that" rather than a planned roadmap item, and it ran out naturally rather than hitting a real stopping point. Pick based on what's actually wanted next:
 
@@ -622,3 +622,75 @@ No single obvious next step was chosen at the end of this session - the work abo
 - **Infrastructure, not user-facing**: job queue durability (in-memory, single-process, §11) or backend authentication (§17.7) - real gaps, but nothing is currently broken by them; worth doing before this scales past one process or gets meaningfully more usage, not urgent today.
 
 Whichever is picked: run `cd backend && ./.venv/Scripts/python.exe -m pytest` (294 passing) and `cd frontend && npm run test` (23 passing) first to confirm a clean starting state, and skim §17 in full before writing code - several of the bugs in §17.2 (jsonb key ordering, the `upload_status` CHECK constraint values, the object-vs-array `joint_angles` shape) are exactly the kind of thing that's easy to reintroduce by anyone who hasn't hit them once already.
+
+---
+
+## 18. Session update: real coach/academy consoles (Phase 1 - connected-athlete roster)
+
+Same session as §17, done as a separate follow-up piece of work. **This section is the authoritative current state for coach/academy functionality** - §17.4's "onboarding only, `PendingConsole` placeholder" description is now historical.
+
+**Status as of writing: migrations `0005`/`0006` are applied to the real Supabase project, and the full connection lifecycle has been live-verified end-to-end in a real browser session with two real accounts (see §18.5) - not just automated checks.** Code is not yet committed to git - that's the project owner's call, still pending as of this writing.
+
+### 18.1 What this is
+
+Coach and academy accounts previously landed on an identical `PendingConsole` placeholder after onboarding - no real functionality existed for either role, and no table anywhere linked a coach/academy account to an athlete account (confirmed via audit before any code was written: every RLS policy on `profiles`/`athlete_profiles`/`performances` was `auth.uid() = <owner>` only). This phase builds the connection layer plus a minimal console on top of it:
+
+- A coach or academy can invite a specific athlete by email; an athlete can equally invite a specific coach/academy by email. Either direction goes through the same `request_partner_connection(target_email)` Postgres RPC (`SECURITY DEFINER`) - the only way a connection row can be created, precisely because neither party has RLS visibility into the other's `profiles` row before a connection exists, so a plain client-side lookup-then-insert isn't possible.
+- The recipient accepts or rejects. Only on **acceptance** does the coach/academy gain `SELECT` access to that athlete's `athlete_profiles` row and `performances` rows (including `analysis_result` - not raw video, that's deferred, see §18.3). A **pending** request only exposes basic name/org info, and only to the request's *recipient*, not the sender (see §18.2 for why this is directional, not symmetric).
+- Either party can revoke an accepted connection at any time, which immediately removes the coach/academy's access (the RLS policies check `status = 'accepted'` live, not a point-in-time grant).
+- A coach/academy can attach private notes to a connected athlete, visible only to the note's author, never the athlete.
+
+### 18.2 Data model and RLS (the real substance of this change)
+
+Two new migrations, written but **not yet run** - same hand-run-in-the-Supabase-SQL-editor workflow as every prior migration in this repo:
+
+- `supabase/migrations/0005_add_coach_athlete_connections.sql` - the `coach_athlete_connections` table, the `request_partner_connection()` RPC, a `BEFORE UPDATE` trigger that owns the connection's entire state machine, and five new *additive* RLS policies on `profiles`/`coach_profiles`/`academy_profiles`/`athlete_profiles`/`performances`. Nothing existing is touched or weakened.
+- `supabase/migrations/0006_add_coach_athlete_notes.sql` - the `coach_athlete_notes` table (private, author-only).
+
+This design went through an explicit adversarial review pass (a second planning agent instructed to find holes) before being written, which caught two real problems in the first draft, both fixed in the shipped SQL:
+
+1. **An information-disclosure leak.** The first draft made pending-request profile visibility *symmetric* (both parties see each other's `profiles` row while pending). Combined with `request_partner_connection()`'s "generic exception either way" design, that would have turned the RPC into a two-step name-enumeration oracle: call it with a guessed email to confirm a registered athlete account exists, then read their real name straight off the now-visible pending row. Fixed by making visibility **directional** - only the *recipient* of a still-pending request can see the *initiator's* base profile, never the reverse.
+2. **A Postgres RLS multi-policy combination bug.** The first draft used two separate `UPDATE` policies (one for "respond to a request", one for "revoke an accepted connection"). Postgres combines multiple permissive policies' `USING` clauses with OR and their `WITH CHECK` clauses with OR *independently*, not as matched pairs - which would have let a recipient of a still-pending request jump straight to `status = 'revoked'` by satisfying one policy's `USING` and a different policy's `WITH CHECK`. Fixed by collapsing to one broad row-access `UPDATE` policy plus a trigger (`enforce_coach_athlete_connection_transition()`) that owns the entire legal-transition state machine (`pending → accepted/rejected` only by the non-initiating party, `accepted → revoked` by either party, `rejected/revoked → pending` reactivation gated behind a transaction-local flag that only `request_partner_connection()` sets, so a raw client `UPDATE` can't reactivate a stale connection while bypassing the RPC's email/role validation).
+
+Other things worth knowing about the shipped design:
+- `coach_id`/`athlete_id` are immutable post-insert (trigger-enforced - `WITH CHECK` alone can only see the new row, not old-vs-new, so a trigger is the only place this can actually be enforced).
+- There is deliberately **no direct `INSERT` policy** on `coach_athlete_connections` - `request_partner_connection()` is the sole creation path, avoiding a second, independently-maintained copy of the same authorization logic.
+- `invited_email` is stored on the connection row (set by the RPC from the email the inviter actually typed) purely so the *inviter's own* "sent invitations" list can show who they invited, given they have no other way to see the recipient's profile before acceptance. This isn't a new disclosure - the inviter already knows the email, and a recipient seeing their own email echoed back is not a leak either.
+- **Known, accepted gaps, flagged not solved**: no rate limiting on `request_partner_connection` (nothing in this app has rate limiting anywhere - see §11/§17.7); acceptance is not gated on `coach_profiles.verified`/`academy_profiles.verified` (those columns exist but stay unused this phase - gating on them would lock out every existing account, and a full verification workflow is explicitly out of scope, see §18.3). The athlete's own accept action is the trust boundary for this phase.
+
+### 18.3 Explicitly deferred (per the product owner's own phasing)
+
+Nationwide discovery/search UI, a distilled "Performance Index"/AI-potential score, a full coach/academy verification workflow, an `organizations`/multi-tenant model, guardian-consent records for minors, messaging, automatic recommendations, raw video playback access for coaches (analysis results/metrics only this phase), and an athlete-visible "coaching feedback" channel (only private, author-only coach notes shipped). None of these require a destructive schema change later - `partner_role` already distinguishes coach vs. academy without a join (for a future organizations model), `accepted` status is already the single choke point for all athlete-data visibility (a future `guardian_consent_at` column is a one-column, one-predicate addition), and `verified` columns already exist on `coach_profiles`/`academy_profiles` for a future verification tier.
+
+### 18.4 Frontend
+
+New `frontend/src/features/partners/` feature folder (coach and academy share one implementation - `PartnerLayout`, `PartnerHome`, `PartnerRoster`, `PartnerAthleteDetail`, `PartnerRequests` - role-driven copy only, not two parallel folders), plus `frontend/src/features/athlete/pages/AthleteCoaches.tsx` (new "Coaches" nav item in `AthleteLayout`) for the athlete's own side of accept/reject/revoke/invite. `AppRouter.tsx`'s `/console/coach` and `/console/academy` routes now mount `PartnerLayout` with real nested routes instead of the old `PendingConsole` placeholder, which has been deleted (it had zero remaining usages after this change). `PartnerAthleteDetail.tsx` reuses the existing `AnalysisReport` component from `performances/pages/PerformanceDetail.tsx` as-is (a pure presentational export with no athlete-only actions like retry) rather than reusing the whole `PerformanceDetail` page, which has retry/processing-link UI that would silently fail under a coach's RLS grant (SELECT-only, no UPDATE access to `performances`).
+
+Also fixed in passing: `UserMenu.tsx`'s "Dashboard" link was hardcoded to `ROUTES.ATHLETE.HOME` - harmless while only `AthleteLayout` used it, but would have sent a coach/academy user on a pointless detour through a `RoleGate` bounce. Now uses `roleHomeRoute(role)`. `CoachOnboarding.tsx`/`AcademyOnboarding.tsx`'s step-4 completion screen also predated this work - it only offered "Sign Out" and its copy claimed the console was "still being built" (true when it was written, stale the moment this session made it real). Both now navigate to the real console (`ROUTES.COACH.HOME`/`ROUTES.ACADEMY.HOME`) with updated copy. Caught live while walking through the actual sign-up flow during verification, not by code review - a reminder that onboarding completion screens are easy to leave stale when the thing they're gating gets built later.
+
+New pure helper `frontend/src/features/partners/lib/getConnectionViewState.ts` (unit-tested, 7 cases) resolves what a connection row means from the current viewer's perspective (`outgoing_request` / `incoming_request` / `connected` / `declined` / `ended`) - used by both `PartnerRequests.tsx` and `AthleteCoaches.tsx` so both sides of the same table stay in sync without duplicating the perspective logic.
+
+### 18.5 Verification performed
+
+Automated:
+- `cd backend && ./.venv/Scripts/python.exe -m pytest` - 302 passed, confirmed untouched (this work doesn't touch `backend/` at all).
+- `cd frontend && npm run test` - 30 passed (23 existing + 7 new `getConnectionViewState` cases).
+- `npx tsc -b --force` - clean, no errors.
+
+**Live, both migrations applied to the real Supabase project** (project owner ran `0005` then `0006` in the SQL editor - `0005` initially hit `ERROR: 42601: unterminated dollar-quoted string`, which turned out to be a paste that got truncated partway through the SQL editor, not a bug in the migration itself; re-copying the full file resolved it). Full walkthrough done in a real browser session against the live app with two freshly-created real accounts (`shakti.qa.athlete@example.com` / `shakti.qa.coach@example.com`, both still in Supabase - fine to leave or delete):
+
+1. Signed up and onboarded both a real athlete account and a real coach account through the actual sign-up/onboarding flow (this is what caught the stale onboarding-CTA bug noted in §18.4).
+2. Coach sent an invite to the athlete's email from `/console/coach/requests` - `request_partner_connection()` RPC succeeded, row created with `status = 'pending'`, `initiated_by = 'coach'`.
+3. **Confirmed the directional pending-visibility fix works as designed**: on the coach's side, the pending row rendered with no athlete profile data (fell back to `invited_email`, exactly as intended - the coach-as-initiator has no profile visibility yet). On the athlete's side (`/console/athlete/coaches`), the same pending row showed the coach's real name/email/role in full - the recipient can see the initiator, not the reverse.
+4. Athlete clicked Accept. Status flipped `pending -> accepted` (the trigger's state-machine, exercised for real for the first time - non-initiator responding to a pending request).
+5. **Confirmed accepted-only data unlock**: coach's roster (`/console/coach/athletes`) now showed the athlete's real name/email; opening the athlete detail page showed the real `athlete_profiles` data (preferred event: Sprint, from onboarding) and an honest "hasn't uploaded any performances yet" (no test video was uploaded this pass - the RTMPose worker wasn't running, so this only exercises the zero-performances path, not a populated `AnalysisReport` render; that render path itself was already exercised and unit-tested in §17 via the athlete's own `PerformanceDetail.tsx`, and `PartnerAthleteDetail.tsx` reuses that exact same `AnalysisReport` export unmodified).
+6. **Confirmed private notes work**: added a note as the coach ("Strong start technique, needs work on top-end speed."), it saved and rendered immediately. No athlete-facing UI exists to see it (by construction - see §18.1), and the RLS policy (`auth.uid() = coach_id`) is the actual enforcement boundary regardless.
+7. Athlete clicked Revoke Access. Status flipped `accepted -> revoked`.
+8. **Confirmed revocation actually removes access live**: athlete's connected-coaches list went back to "No coaches yet"; coach's roster independently went back to "No connected athletes yet" on a fresh page load (not just optimistic UI - a real re-query against the DB, since `accepted`-only is a live predicate re-evaluated on every query, not a point-in-time grant).
+9. Zero browser console errors and zero dev-server errors at any point across the whole walkthrough.
+
+**Not exercised this pass**: the athlete-initiated invite direction (only coach-initiated was tested live, though it's the same RPC/trigger code path with the roles swapped, and is covered by the `getConnectionViewState` unit tests for both directions), academy-role behavior specifically (coach and academy share 100% of the same code path - only the role label differs - so this is low-risk but not independently confirmed live), a populated performance/analysis report inside `PartnerAthleteDetail.tsx` (needs a real uploaded+analyzed video, out of scope for this pass), and reject (only accept and revoke were exercised).
+
+### 18.6 Exact next task (current, supersedes §17.9)
+
+This phase is done and verified. Pick between the same options §17.9 laid out (Terms/Privacy content - still the most urgent given the apparent-minors data collection, see §17.6/§17.7; ground-contact detection; job-queue/auth infrastructure) - or extend this phase: coach profile editing is still a `ComingSoon` stub, "coaching feedback" visible to the athlete (deferred in §18.3) is a natural fast-follow now that private notes exist as a base to build on, and the not-exercised paths listed in §18.5 (reject, academy role, athlete-initiated invites, a populated performance report in the coach view) are worth a pass before this is fully trusted at higher traffic.

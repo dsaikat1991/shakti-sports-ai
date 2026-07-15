@@ -20,16 +20,22 @@ import ChooseRole from "../../features/auth/pages/ChooseRole";
 import AthleteOnboarding from "../../features/auth/pages/AthleteOnboarding";
 import CoachOnboarding from "../../features/auth/pages/CoachOnboarding";
 import AcademyOnboarding from "../../features/auth/pages/AcademyOnboarding";
-import PendingConsole from "../../features/auth/pages/PendingConsole";
 
 import AthleteLayout from "../../features/athlete/components/AthleteLayout";
 import AthleteHome from "../../features/athlete/pages/AthleteHome";
+import AthleteCoaches from "../../features/athlete/pages/AthleteCoaches";
 
 import NewPerformance from "../../features/performances/pages/NewPerformance";
 import PerformanceProcessing from "../../features/performances/pages/PerformanceProcessing";
 
 import PerformanceHistory from "../../features/performances/pages/PerformanceHistory";
 import PerformanceDetail from "../../features/performances/pages/PerformanceDetail";
+
+import PartnerLayout from "../../features/partners/components/PartnerLayout";
+import PartnerHome from "../../features/partners/pages/PartnerHome";
+import PartnerRoster from "../../features/partners/pages/PartnerRoster";
+import PartnerAthleteDetail from "../../features/partners/pages/PartnerAthleteDetail";
+import PartnerRequests from "../../features/partners/pages/PartnerRequests";
 
 import ComingSoon from "../../components/shared/ComingSoon";
 
@@ -143,6 +149,8 @@ export default function AppRouter() {
     element={<PerformanceProcessing />}
   />
 
+  <Route path="coaches" element={<AthleteCoaches />} />
+
   <Route
     path="reports"
     element={
@@ -199,18 +207,32 @@ export default function AppRouter() {
         {/* ---------------------- */}
         {/* Protected Coach / Academy Area */}
         {/* ---------------------- */}
-        {/* No real console yet - lands on a holding screen. See */}
-        {/* docs/ENGINEERING_HANDOFF.md for status. */}
+        {/* Connected-athlete roster (invite/accept, profile + */}
+        {/* performances + private notes) - see docs/ENGINEERING_HANDOFF.md */}
+        {/* §18. Talent search/discovery is still not built. */}
 
         <Route element={<ProtectedRoute />}>
           <Route element={<RoleGate allow={["coach"]} />}>
-            <Route element={<MarketingLayout />}>
+            <Route path="/console/coach" element={<PartnerLayout />}>
+              <Route index element={<PartnerHome />} />
+              <Route path="athletes" element={<PartnerRoster />} />
+              <Route path="athletes/:athleteId" element={<PartnerAthleteDetail />} />
+              <Route path="requests" element={<PartnerRequests />} />
               <Route
-                path="/console/coach"
+                path="profile"
                 element={
-                  <PendingConsole
-                    title="Coach Console"
-                    description="Athlete search, report comparisons, and shortlists are still being built. We'll notify you the moment it's ready."
+                  <ComingSoon
+                    title="Profile"
+                    description="Editing your coach profile from here is on its way."
+                  />
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ComingSoon
+                    title="Settings"
+                    description="Account and notification settings are on the way."
                   />
                 }
               />
@@ -218,13 +240,26 @@ export default function AppRouter() {
           </Route>
 
           <Route element={<RoleGate allow={["academy"]} />}>
-            <Route element={<MarketingLayout />}>
+            <Route path="/console/academy" element={<PartnerLayout />}>
+              <Route index element={<PartnerHome />} />
+              <Route path="athletes" element={<PartnerRoster />} />
+              <Route path="athletes/:athleteId" element={<PartnerAthleteDetail />} />
+              <Route path="requests" element={<PartnerRequests />} />
               <Route
-                path="/console/academy"
+                path="profile"
                 element={
-                  <PendingConsole
-                    title="Academy Console"
-                    description="Squad management, progress tracking, and reports are still being built. We'll notify you the moment it's ready."
+                  <ComingSoon
+                    title="Profile"
+                    description="Editing your academy profile from here is on its way."
+                  />
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ComingSoon
+                    title="Settings"
+                    description="Account and notification settings are on the way."
                   />
                 }
               />

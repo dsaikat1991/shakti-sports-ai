@@ -1,11 +1,11 @@
 import { LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ROUTES } from "../../constants/routes";
+import { roleHomeRoute } from "../../constants/routes";
 import { useAuth } from "../../features/auth/context/AuthContext";
 
 export default function UserMenu() {
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
   const email = user?.email ?? "";
@@ -36,7 +36,7 @@ export default function UserMenu() {
 
           <div className="p-2">
             <Link
-              to={ROUTES.ATHLETE.HOME}
+              to={roleHomeRoute(role)}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-orange-50 hover:text-[#F0600E]"
             >

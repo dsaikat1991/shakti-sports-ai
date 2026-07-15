@@ -1,12 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { ROUTES } from "../../../constants/routes";
 import {
   createAcademyProfile,
   createBaseProfile,
 } from "../services/profile.service";
 
 export default function AcademyOnboarding() {
-  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -194,17 +197,17 @@ export default function AcademyOnboarding() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-md text-base leading-7 text-gray-600">
-            Your academy profile is saved. The full academy console —
-            squad management, progress tracking, and reports — is still
-            being built. We'll notify you the moment it's ready.
+            Your academy profile is saved. Invite athletes to connect and
+            you'll be able to review their performance history and reports
+            from your console.
           </p>
 
           <button
             type="button"
-            onClick={signOut}
-            className="mt-8 cursor-pointer rounded-xl border border-gray-200 px-6 py-3 text-sm font-bold text-gray-700 transition hover:border-gray-400"
+            onClick={() => navigate(ROUTES.ACADEMY.HOME)}
+            className="mt-8 cursor-pointer rounded-xl bg-[#F0600E] px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
           >
-            Sign Out
+            Go to Academy Console →
           </button>
         </div>
       )}

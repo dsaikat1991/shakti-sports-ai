@@ -32,6 +32,8 @@ export const ROUTES = {
 
     HISTORY: "/console/athlete/performances",
 
+    COACHES: "/console/athlete/coaches",
+
     PROFILE: "/console/athlete/profile",
 
     SETTINGS: "/console/athlete/settings",
@@ -48,10 +50,20 @@ export const ROUTES = {
 
   COACH: {
     HOME: "/console/coach",
+    ATHLETES: "/console/coach/athletes",
+    REQUESTS: "/console/coach/requests",
+    PROFILE: "/console/coach/profile",
+    SETTINGS: "/console/coach/settings",
+    ATHLETE_DETAIL: (id: string) => `/console/coach/athletes/${id}`,
   },
 
   ACADEMY: {
     HOME: "/console/academy",
+    ATHLETES: "/console/academy/athletes",
+    REQUESTS: "/console/academy/requests",
+    PROFILE: "/console/academy/profile",
+    SETTINGS: "/console/academy/settings",
+    ATHLETE_DETAIL: (id: string) => `/console/academy/athletes/${id}`,
   },
 } as const;
 
