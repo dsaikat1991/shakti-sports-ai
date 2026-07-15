@@ -1,10 +1,14 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import { ROUTES } from "../../constants/routes";
+
 import MarketingLayout from "../layouts/MarketingLayout";
 import AuthLayout from "../layouts/AuthLayout";
 
 import HomePage from "../pages/HomePage";
 import NotFound from "../pages/NotFound";
+import About from "../pages/About";
+import Mission from "../pages/Mission";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleGate from "./RoleGate";
@@ -38,6 +42,70 @@ export default function AppRouter() {
 
         <Route element={<MarketingLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/mission" element={<Mission />} />
+
+          {/* Content pending - see docs/ENGINEERING_HANDOFF.md */}
+          <Route
+            path="/contact"
+            element={
+              <ComingSoon
+                title="Contact"
+                description="A way to reach the Shakti Sports AI team directly is on its way."
+                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
+              />
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <ComingSoon
+                title="Terms of Use"
+                description="Our Terms of Use are being finalized and will be published here before they take effect."
+                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
+              />
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <ComingSoon
+                title="Privacy Policy"
+                description="Our Privacy Policy is being finalized and will be published here before it takes effect."
+                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.COMING_SOON.AI_ANALYSIS}
+            element={
+              <ComingSoon
+                title="AI Analysis"
+                description="A deeper look at how Shakti's AI reads posture, timing, and movement quality is on its way."
+                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.COMING_SOON.RECORDING_GUIDE}
+            element={
+              <ComingSoon
+                title="Recording Guide"
+                description="A full guide to recording analysis-ready clips for every event is on its way."
+                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.COMING_SOON.FOR_ACADEMIES}
+            element={
+              <ComingSoon
+                title="For Academies"
+                description="A dedicated page for academies - squad management, athlete evaluation, and more - is on its way."
+                action={{ type: "link", to: ROUTES.HOME, label: "Back to Home" }}
+              />
+            }
+          />
         </Route>
 
         {/* ---------------------- */}

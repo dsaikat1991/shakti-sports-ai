@@ -2,6 +2,19 @@ import type { UserRole } from "../features/auth/types/auth";
 
 export const ROUTES = {
   HOME: "/",
+  ABOUT: "/about",
+  MISSION: "/mission",
+  CONTACT: "/contact",
+  TERMS: "/terms",
+  PRIVACY: "/privacy",
+
+  // Footer links with no real destination yet (see docs/ENGINEERING_HANDOFF.md).
+  // Routed to a ComingSoon placeholder instead of a dead href="#".
+  COMING_SOON: {
+    AI_ANALYSIS: "/ai-analysis",
+    RECORDING_GUIDE: "/recording-guide",
+    FOR_ACADEMIES: "/for-academies",
+  },
 
   AUTH: {
     SIGN_IN: "/signin",
