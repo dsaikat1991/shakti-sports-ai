@@ -2,7 +2,7 @@
 
 **Read this document fully before touching code.** It assumes zero memory of prior work. Where something is uncertain, unverified, or was deliberately left broken, that is stated explicitly — do not assume silence means "done and correct."
 
-Last updated: 2026-07-14, after commit `c72641a` on `main`, plus one follow-up session (§10.1) not yet committed at time of writing this line.
+Last updated: 2026-07-15, after commit `2cde8b5` on `main`. **§17 is the most recent work and supersedes anything in §1-§16 that it contradicts** (frontend integration, RLS fixes, coach/academy onboarding, navigation/marketing pages) — read §17 first if you're starting fresh, then the rest for backend/biomechanics depth.
 
 ---
 
@@ -24,7 +24,8 @@ Top-level directories (`D:\shaktisportsai`):
 ```
 backend/          FastAPI app + all Python services (see §4)
 frontend/         React + Vite + Tailwind app (Supabase-backed)
-docs/             This file, and nothing else yet
+docs/             This file, plus ANALYSIS_WORKFLOW_AUDIT.md (frontend<->backend integration trace, §17)
+supabase/         New this session (§17) - migrations/0002-0004 (analysis columns, RLS WITH CHECK fix, contact_submissions). Not run automatically - each was hand-run by the project owner in the Supabase SQL editor.
 ai-engine/        Empty placeholder (per README's stated structure, never populated)
 datasets/         Empty placeholder
 models/           Empty placeholder (not to be confused with backend/models/, which has a real .task file)
@@ -114,25 +115,29 @@ backend/
 ```
 frontend/src/
   app/
-    router/AppRouter.tsx           React Router config - INCOMPLETE, see §11
+    router/AppRouter.tsx           React Router config - see §17, routing fixed up this session
+    router/RoleGate.tsx            Role-based route guard (new, §17)
     layouts/                       MarketingLayout, AuthLayout
-    pages/HomePage.tsx
+    pages/HomePage.tsx, About.tsx, Mission.tsx, Contact.tsx, NotFound.tsx  (About/Mission/Contact/NotFound new, §17)
   features/
-    auth/                          Sign in/up, role selection, onboarding (athlete only is routed - see §11)
-    athlete/                       Dashboard (AthleteLayout has 5 of 7 nav links with no matching route)
-    performances/                  Upload wizard, performance history/detail/report pages
+    auth/                          Sign in/up, role selection, onboarding - athlete/coach/academy all routed now (§17)
+    athlete/                       Dashboard (AthleteLayout - all 7 nav links now resolve, 5 to ComingSoon placeholders, §17)
+    performances/                  Upload wizard, performance history/detail/report pages - now wired to the FastAPI backend, see §17
+    contact/                       New (§17) - contact form's Supabase backstop service
     home/                          Marketing page sections
-  components/ui, layout, shared    Design system components
+  components/ui, layout, shared    Design system components (ComingSoon.tsx new/generalized, §17)
   constants/routes.ts, navigation.ts, roleNavigation.ts
   lib/supabase.ts                  Supabase client init
   theme/                           Design tokens
 ```
 
-**Critical fact: the frontend does not call the FastAPI backend at all.** `features/performances/services/performance.service.ts` talks directly to Supabase (storage upload + table inserts). There is no fetch/axios call anywhere in the frontend to `/api/analyze/video` or any other backend route. The two halves of this product are not wired together yet.
+**Outdated as of §17 - kept for history.** At the time this paragraph was written, the frontend only talked to Supabase and never called the FastAPI backend. **That is no longer true.** The frontend now submits videos for analysis via a signed Storage URL, polls for job status, persists results back onto the `performances` row, and renders the real report. See §17 for the full picture and `docs/ANALYSIS_WORKFLOW_AUDIT.md` for the detailed trace/architecture decision.
 
 ---
 
 ## 3. High-level architecture
+
+**Diagram below predates §17's frontend integration work - see §17 for the current, accurate data flow (browser → Supabase Storage signed URL → FastAPI → RTMPose worker → back onto the `performances` row).** Kept here for the backend-internal pipeline detail, which is still accurate.
 
 ```
                         ┌─────────────────────────┐
@@ -402,10 +407,10 @@ This directly followed up on the "more labeled data" ask above. Built `backend/s
 - **`backend/app/services/{digital_twin,digital_twin_v2,physics,fusion,motion,coach,talent,validation,research,readiness,athlete_intelligence,feature_store,pipeline}/`** — substantial code, zero validation this session. Unknown state.
 - **`reports/coach.py`, `reports/scoring.py`, `reports/recommendations.py`** are empty 1-line stub files.
 - **Database schema is not version-controlled** beyond one table (`digital_twin_v2/supabase_schema.sql`). See §5.
-- **Frontend routing is broken in several places** (not backend, but worth knowing): coach/academy onboarding pages exist as components but aren't wired into `AppRouter.tsx`; 5 of 7 athlete-dashboard sidebar links (`reports`, `progress`, `discover`, `profile`, `settings`) have no matching route; no 404/catch-all route exists; marketing nav anchor links (`#platform`, `#sports`, etc.) point to page sections that don't have matching `id` attributes. A background task was flagged for this but not yet actioned.
-- **Frontend is not connected to the backend at all.** See §2/§3.
+- ~~Frontend routing is broken in several places~~ **Fixed in §17.5.** All routes now resolve (real pages or honest `ComingSoon` placeholders); 404 fallback added; anchor links fixed.
+- ~~Frontend is not connected to the backend at all~~ **Fixed in §17.1.** Full upload → analysis → report flow now works end-to-end via a signed-URL submission architecture. See §17.
 - **`backend/requirements.txt` is UTF-16 encoded** (unusual; works with `pip install -r` but reads oddly with plain text tools — use `iconv -f UTF-16 -t UTF-8` to view it normally).
-- **No authentication, rate limiting, or file-size limits** on the `/api/analyze/video` endpoint.
+- **No authentication, rate limiting, or file-size limits** on either `/api/analyze/video` endpoint (file-upload or signed-URL variant, §17.1). The signed-URL variant does have SSRF mitigation (host/path/scheme allowlist, §17.1) but that's a different concern from auth - see §17.7 for the current isolation model and its limits.
 
 ---
 
@@ -472,7 +477,19 @@ bb62af0  docs: quantify ground-contact detection error against manual ground tru
 a0c6676  docs: camera angle, not the detection algorithm, looks like the real variable  (§10)
 0311c74  feat: add camera-height quality check, closing the blind spot we found  (bug #7)
 51ad8aa  feat: make video analysis async, so long analyses don't block the request  (bug #8)
-b6b75cf  feat: wire RTMPose into the live API                                 (bug #9) <- HEAD, current tip
+b6b75cf  feat: wire RTMPose into the live API                                 (bug #9)
+c72641a  docs: add engineering handoff document
+6089684  fix: rule out ground-contact threshold calibration with quantified proof  (§10.1)
+80b9a2e  feat: wire performance uploads to the FastAPI analysis backend and render real reports  (§17.1)
+f78e724  feat: submit analysis via signed storage URL, harden the job lifecycle  (§17.1/§17.2)
+c8a932c  fix: self-heal stuck analyzing rows and explain skip reasons on the detail page  (§17.2)
+d16f506  fix: wire up dead athlete nav links and add a 404 fallback              (§17.5)
+15908f2  fix: close RLS gap allowing silent athlete_id reassignment on performances  (§17.3)
+2721bc5  feat: build real coach and academy onboarding, closing a sign-up dead-end  (§17.4)
+ca4b9ed  docs: document the analysis_reports vs performances.analysis_result decision  (§17.3)
+b4df82c  fix: route sign-in and home redirects by role instead of always to athlete console  (§17.4)
+d8f4366  feat: add real About and Mission pages, finish wiring the footer      (§17.5/§17.6)
+2cde8b5  feat: add real contact form with a Supabase backstop                  (§17.6) <- HEAD, current tip
 ```
 
 All commits are pushed to `origin/main` (`https://github.com/dsaikat1991/shakti-sports-ai.git`).
@@ -490,17 +507,17 @@ All commits are pushed to `origin/main` (`https://github.com/dsaikat1991/shakti-
 - **To run the full stack locally**:
   1. `cd backend && ./.venv-rtmpose/Scripts/python.exe -m uvicorn rtmpose_worker.app:app --port 8011` — start the GPU worker. Wait for `/health` to show `"initialized": true` (first `/initialize` call triggers model download/load, takes a while cold).
   2. `cd backend && ./.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000` — start the main API.
-  3. `cd frontend && npm run dev` — start the frontend (Vite, default port 5173). Note: frontend won't actually call the backend (see §2/§11).
-  4. To run tests: `cd backend && ./.venv/Scripts/python.exe -m pytest` (no args needed — `pytest.ini` scopes collection correctly).
+  3. `cd frontend && npm run dev` — start the frontend (Vite, default port 5173 - **must stay 5173**, backend CORS hardcodes it). **As of §17, all three services (worker, main API, frontend) are needed together for the frontend's analysis flow to actually work**, not just for manual `curl` testing as this line originally said.
+  4. To run tests: `cd backend && ./.venv/Scripts/python.exe -m pytest` (no args needed — `pytest.ini` scopes collection correctly). Frontend: `cd frontend && npm run test` (Vitest, 23 tests, added §17) and `npx tsc -b`.
 - **Environment variables**:
   - `backend/.env.rtmpose-live.example` documents the worker's own config: `RTMPOSE_MODEL`, `RTMPOSE_DEVICE` (default `cuda:0`), `RTMPOSE_SCHEMA` (`halpe26`), `RTMPOSE_MIN_CONFIDENCE` (`0.35`), `RTMPOSE_MAX_PEOPLE` (`4`), optional `RTMPOSE_DET_MODEL`.
-  - `RTMPOSE_WORKER_URL` (new this session, in `live_analyzer.py`) — base URL the main backend uses to reach the worker, default `http://127.0.0.1:8011`.
-  - `frontend/.env.local` — `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+  - `RTMPOSE_WORKER_URL` (in `live_analyzer.py`) — base URL the main backend uses to reach the worker, default `http://127.0.0.1:8011`.
+  - `frontend/.env.local` — `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL` (new, §17.8, default `http://localhost:8000`).
   - No `.env.example` exists for the main backend's own config (CORS origin, temp dir, etc. are currently hardcoded in `main.py`/`routes.py`, not env-driven).
 
 ---
 
-## 16. Exact next task
+## 16. Exact next task (historical - Option A below was picked up; see §17 for what actually happened and the current next task)
 
 **Option B (ground-contact detection) was picked up in a follow-up session** (§10.1) — but "properly calibrate a heuristic" turned out to be ruled out by the data itself (direct overlap counterexample, §10.1), and labeling more clips surfaced confounds (occlusion, tracking reliability) that limited how much clean new ground truth could actually be produced from the 3 existing example clips alone. The honest state now: `contact_time_ms`/`flight_time`/`duty_factor` are still not trustworthy, and the path forward needs either (a) real new footage — the 3 existing Pond5 stock clips are close to exhausted as a labeling source, screened first for occlusion/tracking-confidence per §10.1's recommendation — or (b) a richer feature set / different technical approach than single-signal foot height, since calibrating that one signal is now proven not to work.
 
@@ -511,3 +528,97 @@ All commits are pushed to `origin/main` (`https://github.com/dsaikat1991/shakti-
 If picking up ground-contact work again instead: do not re-attempt foot-height threshold tuning (ruled out, §10.1); either source new real footage (screened for occlusion/tracking-confidence first) or explore a richer feature set / different approach; `scripts/label_contact_frames.py` (frame-scrubbing labeling tool) already exists and should be reused rather than rebuilt.
 
 Whichever is chosen: run `cd backend && ./.venv/Scripts/python.exe -m pytest` first to confirm the starting state is clean (294 passing), and re-read §11 in full before writing any code — several of those limitations are easy to accidentally reintroduce or build on top of without realizing it.
+
+---
+
+## 17. Session update: frontend integration, RLS hardening, navigation, marketing pages
+
+Everything below happened across one long follow-up session, commits `80b9a2e` through `2cde8b5` (11 commits, all pushed to `origin/main`). Option A (§16) was picked up, finished, and then extended well past its original scope as real gaps kept surfacing during verification. **This section is the authoritative current state — treat §1-§16 as historical/backend-depth reference, not current frontend status.**
+
+### 17.1 Frontend ↔ backend integration is real now
+
+The frontend no longer only talks to Supabase. Full flow:
+
+1. Athlete uploads a video in the wizard → uploaded to Supabase Storage (`performance-recordings` bucket, private) → a `performances` row is created (`upload_status: "uploaded"`).
+2. The browser mints a **short-lived Supabase Storage signed URL** for that just-uploaded object (`supabase.storage.from(...).createSignedUrl(...)`) and submits it to a **new backend endpoint**, `POST /api/analyze/video-url` (JSON body `{"video_url": "..."}`), instead of re-uploading the raw file a second time.
+3. FastAPI downloads the video itself via that signed URL (`httpx`, already a dependency) and runs the exact same background job pipeline as the original file-upload endpoint (`POST /api/analyze/video`, still present and unchanged — used for direct multipart uploads; `/analyze/video-url` is used for the browser's signed-URL path and for **retry**, since retry doesn't have the original `File` object in memory).
+4. `analysis_job_id` is written onto the `performances` row (migration `0002`), and the frontend polls `GET /api/analyze/video/{job_id}` (bounded: stops on completion/failure/unmount/10-minute timeout) and persists the terminal result into `performances.analysis_result`/`analysis_error` (also migration `0002`).
+5. `PerformanceDetail.tsx` renders the real result: detection rate, recording-quality metrics, and — if biomechanics wasn't skipped — the full per-segment report (cadence, stride, ground contact, joint angles, limitations).
+
+**Why signed URL instead of just re-uploading from the browser**: confirmed this session that the athlete's own Storage RLS already permits minting a signed URL for their own uploaded object with zero policy changes. This avoids double-uploading the same video from the client, and — critically — makes retry possible from a page that doesn't have the original file (performance history, a reloaded detail page), which raw re-upload structurally cannot support.
+
+**SSRF**: `POST /api/analyze/video-url` fetches a client-supplied URL server-side, a classic SSRF vector if unconstrained. Mitigated with a strict host+path+scheme allowlist checked before any network call — see `backend/app/api/routes.py` and `docs/ANALYSIS_WORKFLOW_AUDIT.md` §4 for the full mitigation list.
+
+**Full detail, including the audit that was done *before* writing any code**: `docs/ANALYSIS_WORKFLOW_AUDIT.md`.
+
+### 17.2 Bugs found while wiring this up (all fixed)
+
+- **`performances.upload_status` CHECK constraint doesn't include `"processing"`** — only `draft`/`uploaded`/`analyzing`/`completed`/`failed`. First-pass code wrote `"processing"` and failed silently (Supabase update returned an error that was never checked). Fixed by using `"analyzing"` for the in-flight state and adding error logging to every Supabase write in this flow so a future silent failure like this would actually surface.
+- **Only the processing page polled for job completion.** Navigating away before a job finished (e.g. straight to the dashboard) left the row permanently stuck on `"analyzing"` even after the backend genuinely completed the job — confirmed live with a real stuck user upload. Fixed by also polling from `PerformanceDetail.tsx` whenever it loads a still-`analyzing` performance, so simply revisiting a performance's detail page self-heals it.
+- **`joint_angles` in the biomechanics result is an object keyed by joint name** (`{left_knee: {...}, right_knee: {...}, ...}`), not an array — first-pass rendering code assumed an array and would have silently hidden the whole joint-angle table for real data.
+- **Postgres `jsonb` does not preserve object key insertion order** — it re-serializes keys sorted by (length, then alphabetically). Confirmed by reproducing the exact scrambled key order Postgres actually returns. This meant `joint_angles`' row order in the UI was arbitrary on every read, regardless of what order the backend produced. Fixed by sorting to an explicit canonical order client-side (`JOINT_ANGLE_ORDER` in `PerformanceDetail.tsx`) rather than trusting object key order from any jsonb column, anywhere.
+- **`performances.athlete_id` foreign keys to `athlete_profiles`, not `profiles` directly** (discovered via full schema introspection, §5) — a coach/academy account structurally cannot have `performances` rows, which matters for §17.4 below.
+
+### 17.3 RLS hardening
+
+Full schema (all tables, columns, RLS policies, check constraints, storage bucket config) is now **confirmed via direct introspection**, not inferred from frontend code — see the updated §5 above and `docs/ANALYSIS_WORKFLOW_AUDIT.md`.
+
+- **`performances` UPDATE policy had no `WITH CHECK`** — `USING (auth.uid() = athlete_id)` correctly restricted which rows could be targeted, but nothing restricted what a row could become afterward. An authenticated athlete could reassign their own row to a different `athlete_id`, silently orphaning it from their own view. Fixed (migration `0003`), verified live: the exact exploit (`PATCH` a row's `athlete_id` to a different UUID) now returns `403`, confirmed unchanged before/after via direct API calls.
+- **`analysis_reports` table exists, unused, reserved for a future feature** — see §5's "Architectural decision" writeup. Deliberately left alone; do not migrate the current raw job result into it or invent placeholder scores to populate it.
+- **`contact_submissions` table added** (migration `0004`) as a backstop for the new `/contact` form — public `INSERT` (the page is unauthenticated-accessible), no `SELECT` for anon/authenticated (only the project owner via the Supabase dashboard can read submissions). Verified both directions live: an anonymous insert succeeds, and the same anonymous client reading the table back gets an empty result despite rows existing.
+
+### 17.4 Coach/academy: sign-up, onboarding, and routing are now real
+
+Previously, `ChooseRole.tsx` already routed new coach/academy sign-ups to `/onboarding/coach` and `/onboarding/academy` — but neither route existed, and `CoachOnboarding.tsx`/`AcademyOnboarding.tsx` were empty stub files, so both rendered a blank page. Separately, **every sign-in and every logged-in visit to `/` was hardcoded to redirect to `/console/athlete`**, regardless of role.
+
+Fixed:
+- Real onboarding forms built for both roles, writing to `coach_profiles`/`academy_profiles` — both tables **already existed in Supabase with correct RLS**, just unused; no new migration was needed for this part, only wiring.
+- `AuthContext` now fetches and exposes `role`/`roleLoading` (from `profiles.role`) alongside the Supabase session.
+- Sign-in and the logged-in `/` redirect are now role-aware (`roleHomeRoute()` in `constants/routes.ts`): athlete → `/console/athlete`, coach → `/console/coach`, academy → `/console/academy`.
+- `/console/coach` and `/console/academy` now exist, landing on a shared `PendingConsole` holding screen (no real console for either role exists yet — this only stops the athlete-console leak, it doesn't build coach/academy functionality).
+- `RoleGate` (new route guard) blocks **direct URL navigation** into `/console/athlete/*` for a signed-in coach/academy account too, not just the login-time redirect. `role === null` (authenticated but mid-onboarding, no `profiles` row yet) is treated as pass-through, not blocked.
+
+**Not done**: real coach/academy consoles (talent search, squad management, etc.) — `PendingConsole` is an honest "coming soon," not a feature.
+
+### 17.5 Navigation/routing cleanup
+
+Found via a full static sweep (every `Link`/`href`/`navigate` call cross-referenced against the actual route table) plus live verification of the worst ones:
+
+- 5 of 7 athlete sidebar links (Reports/Progress/Discover/Profile/Settings) pointed at routes that didn't exist → blank page. Now resolve to `ComingSoon` placeholders (honest "not built yet," not fabricated functionality).
+- No catch-all/404 route existed anywhere → any bad URL rendered a silent blank page. Added `NotFound`.
+- Duplicate `id="platform"` on two different homepage sections (invalid HTML, one was unreachable via anchor) → renamed one to `id="how-it-works"`.
+- Marketing nav's "About" anchor (`#about`) had no matching element anywhere → removed (nothing to point it at at the time; now real, see §17.6).
+- All 9 footer links were literal `href="#"` placeholders → now: About/Mission/Contact link to real pages (§17.6); "How it works"/"For athletes"/"For coaches" link to their real existing homepage sections; "AI analysis"/"Recording guide"/"For academies" get honest `ComingSoon` placeholders (no matching content exists yet for these three — did not fabricate anchors or pages for them).
+
+### 17.6 New marketing pages
+
+- **`/about`, `/mission`** — real content, provided directly by the project owner, published as-is.
+- **`/contact`** — real form (name/email/subject/message). Submits to the `contact_submissions` backstop (§17.3) first, then opens a `mailto:contact@shaktisportsai.com` link pre-filled with the message. Verified end-to-end by intercepting the actual `fetch` call from a real form submission, not just a synthetic test.
+- **`/terms`, `/privacy`** — deliberately **not** drafted with real legal text. This product collects real personal data including from apparent minors (the marketing copy's own athlete examples show ages 16-17), so these carry real legal weight and need actual legal input, not AI-generated boilerplate. Currently `ComingSoon` placeholders. **Do not fill these in without real reviewed text from the project owner or counsel.**
+
+### 17.7 What's actually left open now
+
+- **Terms of Use / Privacy Policy real content** — blocked on the project owner providing reviewed text (§17.6). Given the apparent-minors data collection, this is worth prioritizing before more real signups happen, not just a nice-to-have.
+- **Footer "AI analysis" / "Recording guide" / "For academies"** — still `ComingSoon` placeholders with no real destination.
+- **Real coach/academy consoles** — `PendingConsole` only; no actual talent-search/squad-management functionality exists.
+- **Backend still has no authentication layer of its own** (pre-existing, §6/§11). Isolation for the signed-URL flow relies on Supabase RLS (only the owning athlete can mint a signed URL for their own video) + unguessable job IDs, not backend-level auth. A determined attacker who obtained someone else's `job_id` could poll its status with no ownership check. Not fixed this session; flagged, not urgent given no other realistic path to obtain a stray `job_id` exists today.
+- **Job queue is still in-memory, single-process** (§11) — unrelated to this session's work, still an open scaling gap.
+- **Ground-contact/duty-factor accuracy** (§10/§10.1/§16 Option B) — untouched this session, still blocked on real new footage or a richer feature set.
+- **Server-initiated job reconciliation** — the self-heal fix in §17.2 makes polling more resilient, but it's still fundamentally client-driven; if a user never revisits any page for a stuck performance, it stays stuck indefinitely. A real fix would be push-based (a webhook/callback from the backend into Supabase on job completion), not attempted this session.
+
+### 17.8 Environment additions
+
+- `frontend/.env.local` gained `VITE_API_BASE_URL` (default `http://localhost:8000`) — the frontend's base URL for the FastAPI backend.
+- To run the full stack now meaningfully exercises all three services together (§15's steps 1-3 are all required for the frontend's analysis flow to work, not just for manual `curl` testing as previously written).
+- `.claude/launch.json` added — lets the frontend dev server be started via the preview tooling (`name: "frontend"`, port 5173 - **must stay 5173**, the backend's CORS config in `main.py` hardcodes `http://localhost:5173`).
+
+### 17.9 Exact next task (current, supersedes §16)
+
+No single obvious next step was chosen at the end of this session - the work above was a chain of "fix this, which surfaces that" rather than a planned roadmap item, and it ran out naturally rather than hitting a real stopping point. Pick based on what's actually wanted next:
+
+- **Fastest, lowest-risk**: Terms of Use / Privacy Policy real content (§17.6/§17.7) - purely a content/legal task, zero engineering risk, but blocked on the project owner (or counsel) providing real text. Worth raising proactively given the apparent-minors data collection.
+- **Product-shaping decision needed first**: real coach/academy consoles (§17.4) - talent search, squad management. This is a substantial new feature area, not a quick fix; needs its own scoping conversation before any code, the same way Option A did back in §16.
+- **Reopens a previously-shelved, harder problem**: ground-contact detection (§10/§10.1/§16 Option B) - still blocked on real new footage or a fundamentally different technical approach; do not re-attempt threshold tuning, that's proven not to work.
+- **Infrastructure, not user-facing**: job queue durability (in-memory, single-process, §11) or backend authentication (§17.7) - real gaps, but nothing is currently broken by them; worth doing before this scales past one process or gets meaningfully more usage, not urgent today.
+
+Whichever is picked: run `cd backend && ./.venv/Scripts/python.exe -m pytest` (294 passing) and `cd frontend && npm run test` (23 passing) first to confirm a clean starting state, and skim §17 in full before writing code - several of the bugs in §17.2 (jsonb key ordering, the `upload_status` CHECK constraint values, the object-vs-array `joint_angles` shape) are exactly the kind of thing that's easy to reintroduce by anyone who hasn't hit them once already.
