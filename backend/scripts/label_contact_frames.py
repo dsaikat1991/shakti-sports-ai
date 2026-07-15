@@ -37,6 +37,17 @@ Two window-generation modes:
 Each window becomes one grid PNG under <out>/<clip>_<side>_<window_idx>.png.
 Nothing here writes to tests/fixtures/ - after visual review, transcribe
 findings into ground_truth_contact_labels.json by hand.
+
+Optional --emit-label-skeleton <path> (new, additive - default behavior
+above is unchanged if this flag is omitted): also writes/updates a
+structured label file at <path>, matching the schema documented in
+datasets/sprint_biomechanics/README.md, with one skeleton entry per
+window generated this run (detector_peak_frame_index/timestamp
+pre-filled for candidates-mode windows; verdict/confidence/reasoning
+left null for a human to fill in directly, instead of hand-authoring
+JSON from scratch). Re-running merges by window_frames rather than
+overwriting, so already-reviewed windows survive a re-run (e.g. after a
+detector change moves where candidate windows land).
 """
 
 import argparse
@@ -179,6 +190,68 @@ def crop_tile(frame_bgr: np.ndarray, landmark_xy: tuple[float, float] | None) ->
     return tile
 
 
+def peak_info_for_window(
+    events: list, start: int, end: int
+) -> tuple[int | None, int | None]:
+    for event in events:
+        if start <= event.peak_frame_index <= end:
+            return event.peak_frame_index, event.peak_timestamp_ms
+    return None, None
+
+
+def load_or_create_label_file(path: Path, clip_id: str, source_timeline: Path) -> dict:
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "schema_version": "1.0",
+        "clip_id": clip_id,
+        "source_timeline": str(source_timeline),
+        "label_sets": {
+            "ground_contact_peak": {
+                "methodology": "candidates+uniform tile review via scripts/label_contact_frames.py",
+                "reviewer": None,
+                "reviewed_at": None,
+                "sides": {"left": [], "right": []},
+            }
+        },
+    }
+
+
+def merge_label_skeleton(
+    data: dict,
+    side: str,
+    mode: str,
+    windows: list[tuple[int, int]],
+    events: list,
+) -> int:
+    sides = data["label_sets"]["ground_contact_peak"]["sides"]
+    side_list = sides.setdefault(side, [])
+    existing = {tuple(entry["window_frames"]) for entry in side_list}
+
+    added = 0
+    for start, end in windows:
+        if (start, end) in existing:
+            continue
+        peak_frame, peak_ts = (
+            peak_info_for_window(events, start, end) if mode == "candidates" else (None, None)
+        )
+        side_list.append(
+            {
+                "window_source": mode,
+                "window_frames": [start, end],
+                "detector_peak_frame_index": peak_frame,
+                "detector_peak_timestamp_ms": peak_ts,
+                "verdict": None,
+                "confidence": None,
+                "labeled_frame_index": None,
+                "labeled_timestamp_ms": None,
+                "reasoning": None,
+            }
+        )
+        added += 1
+    return added
+
+
 def build_grid(tiles: list[np.ndarray], captions: list[str]) -> np.ndarray:
     rows = (len(tiles) + GRID_COLS - 1) // GRID_COLS
     cell_h = TILE_SIZE + LABEL_HEIGHT
@@ -214,6 +287,12 @@ def main() -> None:
     parser.add_argument("--mode", choices=["candidates", "uniform"], default="candidates")
     parser.add_argument("--half-width", type=int, default=7)
     parser.add_argument("--uniform-count", type=int, default=8)
+    parser.add_argument(
+        "--emit-label-skeleton",
+        type=Path,
+        default=None,
+        help="Also write/update a structured label file at this path (see module docstring).",
+    )
     args = parser.parse_args()
 
     video_meta, frames = load_frames(args.timeline)
@@ -290,6 +369,24 @@ def main() -> None:
     manifest_path = args.out / f"{clip_name}_{args.side}_{args.mode}_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"\n{len(manifest)} window(s) written to {args.out}")
+
+    if args.emit_label_skeleton:
+        events = []
+        if args.mode == "candidates":
+            samples = foot_series_for_side(frames, args.side)
+            events = _detect_side_contacts(samples)
+
+        label_data = load_or_create_label_file(
+            args.emit_label_skeleton, clip_name, args.timeline
+        )
+        added = merge_label_skeleton(label_data, args.side, args.mode, windows, events)
+        args.emit_label_skeleton.parent.mkdir(parents=True, exist_ok=True)
+        args.emit_label_skeleton.write_text(
+            json.dumps(label_data, indent=2), encoding="utf-8"
+        )
+        print(
+            f"{added} new label skeleton window(s) added to {args.emit_label_skeleton}"
+        )
 
 
 if __name__ == "__main__":

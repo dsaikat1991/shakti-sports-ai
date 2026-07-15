@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "clip_id": "my_sprint",
+  "generated_by": "scripts/screen_clip.py",
+  "generated_at": "2026-07-15T17:08:06.311074+00:00",
+  "verdict": "marginal",
+  "verdict_reasons": [
+    "fails the production biomechanics_ready gate (Full Body Not Visible) - still labelable, and bad-angle/height footage is exactly what exposed the current ground-contact bug. Label it."
+  ],
+  "raw_result": {
+    "provider": "rtmpose",
+    "video": {
+      "total_frames": 655,
+      "fps": 29.97,
+      "duration_seconds": 21.86
+    },
+    "analysis": {
+      "frames_with_pose": 618,
+      "detection_rate_percent": 94.35
+    },
+    "recording_quality": {
+      "overall_score": 84.27,
+      "rating": "Good",
+      "biomechanics_ready": false,
+      "analysis_readiness": {
+        "score": 60.0,
+        "rating": "Full Body Not Visible",
+        "ready": false,
+        "required_camera_view": "Side View"
+      },
+      "metrics": {
+        "pose_detection_score": 94.35,
+        "full_body_visibility_score": 74.33,
+        "athlete_movement_score": 100.0,
+        "athlete_occupancy_score": 65.0,
+        "camera_angle_score": 100.0,
+        "camera_height_score": 30.0,
+        "lighting_score": 100.0,
+        "sharpness_score": 75.0,
+        "frame_rate_score": 85.0
+      },
+      "body_visibility": {
+        "head": 92.56,
+        "shoulders": 86.0,
+        "hips": 80.34,
+        "knees": 70.15,
+        "ankles": 71.36,
+        "feet": 52.02
+      },
+      "camera_view": {
+        "classification": "Side View",
+        "confidence": 96.91,
+        "suitable_for_sprint": true,
+        "required_view": "Side View"
+      },
+      "raw_measurements": {
+        "average_brightness": 108.1,
+        "average_sharpness": 73.87,
+        "average_pose_movement": 0.014466,
+        "average_frame_change": 12.45,
+        "average_athlete_occupancy_percent": 8.82,
+        "athlete_occupancy_range_percent": {
+          "minimum": 0.01,
+          "maximum": 38.9,
+          "average": 8.82
+        },
+        "fps": 29.97,
+        "average_headroom_percent": 35.56
+      },
+      "warnings": [
+        "Feet are not consistently visible.",
+        "The camera appears to be positioned low and angled upward, leaving excess empty space above the athlete."
+      ],
+      "recommendations": [
+        "Raise the camera to about the athlete's waist-to-shoulder height and keep the shot level, rather than shooting up from near the ground."
+      ]
+    },
+    "tracking_summary": {
+      "status_counts": {
+        "selected": 2,
+        "tracked": 614,
+        "coasting": 31,
+        "reselected": 2,
+        "lost": 6
+      },
+      "observed_frames": 618,
+      "observed_ratio": 0.9435
+    },
+    "biomechanics": {
+      "status": "skipped",
+      "reason": "Full Body Not Visible"
+    }
+  }
+}

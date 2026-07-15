@@ -1,0 +1,5 @@
+{
+  "schema_version": "1.0",
+  "description": "Master index of sprint footage collected for ground-contact / flight-time / duty-factor research. Raw video never lives in git (see backend/datasets/sprint_biomechanics/clips/ in .gitignore) - only this manifest and the per-clip screening/labels/benchmarks JSON are checked in. See README.md for the full workflow and the exact meaning of every field.",
+  "clips": []
+}

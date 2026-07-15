@@ -39,3 +39,4 @@ Thumbs.db
 
 backend/models/*.task
 backend/examples/*
+backend/datasets/sprint_biomechanics/clips/*

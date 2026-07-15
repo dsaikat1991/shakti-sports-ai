@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "clip_id": "my_sprint_2",
+  "source_timeline": "C:\\Users\\SAIKAT~1\\AppData\\Local\\Temp\\timelines\\my_sprint_2.json",
+  "label_sets": {
+    "ground_contact_peak": {
+      "methodology": "Hand-migrated from tests/fixtures/ground_truth_contact_labels.json for a benchmark-harness smoke test (see docs/ENGINEERING_HANDOFF.md §19.7) - NOT a full re-review. Original review used the static-strip/legacy methodology, not scripts/label_contact_frames.py.",
+      "reviewer": "smoke-test migration, 2026-07-15",
+      "reviewed_at": "2026-07-15T00:00:00Z",
+      "sides": {
+        "right": [
+          {
+            "window_source": "uniform",
+            "window_frames": [14, 28],
+            "detector_peak_frame_index": 21,
+            "detector_peak_timestamp_ms": 420,
+            "verdict": "true_contact",
+            "confidence": "medium",
+            "labeled_frame_index": 21,
+            "labeled_timestamp_ms": 420,
+            "reasoning": "Foot visibly flat against the track surface across a ~5-6 frame plateau (approx f19-f24), clearly distinct from the curled-up swing posture seen in every other reviewed window on this clip."
+          },
+          {
+            "window_source": "uniform",
+            "window_frames": [109, 123],
+            "detector_peak_frame_index": 116,
+            "detector_peak_timestamp_ms": 2320,
+            "verdict": "false_positive",
+            "confidence": "high",
+            "labeled_frame_index": null,
+            "labeled_timestamp_ms": null,
+            "reasoning": "Tracked foot visibly curls up and back toward the glutes (classic swing/recovery) through the whole window - never approaches the ground plane."
+          },
+          {
+            "window_source": "uniform",
+            "window_frames": [203, 217],
+            "detector_peak_frame_index": 210,
+            "detector_peak_timestamp_ms": 4200,
+            "verdict": "false_positive",
+            "confidence": "high",
+            "labeled_frame_index": null,
+            "labeled_timestamp_ms": null,
+            "reasoning": "Same pattern as f109-123: foot curls up behind the body through the whole window, peak y-value coincides with maximum curl, not ground contact."
+          },
+          {
+            "window_source": "uniform",
+            "window_frames": [292, 306],
+            "detector_peak_frame_index": 299,
+            "detector_peak_timestamp_ms": 5980,
+            "verdict": "false_positive",
+            "confidence": "high",
+            "labeled_frame_index": null,
+            "labeled_timestamp_ms": null,
+            "reasoning": "Exaggerated swing kick with the foot held high and behind the body - unambiguously not ground contact despite being the single highest-magnitude detector signal in the clip."
+          },
+          {
+            "window_source": "uniform",
+            "window_frames": [493, 507],
+            "detector_peak_frame_index": 500,
+            "detector_peak_timestamp_ms": 10000,
+            "verdict": "false_positive",
+            "confidence": "medium",
+            "labeled_frame_index": null,
+            "labeled_timestamp_ms": null,
+            "reasoning": "Foot is elevated and bent through the window; never reaches a position consistent with ground contact."
+          },
+          {
+            "window_source": "uniform",
+            "window_frames": [685, 699],
+            "detector_peak_frame_index": 692,
+            "detector_peak_timestamp_ms": 13840,
+            "verdict": "false_positive",
+            "confidence": "medium",
+            "labeled_frame_index": null,
+            "labeled_timestamp_ms": null,
+            "reasoning": "Foot swings up and to the side through the window, no ground contact visible. Notable: this false positive's raw y (0.8971) is lower than the confirmed true contact's raw y (0.9042) - direct evidence no magnitude threshold on this signal separates the two classes."
+          }
+        ],
+        "left": []
+      }
+    }
+  }
+}

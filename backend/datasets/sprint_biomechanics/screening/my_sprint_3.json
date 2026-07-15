@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "clip_id": "my_sprint_3",
+  "generated_by": "scripts/screen_clip.py",
+  "generated_at": "2026-07-15T17:05:37.685487+00:00",
+  "verdict": "marginal",
+  "verdict_reasons": [
+    "fails the production biomechanics_ready gate (Not Ready for Analysis) - still labelable, and bad-angle/height footage is exactly what exposed the current ground-contact bug. Label it."
+  ],
+  "raw_result": {
+    "provider": "rtmpose",
+    "video": {
+      "total_frames": 290,
+      "fps": 24.0,
+      "duration_seconds": 12.08
+    },
+    "analysis": {
+      "frames_with_pose": 290,
+      "detection_rate_percent": 100.0
+    },
+    "recording_quality": {
+      "overall_score": 92.88,
+      "rating": "Excellent",
+      "biomechanics_ready": false,
+      "analysis_readiness": {
+        "score": 49.0,
+        "rating": "Not Ready for Analysis",
+        "ready": false,
+        "required_camera_view": "Side View"
+      },
+      "metrics": {
+        "pose_detection_score": 100.0,
+        "full_body_visibility_score": 82.56,
+        "athlete_movement_score": 100.0,
+        "athlete_occupancy_score": 100.0,
+        "camera_angle_score": 100.0,
+        "camera_height_score": 100.0,
+        "lighting_score": 100.0,
+        "sharpness_score": 100.0,
+        "frame_rate_score": 70.0
+      },
+      "body_visibility": {
+        "head": 100.0,
+        "shoulders": 99.48,
+        "hips": 96.38,
+        "knees": 90.69,
+        "ankles": 67.76,
+        "feet": 44.48
+      },
+      "camera_view": {
+        "classification": "Side View",
+        "confidence": 91.25,
+        "suitable_for_sprint": true,
+        "required_view": "Side View"
+      },
+      "raw_measurements": {
+        "average_brightness": 123.35,
+        "average_sharpness": 367.71,
+        "average_pose_movement": 0.019084,
+        "average_frame_change": 18.15,
+        "average_athlete_occupancy_percent": 36.19,
+        "athlete_occupancy_range_percent": {
+          "minimum": 11.58,
+          "maximum": 67.95,
+          "average": 36.19
+        },
+        "fps": 24.0,
+        "average_headroom_percent": 19.15
+      },
+      "warnings": [
+        "Ankles are not consistently visible.",
+        "Feet are not consistently visible."
+      ],
+      "recommendations": []
+    },
+    "tracking_summary": {
+      "status_counts": {
+        "selected": 1,
+        "tracked": 289
+      },
+      "observed_frames": 290,
+      "observed_ratio": 1.0
+    },
+    "biomechanics": {
+      "status": "skipped",
+      "reason": "Not Ready for Analysis"
+    }
+  }
+}

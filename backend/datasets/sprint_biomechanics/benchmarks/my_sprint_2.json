@@ -1,0 +1,285 @@
+{
+  "schema_version": "1.0",
+  "clip_id": "my_sprint_2",
+  "detector": "app.services.biomechanics.contact_events (production)",
+  "tolerance_ms": 80,
+  "generated_at": "2026-07-15T17:12:28.033673+00:00",
+  "label_verdict_counts": {
+    "left": {
+      "true_contact": 0,
+      "false_positive": 0,
+      "inconclusive": 0,
+      "unusable": 0
+    },
+    "right": {
+      "true_contact": 1,
+      "false_positive": 5,
+      "inconclusive": 0,
+      "unusable": 0
+    }
+  },
+  "review_coverage": {
+    "left": {
+      "detector_events_total": 22,
+      "detector_events_reviewed": 0
+    },
+    "right": {
+      "detector_events_total": 24,
+      "detector_events_reviewed": 6
+    }
+  },
+  "results_by_side": {
+    "left": {
+      "initial_contact": {
+        "tolerance_ms": 80,
+        "counts": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0
+        },
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "timing_error_ms": {
+          "mean_absolute_error": null,
+          "median_absolute_error": null,
+          "p95_absolute_error": null,
+          "maximum_absolute_error": null
+        },
+        "matches": [],
+        "false_positives": [],
+        "false_negatives": []
+      },
+      "toe_off": {
+        "tolerance_ms": 80,
+        "counts": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0
+        },
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "timing_error_ms": {
+          "mean_absolute_error": null,
+          "median_absolute_error": null,
+          "p95_absolute_error": null,
+          "maximum_absolute_error": null
+        },
+        "matches": [],
+        "false_positives": [],
+        "false_negatives": []
+      }
+    },
+    "right": {
+      "initial_contact": {
+        "tolerance_ms": 80,
+        "counts": {
+          "true_positives": 1,
+          "false_positives": 5,
+          "false_negatives": 0
+        },
+        "precision": 0.1667,
+        "recall": 1.0,
+        "f1_score": 0.2857,
+        "timing_error_ms": {
+          "mean_absolute_error": 0,
+          "median_absolute_error": 0,
+          "p95_absolute_error": 0.0,
+          "maximum_absolute_error": 0
+        },
+        "matches": [
+          {
+            "predicted": {
+              "event_type": "initial_contact",
+              "side": "right",
+              "timestamp_ms": 420,
+              "frame_index": 21,
+              "confidence": 100.0,
+              "source": "contact_events_v1"
+            },
+            "actual": {
+              "event_type": "initial_contact",
+              "side": "right",
+              "timestamp_ms": 420,
+              "frame_index": 21,
+              "confidence": null,
+              "source": "human_label"
+            },
+            "absolute_error_ms": 0
+          }
+        ],
+        "false_positives": [
+          {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 2320,
+            "frame_index": 116,
+            "confidence": 100.0,
+            "source": "contact_events_v1"
+          },
+          {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 4200,
+            "frame_index": 210,
+            "confidence": 100.0,
+            "source": "contact_events_v1"
+          },
+          {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 5980,
+            "frame_index": 299,
+            "confidence": 100.0,
+            "source": "contact_events_v1"
+          },
+          {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 10000,
+            "frame_index": 500,
+            "confidence": 100.0,
+            "source": "contact_events_v1"
+          },
+          {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 13840,
+            "frame_index": 692,
+            "confidence": 100.0,
+            "source": "contact_events_v1"
+          }
+        ],
+        "false_negatives": []
+      },
+      "toe_off": {
+        "tolerance_ms": 80,
+        "counts": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0
+        },
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "timing_error_ms": {
+          "mean_absolute_error": null,
+          "median_absolute_error": null,
+          "p95_absolute_error": null,
+          "maximum_absolute_error": null
+        },
+        "matches": [],
+        "false_positives": [],
+        "false_negatives": []
+      }
+    }
+  },
+  "results_combined": {
+    "initial_contact": {
+      "tolerance_ms": 80,
+      "counts": {
+        "true_positives": 1,
+        "false_positives": 5,
+        "false_negatives": 0
+      },
+      "precision": 0.1667,
+      "recall": 1.0,
+      "f1_score": 0.2857,
+      "timing_error_ms": {
+        "mean_absolute_error": 0,
+        "median_absolute_error": 0,
+        "p95_absolute_error": 0.0,
+        "maximum_absolute_error": 0
+      },
+      "matches": [
+        {
+          "predicted": {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 420,
+            "frame_index": 21,
+            "confidence": 100.0,
+            "source": "contact_events_v1"
+          },
+          "actual": {
+            "event_type": "initial_contact",
+            "side": "right",
+            "timestamp_ms": 420,
+            "frame_index": 21,
+            "confidence": null,
+            "source": "human_label"
+          },
+          "absolute_error_ms": 0
+        }
+      ],
+      "false_positives": [
+        {
+          "event_type": "initial_contact",
+          "side": "right",
+          "timestamp_ms": 2320,
+          "frame_index": 116,
+          "confidence": 100.0,
+          "source": "contact_events_v1"
+        },
+        {
+          "event_type": "initial_contact",
+          "side": "right",
+          "timestamp_ms": 4200,
+          "frame_index": 210,
+          "confidence": 100.0,
+          "source": "contact_events_v1"
+        },
+        {
+          "event_type": "initial_contact",
+          "side": "right",
+          "timestamp_ms": 5980,
+          "frame_index": 299,
+          "confidence": 100.0,
+          "source": "contact_events_v1"
+        },
+        {
+          "event_type": "initial_contact",
+          "side": "right",
+          "timestamp_ms": 10000,
+          "frame_index": 500,
+          "confidence": 100.0,
+          "source": "contact_events_v1"
+        },
+        {
+          "event_type": "initial_contact",
+          "side": "right",
+          "timestamp_ms": 13840,
+          "frame_index": 692,
+          "confidence": 100.0,
+          "source": "contact_events_v1"
+        }
+      ],
+      "false_negatives": []
+    },
+    "toe_off": {
+      "tolerance_ms": 80,
+      "counts": {
+        "true_positives": 0,
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "timing_error_ms": {
+        "mean_absolute_error": null,
+        "median_absolute_error": null,
+        "p95_absolute_error": null,
+        "maximum_absolute_error": null
+      },
+      "matches": [],
+      "false_positives": [],
+      "false_negatives": []
+    }
+  },
+  "notes": [
+    "event_type 'toe_off' is intentionally empty in both predicted and actual - V1 labels are single-point contact judgments (matching the detector's own peak_timestamp_ms), not stance intervals. See datasets/sprint_biomechanics/README.md for the Phase 1/Phase 2 note.",
+    "results are restricted to detector-fired events a human actually reviewed (see review_coverage) - an unreviewed detector firing is neither a confirmed hit nor a confirmed miss, so it is excluded from precision/recall rather than counted as an automatic false positive. Low detector_events_reviewed vs. detector_events_total means the numbers below only describe the reviewed subset, not the whole clip."
+  ]
+}
