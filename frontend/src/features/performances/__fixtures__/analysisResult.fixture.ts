@@ -23,6 +23,31 @@ export const skippedBiomechanicsFixture: AnalysisResult = {
       suitable_for_sprint: true,
       required_view: "Side View",
     },
+    metrics: {
+      pose_detection_score: 100.0,
+      full_body_visibility_score: 82.56,
+      athlete_movement_score: 100.0,
+      athlete_occupancy_score: 100.0,
+      camera_angle_score: 100.0,
+      camera_height_score: 100.0,
+      lighting_score: 100.0,
+      sharpness_score: 100.0,
+      frame_rate_score: 70.0,
+    },
+    body_visibility: {
+      feet: 44.48,
+      head: 100,
+      hips: 96.38,
+      knees: 90.69,
+      ankles: 67.76,
+      shoulders: 99.48,
+    },
+    analysis_readiness: {
+      ready: false,
+      score: 49,
+      rating: "Not Ready for Analysis",
+      required_camera_view: "Side View",
+    },
     warnings: [
       "Ankles are not consistently visible.",
       "Feet are not consistently visible.",
@@ -35,6 +60,68 @@ export const skippedBiomechanicsFixture: AnalysisResult = {
     observed_frames: 290,
   },
   biomechanics: { status: "skipped", reason: "Not Ready for Analysis" },
+};
+
+// Real completed job for performance #9's uploaded clip (job id
+// 44ee0b5f-b486-4394-b81d-e8abc7fd3152) - biomechanics skipped for a
+// different reason: the composite full_body_visibility_score narrowly
+// misses its threshold (74.33 vs 75), driven almost entirely by feet
+// visibility (52.02%, the only individual body-part group that fails its
+// own >=70% requirement - ankles/knees/hips all individually pass).
+// Camera height also independently fails (30 vs required 60).
+export const skippedFullBodyNotVisibleFixture: AnalysisResult = {
+  provider: "rtmpose",
+  video: { total_frames: 655, fps: 29.97, duration_seconds: 21.86 },
+  analysis: { frames_with_pose: 618, detection_rate_percent: 94.35 },
+  recording_quality: {
+    rating: "Good",
+    overall_score: 84.27,
+    biomechanics_ready: false,
+    camera_view: {
+      classification: "Side View",
+      confidence: 96.91,
+      suitable_for_sprint: true,
+      required_view: "Side View",
+    },
+    metrics: {
+      pose_detection_score: 94.35,
+      full_body_visibility_score: 74.33,
+      athlete_movement_score: 100.0,
+      athlete_occupancy_score: 65.0,
+      camera_angle_score: 100.0,
+      camera_height_score: 30.0,
+      lighting_score: 100.0,
+      sharpness_score: 75.0,
+      frame_rate_score: 85.0,
+    },
+    body_visibility: {
+      head: 92.56,
+      shoulders: 86.0,
+      hips: 80.34,
+      knees: 70.15,
+      ankles: 71.36,
+      feet: 52.02,
+    },
+    analysis_readiness: {
+      ready: false,
+      score: 60.0,
+      rating: "Full Body Not Visible",
+      required_camera_view: "Side View",
+    },
+    warnings: [
+      "Feet are not consistently visible.",
+      "The camera appears to be positioned low and angled upward, leaving excess empty space above the athlete.",
+    ],
+    recommendations: [
+      "Raise the camera to about the athlete's waist-to-shoulder height and keep the shot level, rather than shooting up from near the ground.",
+    ],
+  },
+  tracking_summary: {
+    status_counts: { selected: 2, tracked: 614, coasting: 31, reselected: 2, lost: 6 },
+    observed_ratio: 0.9435,
+    observed_frames: 618,
+  },
+  biomechanics: { status: "skipped", reason: "Full Body Not Visible" },
 };
 
 // Hybrid: recording_quality/video/tracking_summary are the real completed

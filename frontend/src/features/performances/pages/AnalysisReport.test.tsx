@@ -1,23 +1,109 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
-import { AnalysisReport } from "./PerformanceDetail";
+import {
+  AnalysisReport,
+  buildGatingChecks,
+  buildQualityChecks,
+  diagnoseSkipReason,
+} from "./PerformanceDetail";
 import {
   completedWithBiomechanicsFixture,
   completedWithMissingValuesFixture,
   skippedBiomechanicsFixture,
+  skippedFullBodyNotVisibleFixture,
 } from "../__fixtures__/analysisResult.fixture";
 
 describe("AnalysisReport", () => {
-  it("renders the skipped-biomechanics reason instead of a report", () => {
+  it("renders a specific, actionable reason instead of the generic backend rating string", () => {
     render(<AnalysisReport result={skippedBiomechanicsFixture} />);
 
     expect(
-      screen.getByText(/biomechanics analysis was skipped/i),
+      screen.getByText(/biomechanics analysis could not be completed/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/not ready for analysis/i)).toBeInTheDocument();
+    // Not just the raw backend "reason" (Not Ready for Analysis) - the
+    // specific failing measurement.
+    expect(
+      screen.getByText(/feet were visible in only 44% of analysed frames/i),
+    ).toBeInTheDocument();
   });
 
+  it("renders the full readiness-check breakdown table with pass/fail badges", () => {
+    render(<AnalysisReport result={skippedBiomechanicsFixture} />);
+
+    expect(screen.getByText("Biomechanics Readiness Checks")).toBeInTheDocument();
+    expect(screen.getByText("Feet visibility")).toBeInTheDocument();
+    expect(screen.getByText("44%")).toBeInTheDocument();
+
+    const feetRow = screen.getByText("Feet visibility").closest("tr");
+    expect(within(feetRow as HTMLElement).getByText("Failed")).toBeInTheDocument();
+
+    const hipsRow = screen.getByText("Hips visibility").closest("tr");
+    expect(within(hipsRow as HTMLElement).getByText("Passed")).toBeInTheDocument();
+  });
+
+  it("renders general (non-gating) quality checks separately from the hard gates", () => {
+    render(<AnalysisReport result={skippedBiomechanicsFixture} />);
+
+    expect(screen.getByText("General Recording Quality")).toBeInTheDocument();
+    expect(screen.getByText("Lighting")).toBeInTheDocument();
+  });
+});
+
+describe("diagnoseSkipReason", () => {
+  it("identifies the worst individual body-part failure (feet) even when the composite score passes", () => {
+    // skippedBiomechanicsFixture: full_body_visibility_score is 82.56
+    // (passes the >=75 composite gate) but feet (44.48%) and ankles
+    // (67.76%) individually fail their own >=70% gate - the backend's
+    // own rating text ("Not Ready for Analysis") misses this because it
+    // only checks the composite, not each group.
+    const reason = diagnoseSkipReason(
+      skippedBiomechanicsFixture.recording_quality,
+    );
+    expect(reason).toContain("feet");
+    expect(reason).toContain("44%");
+    expect(reason).not.toContain("ankles"); // feet is strictly worse, headline picks one
+  });
+
+  it("identifies feet as the driver of a failing composite score", () => {
+    // skippedFullBodyNotVisibleFixture: composite (74.33) fails its
+    // >=75 gate, and feet (52.02%) is the only individual group that
+    // also fails - matches the backend's own "Full Body Not Visible"
+    // rating, but with the actual number instead of a generic label.
+    const reason = diagnoseSkipReason(
+      skippedFullBodyNotVisibleFixture.recording_quality,
+    );
+    expect(reason).toContain("feet");
+    expect(reason).toContain("52%");
+  });
+
+  it("flags a non-side camera angle before checking any body-visibility numbers", () => {
+    const reason = diagnoseSkipReason({
+      camera_view: { classification: "Front View" },
+      body_visibility: { feet: 10 }, // would otherwise dominate - angle must win
+    });
+    expect(reason).toMatch(/front rather than the side/i);
+  });
+});
+
+describe("buildGatingChecks / buildQualityChecks", () => {
+  it("marks camera height as an independent failing gate (#9's case)", () => {
+    const checks = buildGatingChecks(
+      skippedFullBodyNotVisibleFixture.recording_quality,
+    );
+    const cameraHeight = checks.find((c) => c.label === "Camera height");
+    expect(cameraHeight).toMatchObject({ passed: false, value: "30/100" });
+  });
+
+  it("does not fabricate a required threshold for informational-only checks", () => {
+    const checks = buildQualityChecks(
+      skippedBiomechanicsFixture.recording_quality,
+    );
+    expect(checks.every((c) => c.required === undefined)).toBe(true);
+  });
+});
+
+describe("AnalysisReport - completed report rendering", () => {
   it("renders recording quality warnings and recommendations together", () => {
     render(<AnalysisReport result={completedWithBiomechanicsFixture} />);
 

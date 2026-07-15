@@ -6,11 +6,14 @@ import {
   Clock3,
   FileVideo,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
 import { usePerformance } from "../hooks/usePerformance";
+import { useRetryAnalysis } from "../hooks/useRetryAnalysis";
+import { useAnalysisPolling } from "../hooks/useAnalysisPolling";
 import type { AnalysisResult } from "../types/analysis";
 
 // Postgres's jsonb column type does not preserve object key insertion
@@ -264,6 +267,251 @@ function SegmentReport({ segment, index }: { segment: any; index: number }) {
   );
 }
 
+type CheckRow = {
+  label: string;
+  passed: boolean;
+  value: string;
+  required?: string;
+};
+
+// All of this reads fields the backend already sends in recording_quality
+// - nothing here changes what passes or fails, it only explains the same
+// gate result more specifically than the backend's single rating string.
+// Priority mirrors biomechanics_ready's actual condition order in
+// backend/app/services/quality/scoring.py (camera angle first - nothing
+// else is meaningful if the angle is wrong - then the worst individual
+// body-part visibility, then the composite, then camera height, then
+// movement, then a generic fallback).
+export function diagnoseSkipReason(quality: any): string {
+  const view = quality?.camera_view?.classification;
+  const bodyVisibility = quality?.body_visibility ?? {};
+  const metrics = quality?.metrics ?? {};
+
+  if (view === "Front View") {
+    return "the camera is recording from the front rather than the side. Reposition to a true side-on view of the athlete.";
+  }
+
+  if (view === "Three-Quarter View") {
+    return "the camera angle is three-quarter rather than a true side view. Move directly to the athlete's side.";
+  }
+
+  if (!view || view === "Unknown") {
+    return "the camera angle could not be reliably determined from this recording.";
+  }
+
+  const bodyParts: Array<{ label: string; value: number | undefined }> = [
+    { label: "feet", value: bodyVisibility.feet },
+    { label: "ankles", value: bodyVisibility.ankles },
+    { label: "knees", value: bodyVisibility.knees },
+    { label: "hips", value: bodyVisibility.hips },
+  ];
+
+  const failingParts = bodyParts
+    .filter(
+      (part): part is { label: string; value: number } =>
+        typeof part.value === "number" && part.value < 70,
+    )
+    .sort((a, b) => a.value - b.value);
+
+  if (failingParts.length > 0) {
+    const worst = failingParts[0];
+    return (
+      `the athlete's ${worst.label} were visible in only ` +
+      `${Math.round(worst.value)}% of analysed frames (at least 70% is ` +
+      `required). Keep the full body, including ${worst.label}, inside ` +
+      `the frame throughout the run.`
+    );
+  }
+
+  if (
+    typeof metrics.full_body_visibility_score === "number" &&
+    metrics.full_body_visibility_score < 75
+  ) {
+    return (
+      `the athlete's full body was only visible in ` +
+      `${Math.round(metrics.full_body_visibility_score)}% of frames on ` +
+      `average (at least 75% is required).`
+    );
+  }
+
+  if (
+    typeof metrics.camera_height_score === "number" &&
+    metrics.camera_height_score < 60
+  ) {
+    return "the camera appears to be positioned too low or tilted upward, leaving too much empty space above the athlete. Raise the camera to roughly waist height and keep the shot level.";
+  }
+
+  if (
+    typeof metrics.athlete_movement_score === "number" &&
+    metrics.athlete_movement_score < 50
+  ) {
+    return "not enough athletic movement was detected in this recording - this looks like a standing pose rather than an actual run.";
+  }
+
+  return quality?.analysis_readiness?.rating
+    ? `the recording did not meet the requirements for biomechanics analysis (${quality.analysis_readiness.rating}).`
+    : "the recording did not meet the requirements for biomechanics analysis.";
+}
+
+// The hard checks that actually gate biomechanics_ready, in the same
+// order as the boolean formula in scoring.py.
+export function buildGatingChecks(quality: any): CheckRow[] {
+  const view = quality?.camera_view?.classification;
+  const bodyVisibility = quality?.body_visibility ?? {};
+  const metrics = quality?.metrics ?? {};
+  const readiness = quality?.analysis_readiness ?? {};
+
+  const checks: CheckRow[] = [
+    {
+      label: "Camera angle",
+      passed: view === "Side View",
+      value: view ?? "Unknown",
+      required: "Side View",
+    },
+  ];
+
+  const bodyGroups: Array<[string, string]> = [
+    ["hips", "Hips visibility"],
+    ["knees", "Knees visibility"],
+    ["ankles", "Ankles visibility"],
+    ["feet", "Feet visibility"],
+  ];
+
+  for (const [key, label] of bodyGroups) {
+    const value = bodyVisibility[key];
+    if (typeof value === "number") {
+      checks.push({
+        label,
+        passed: value >= 70,
+        value: `${Math.round(value)}%`,
+        required: "≥ 70%",
+      });
+    }
+  }
+
+  if (typeof metrics.full_body_visibility_score === "number") {
+    checks.push({
+      label: "Overall body visibility",
+      passed: metrics.full_body_visibility_score >= 75,
+      value: `${Math.round(metrics.full_body_visibility_score)}%`,
+      required: "≥ 75%",
+    });
+  }
+
+  if (typeof metrics.athlete_movement_score === "number") {
+    checks.push({
+      label: "Athlete movement",
+      passed: metrics.athlete_movement_score >= 50,
+      value: `${Math.round(metrics.athlete_movement_score)}/100`,
+      required: "≥ 50/100",
+    });
+  }
+
+  if (typeof metrics.camera_height_score === "number") {
+    checks.push({
+      label: "Camera height",
+      passed: metrics.camera_height_score >= 60,
+      value: `${Math.round(metrics.camera_height_score)}/100`,
+      required: "≥ 60/100",
+    });
+  }
+
+  if (typeof readiness.score === "number") {
+    checks.push({
+      label: "Overall readiness score",
+      passed: readiness.score >= 70,
+      value: `${Math.round(readiness.score)}/100`,
+      required: "≥ 70/100",
+    });
+  }
+
+  return checks;
+}
+
+// Informational only - none of these gate biomechanics_ready on their
+// own (see scoring.py), so they get no "required" column value.
+export function buildQualityChecks(quality: any): CheckRow[] {
+  const metrics = quality?.metrics ?? {};
+  const informational: Array<[string, string]> = [
+    ["lighting_score", "Lighting"],
+    ["sharpness_score", "Sharpness"],
+    ["frame_rate_score", "Frame rate"],
+    ["pose_detection_score", "Pose tracking confidence"],
+    ["athlete_occupancy_score", "Framing distance"],
+  ];
+
+  return informational
+    .filter(([key]) => typeof metrics[key] === "number")
+    .map(([key, label]) => ({
+      label,
+      passed: metrics[key] >= 70,
+      value: `${Math.round(metrics[key])}/100`,
+    }));
+}
+
+function CheckTable({ title, checks }: { title: string; checks: CheckRow[] }) {
+  if (checks.length === 0) return null;
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+        {title}
+      </p>
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full min-w-[420px] text-left text-sm">
+          <thead>
+            <tr className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              <th className="pb-2">Check</th>
+              <th className="pb-2">Value</th>
+              <th className="pb-2">Required</th>
+              <th className="pb-2">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {checks.map((check) => (
+              <tr key={check.label} className="border-t border-gray-100">
+                <td className="py-2 font-semibold text-gray-800">
+                  {check.label}
+                </td>
+                <td className="py-2 text-gray-600">{check.value}</td>
+                <td className="py-2 text-gray-500">{check.required ?? "—"}</td>
+                <td className="py-2">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      check.passed
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {check.passed ? "Passed" : "Failed"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function QualityGateBreakdown({ quality }: { quality: any }) {
+  const gatingChecks = buildGatingChecks(quality);
+  const qualityChecks = buildQualityChecks(quality);
+  const diagnosis = diagnoseSkipReason(quality);
+
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
+      <p className="text-sm leading-6 text-gray-700">
+        Biomechanics analysis could not be completed because {diagnosis}
+      </p>
+
+      <CheckTable title="Biomechanics Readiness Checks" checks={gatingChecks} />
+      <CheckTable title="General Recording Quality" checks={qualityChecks} />
+    </div>
+  );
+}
+
 export function AnalysisReport({ result }: { result: AnalysisResult }) {
   const quality = result.recording_quality as any;
   const biomechanics = result.biomechanics as any;
@@ -318,11 +566,7 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
         </p>
 
         {biomechanics?.status === "skipped" ? (
-          <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-            <p className="text-sm text-gray-600">
-              Biomechanics analysis was skipped: {biomechanics.reason}
-            </p>
-          </div>
+          <QualityGateBreakdown quality={quality} />
         ) : Array.isArray(biomechanics?.segments) &&
           biomechanics.segments.length > 0 ? (
           <div className="space-y-4">
@@ -346,6 +590,32 @@ export default function PerformanceDetail() {
   const { performanceId } = useParams();
   const { data: performance, isLoading, error } =
     usePerformance(performanceId);
+  const retryAnalysis = useRetryAnalysis();
+
+  // PerformanceProcessing.tsx polls while it's mounted, but a user who
+  // navigates away (e.g. back to the dashboard) before a job finishes
+  // stops that polling - nothing else ever checks again, so the row can
+  // stay stuck on "analyzing" forever even after the backend genuinely
+  // completed the job. Landing on this page for a not-yet-terminal
+  // performance is exactly the moment to reconcile: poll once (and keep
+  // polling, bounded, while this page stays open) and persist whatever
+  // the backend actually says.
+  const jobId =
+    performance?.analysis_job_id &&
+    performance?.upload_status !== "completed" &&
+    performance?.upload_status !== "failed"
+      ? (performance.analysis_job_id as string)
+      : undefined;
+
+  const analysisPoll = useAnalysisPolling(performanceId, jobId);
+
+  function handleRetry() {
+    if (!performance || !performance.video_url) return;
+    retryAnalysis.retry({
+      performanceId: performance.id,
+      videoPath: performance.video_url as string,
+    });
+  }
 
   if (isLoading) {
     return (
@@ -518,6 +788,24 @@ export default function PerformanceDetail() {
               {(performance.analysis_error as string | null) ||
                 "Analysis could not be completed for this recording."}
             </p>
+
+            {retryAnalysis.error && (
+              <p className="mt-2 text-sm leading-6 text-red-600">
+                Retry failed: {retryAnalysis.error.message}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retryAnalysis.isPending}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${retryAnalysis.isPending ? "animate-spin" : ""}`}
+              />
+              {retryAnalysis.isPending ? "Retrying..." : "Retry Analysis"}
+            </button>
           </div>
         ) : (
           <div className="mt-6 rounded-3xl border border-orange-200 bg-[#FFF8F3] p-6">
@@ -530,6 +818,15 @@ export default function PerformanceDetail() {
               and coaching recommendations will appear here when the
               analysis is completed.
             </p>
+
+            {jobId && (
+              <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-gray-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {analysisPoll.timedOut
+                  ? "This is taking longer than usual - check back later."
+                  : "Checking analysis status..."}
+              </p>
+            )}
           </div>
         )}
       </div>
