@@ -6,6 +6,7 @@ import {
   setAccountDeletionRequested,
   updateAiTrainingConsent,
   updateBaseProfile,
+  updateDiscoverable,
   updateSportingProfile,
 } from "../services/athleteProfile.service";
 
@@ -40,6 +41,21 @@ export function useUpdateAiTrainingConsent(athleteId?: string) {
     mutationFn: async (consent: boolean) => {
       if (!athleteId) throw new Error("Not signed in.");
       const { error } = await updateAiTrainingConsent(athleteId, consent);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["athlete-profile", athleteId] });
+    },
+  });
+}
+
+export function useUpdateDiscoverable(athleteId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (discoverable: boolean) => {
+      if (!athleteId) throw new Error("Not signed in.");
+      const { error } = await updateDiscoverable(athleteId, discoverable);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {

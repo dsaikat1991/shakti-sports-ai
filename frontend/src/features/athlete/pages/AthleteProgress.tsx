@@ -5,6 +5,7 @@ import EmptyState from "../../../components/shared/EmptyState";
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../../performances/hooks/usePerformances";
+import { buildReadinessTrend, ReadinessTrendChart } from "../../performances/lib/readinessTrend";
 import { useAthleteProfile } from "../hooks/useAthleteProfile";
 
 // One entry per meaningful event in an athlete's journey. `score` is
@@ -66,87 +67,6 @@ function buildTimeline(performances: any[]): TimelineEntry[] {
   }
 
   return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-}
-
-interface ReadinessPoint {
-  label: string;
-  score: number;
-  date: string;
-}
-
-// Real, already-computed recording-quality readiness scores pulled
-// straight from each session's analysis_result - deliberately not the
-// same thing as the "Score progression" card above, which is reserved
-// for a future athletic Performance Index (roadmap step 8) that doesn't
-// exist yet. This trend is about whether recordings are being captured
-// well enough to analyze, not an athletic score - kept clearly labeled
-// as such so the two aren't confused.
-function buildReadinessTrend(performances: any[]): ReadinessPoint[] {
-  return performances
-    .map((performance) => {
-      if (performance.upload_status !== "completed" || !performance.analysis_result) {
-        return null;
-      }
-
-      const result = performance.analysis_result as any;
-      const score = result?.recording_quality?.analysis_readiness?.score;
-
-      if (typeof score !== "number") return null;
-
-      return {
-        label: `#${String(performance.performance_number ?? 0).padStart(2, "0")}`,
-        score,
-        date: performance.performance_date ?? performance.created_at,
-      };
-    })
-    .filter((point): point is ReadinessPoint => point !== null)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-}
-
-function ReadinessTrendChart({ points }: { points: ReadinessPoint[] }) {
-  if (points.length === 0) {
-    return (
-      <p className="mt-4 text-sm leading-6 text-gray-500">
-        Analyze a session to start seeing your recording-readiness trend here.
-      </p>
-    );
-  }
-
-  const chartHeight = 96;
-
-  return (
-    <div className="mt-4">
-      <div className="flex items-end gap-3" style={{ height: chartHeight }}>
-        {points.map((point) => {
-          const barHeight = Math.max(6, (Math.min(100, Math.max(0, point.score)) / 100) * chartHeight);
-          const passed = point.score >= 70;
-
-          return (
-            <div key={point.label} className="flex flex-1 flex-col items-center justify-end gap-1">
-              <span className="text-[11px] font-bold text-gray-500">
-                {Math.round(point.score)}
-              </span>
-              <div
-                className={`w-full max-w-10 rounded-t-md ${passed ? "bg-green-500" : "bg-red-400"}`}
-                style={{ height: barHeight }}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-2 flex gap-3">
-        {points.map((point) => (
-          <span
-            key={point.label}
-            className="flex-1 truncate text-center text-[11px] font-semibold text-gray-400"
-          >
-            {point.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function dotClasses(kind: TimelineEntry["kind"]) {

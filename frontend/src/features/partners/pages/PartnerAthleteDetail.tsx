@@ -280,9 +280,17 @@ export default function PartnerAthleteDetail() {
       </div>
 
       <div className="mt-8">
-        <p className="mb-4 font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
-          Performance History
-        </p>
+        <div className="mb-4 flex items-center justify-between">
+          <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+            Performance History
+          </p>
+          <Link
+            to={routeSet.ATHLETE_PROGRESS(athleteId!)}
+            className="text-sm font-bold text-[#F0600E] hover:text-orange-700"
+          >
+            View Progress Over Time →
+          </Link>
+        </div>
 
         {performancesLoading && (
           <div className="flex items-center gap-2 text-sm text-gray-500">

@@ -1,4 +1,17 @@
-import { Home, Inbox, Settings, User, Users } from "lucide-react";
+import {
+  Bookmark,
+  GitCompare,
+  Home,
+  Inbox,
+  ListChecks,
+  Menu,
+  Search,
+  Settings,
+  User,
+  Users,
+  X,
+} from "lucide-react";
+import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import Logo from "../../../components/shared/Logo";
 import { useAuth } from "../../auth/context/AuthContext";
@@ -9,6 +22,7 @@ import UserMenu from "../../../components/layout/UserMenu";
 // role-driven copy - rather than two near-duplicate layout components.
 export default function PartnerLayout() {
   const { user, role, signOut } = useAuth();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const isAcademy = role === "academy";
   const routeSet = isAcademy ? ROUTES.ACADEMY : ROUTES.COACH;
@@ -17,9 +31,42 @@ export default function PartnerLayout() {
     { label: "Home", href: routeSet.HOME, icon: Home },
     { label: isAcademy ? "Squad" : "My Athletes", href: routeSet.ATHLETES, icon: Users },
     { label: "Requests", href: routeSet.REQUESTS, icon: Inbox },
+    { label: "Discover", href: routeSet.DISCOVER, icon: Search },
+    { label: "Bookmarks", href: routeSet.BOOKMARKS, icon: Bookmark },
+    { label: "Lists", href: routeSet.LISTS, icon: ListChecks },
+    { label: "Compare", href: routeSet.COMPARE, icon: GitCompare },
     { label: "Profile", href: routeSet.PROFILE, icon: User },
     { label: "Settings", href: routeSet.SETTINGS, icon: Settings },
   ];
+
+  function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+    return (
+      <nav className="mt-10 space-y-2">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <NavLink
+              key={item.label}
+              to={item.href}
+              end={item.href === routeSet.HOME}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  isActive
+                    ? "bg-orange-50 text-[#F0600E]"
+                    : "text-gray-600 hover:bg-orange-50 hover:text-[#F0600E]"
+                }`
+              }
+            >
+              <Icon className="h-5 w-5" />
+              {item.label}
+            </NavLink>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF7]">
@@ -28,29 +75,7 @@ export default function PartnerLayout() {
           <Logo />
         </Link>
 
-        <nav className="mt-10 space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <NavLink
-                key={item.label}
-                to={item.href}
-                end={item.href === routeSet.HOME}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                    isActive
-                      ? "bg-orange-50 text-[#F0600E]"
-                      : "text-gray-600 hover:bg-orange-50 hover:text-[#F0600E]"
-                  }`
-                }
-              >
-                <Icon className="h-5 w-5" />
-                {item.label}
-              </NavLink>
-            );
-          })}
-        </nav>
+        <NavLinks />
 
         <button
           onClick={signOut}
@@ -60,16 +85,64 @@ export default function PartnerLayout() {
         </button>
       </aside>
 
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMobileNavOpen(false)}
+            className="absolute inset-0 cursor-default bg-gray-950/40 backdrop-blur-sm"
+          />
+
+          <aside className="relative flex h-full w-72 max-w-[80vw] flex-col overflow-y-auto border-r border-gray-200 bg-white px-5 py-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <Link to={routeSet.HOME} onClick={() => setMobileNavOpen(false)}>
+                <Logo />
+              </Link>
+
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-[#F0600E] hover:text-[#F0600E]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <NavLinks onNavigate={() => setMobileNavOpen(false)} />
+
+            <button
+              onClick={signOut}
+              className="mt-6 cursor-pointer rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 transition hover:border-[#F0600E] hover:text-[#F0600E]"
+            >
+              Sign out
+            </button>
+          </aside>
+        </div>
+      )}
+
       <main className="lg:pl-72">
         <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/85 px-6 py-4 backdrop-blur-xl lg:px-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-gray-400">
-                {isAcademy ? "Academy Console" : "Coach Console"}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-gray-700">
-                {user?.email}
-              </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label="Open menu"
+                onClick={() => setMobileNavOpen(true)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-[#F0600E] hover:text-[#F0600E] lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div>
+                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-gray-400">
+                  {isAcademy ? "Academy Console" : "Coach Console"}
+                </p>
+                <p className="mt-1 truncate text-sm font-semibold text-gray-700">
+                  {user?.email}
+                </p>
+              </div>
             </div>
 
             <UserMenu />

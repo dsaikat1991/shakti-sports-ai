@@ -61,6 +61,12 @@ export const ROUTES = {
     PROFILE: "/console/coach/profile",
     SETTINGS: "/console/coach/settings",
     ATHLETE_DETAIL: (id: string) => `/console/coach/athletes/${id}`,
+    DISCOVER: "/console/coach/discover",
+    BOOKMARKS: "/console/coach/bookmarks",
+    LISTS: "/console/coach/lists",
+    LIST_DETAIL: (id: string) => `/console/coach/lists/${id}`,
+    COMPARE: "/console/coach/compare",
+    ATHLETE_PROGRESS: (id: string) => `/console/coach/athletes/${id}/progress`,
   },
 
   ACADEMY: {
@@ -70,6 +76,12 @@ export const ROUTES = {
     PROFILE: "/console/academy/profile",
     SETTINGS: "/console/academy/settings",
     ATHLETE_DETAIL: (id: string) => `/console/academy/athletes/${id}`,
+    DISCOVER: "/console/academy/discover",
+    BOOKMARKS: "/console/academy/bookmarks",
+    LISTS: "/console/academy/lists",
+    LIST_DETAIL: (id: string) => `/console/academy/lists/${id}`,
+    COMPARE: "/console/academy/compare",
+    ATHLETE_PROGRESS: (id: string) => `/console/academy/athletes/${id}/progress`,
   },
 } as const;
 

@@ -22,6 +22,7 @@ import { useAthleteProfile } from "../hooks/useAthleteProfile";
 import {
   useSetAccountDeletionRequested,
   useUpdateAiTrainingConsent,
+  useUpdateDiscoverable,
 } from "../hooks/useAthleteProfileMutations";
 
 function SettingsCard({
@@ -54,6 +55,20 @@ function ReservedCard({ title, description }: { title: string; description: stri
       <p className="mt-2 text-sm leading-6 text-gray-500">{description}</p>
     </div>
   );
+}
+
+// Purely a UX-honesty check, not a security control - the real gate is
+// computed server-side on every search/connect/bookmark call (see
+// migration 0009_add_athlete_discovery.sql's is_athlete_currently_
+// discoverable()), which independently excludes minors regardless of
+// this flag. This just avoids showing a minor a toggle that would
+// silently do nothing if they turned it on.
+function isAdult(dateOfBirth: string | null): boolean {
+  if (!dateOfBirth) return false;
+  const dob = new Date(dateOfBirth);
+  const eighteenYearsAgo = new Date();
+  eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+  return dob <= eighteenYearsAgo;
 }
 
 function PasswordSection() {
@@ -130,6 +145,7 @@ export default function AthleteSettings() {
   const { data: connections = [] } = useAthleteConnections(user?.id);
 
   const updateConsent = useUpdateAiTrainingConsent(user?.id);
+  const updateDiscoverable = useUpdateDiscoverable(user?.id);
   const setDeletionRequested = useSetAccountDeletionRequested(user?.id);
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -140,6 +156,8 @@ export default function AthleteSettings() {
 
   const consent = profileData?.sporting?.ai_training_consent ?? false;
   const deletionRequested = Boolean(profileData?.sporting?.deletion_requested_at);
+  const discoverable = profileData?.sporting?.discoverable ?? false;
+  const eligibleForDiscovery = isAdult(profileData?.sporting?.date_of_birth ?? null);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -173,10 +191,34 @@ export default function AthleteSettings() {
           title="Privacy"
           description="Control over who can see your data."
         >
-          <ReservedCard
-            title="Discoverability"
-            description="Letting coaches/scouts find you without an existing connection is planned but not built yet - your data stays private to you and any coach you've explicitly connected with."
-          />
+          {eligibleForDiscovery ? (
+            <div>
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={discoverable}
+                  disabled={updateDiscoverable.isPending}
+                  onChange={(e) => updateDiscoverable.mutate(e.target.checked)}
+                  className="h-5 w-5 rounded border-gray-300 text-[#F0600E] focus:ring-[#F0600E]"
+                />
+                <span className="text-sm font-semibold text-gray-800">
+                  Let verified coaches/academies find me in search
+                </span>
+              </label>
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Only your name, event, and state are ever shown in a search
+                result - never your date of birth, academy, exact location,
+                or any performance data. A coach still needs to send a
+                connection request, which you can accept or reject, before
+                they see anything else.
+              </p>
+            </div>
+          ) : (
+            <ReservedCard
+              title="Discoverability"
+              description="Letting verified coaches/academies find you without an existing connection requires an adult account. Athletes under 18 stay excluded from search regardless of this setting until a guardian-consent system exists - not built yet."
+            />
+          )}
         </SettingsCard>
 
         <SettingsCard

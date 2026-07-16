@@ -41,6 +41,12 @@ import PartnerHome from "../../features/partners/pages/PartnerHome";
 import PartnerRoster from "../../features/partners/pages/PartnerRoster";
 import PartnerAthleteDetail from "../../features/partners/pages/PartnerAthleteDetail";
 import PartnerRequests from "../../features/partners/pages/PartnerRequests";
+import PartnerDiscover from "../../features/partners/pages/PartnerDiscover";
+import PartnerBookmarks from "../../features/partners/pages/PartnerBookmarks";
+import PartnerLists from "../../features/partners/pages/PartnerLists";
+import PartnerListDetail from "../../features/partners/pages/PartnerListDetail";
+import PartnerCompare from "../../features/partners/pages/PartnerCompare";
+import PartnerAthleteProgress from "../../features/partners/pages/PartnerAthleteProgress";
 
 import ComingSoon from "../../components/shared/ComingSoon";
 
@@ -192,7 +198,13 @@ export default function AppRouter() {
               <Route index element={<PartnerHome />} />
               <Route path="athletes" element={<PartnerRoster />} />
               <Route path="athletes/:athleteId" element={<PartnerAthleteDetail />} />
+              <Route path="athletes/:athleteId/progress" element={<PartnerAthleteProgress />} />
               <Route path="requests" element={<PartnerRequests />} />
+              <Route path="discover" element={<PartnerDiscover />} />
+              <Route path="bookmarks" element={<PartnerBookmarks />} />
+              <Route path="lists" element={<PartnerLists />} />
+              <Route path="lists/:listId" element={<PartnerListDetail />} />
+              <Route path="compare" element={<PartnerCompare />} />
               <Route
                 path="profile"
                 element={
@@ -219,7 +231,13 @@ export default function AppRouter() {
               <Route index element={<PartnerHome />} />
               <Route path="athletes" element={<PartnerRoster />} />
               <Route path="athletes/:athleteId" element={<PartnerAthleteDetail />} />
+              <Route path="athletes/:athleteId/progress" element={<PartnerAthleteProgress />} />
               <Route path="requests" element={<PartnerRequests />} />
+              <Route path="discover" element={<PartnerDiscover />} />
+              <Route path="bookmarks" element={<PartnerBookmarks />} />
+              <Route path="lists" element={<PartnerLists />} />
+              <Route path="lists/:listId" element={<PartnerListDetail />} />
+              <Route path="compare" element={<PartnerCompare />} />
               <Route
                 path="profile"
                 element={

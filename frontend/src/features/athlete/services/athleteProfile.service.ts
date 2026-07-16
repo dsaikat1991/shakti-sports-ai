@@ -24,6 +24,7 @@ export interface AthleteSportingProfile {
   achievements: string | null;
   ai_training_consent: boolean;
   deletion_requested_at: string | null;
+  discoverable: boolean;
 }
 
 export type BaseProfileUpdate = Partial<
@@ -59,7 +60,7 @@ export async function getSportingProfile(athleteId: string) {
   return supabase
     .from("athlete_profiles")
     .select(
-      "id, date_of_birth, gender, height_cm, weight_kg, preferred_event, secondary_event, academy, bio, dominant_leg, personal_best, achievements, ai_training_consent, deletion_requested_at",
+      "id, date_of_birth, gender, height_cm, weight_kg, preferred_event, secondary_event, academy, bio, dominant_leg, personal_best, achievements, ai_training_consent, deletion_requested_at, discoverable",
     )
     .eq("id", athleteId)
     .maybeSingle();
@@ -80,6 +81,17 @@ export async function updateAiTrainingConsent(athleteId: string, consent: boolea
   return supabase
     .from("athlete_profiles")
     .update({ ai_training_consent: consent })
+    .eq("id", athleteId);
+}
+
+// The athlete's own preference only - actual discovery eligibility is
+// computed server-side (adult + this flag both required, see migration
+// 0009_add_athlete_discovery.sql) and re-checked live on every search/
+// connect/bookmark call, never trusted from this column alone.
+export async function updateDiscoverable(athleteId: string, discoverable: boolean) {
+  return supabase
+    .from("athlete_profiles")
+    .update({ discoverable })
     .eq("id", athleteId);
 }
 
