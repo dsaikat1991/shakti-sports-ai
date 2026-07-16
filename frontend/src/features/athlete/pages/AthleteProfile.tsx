@@ -1,5 +1,6 @@
 import {
   Building2,
+  Camera,
   CheckCircle2,
   Loader2,
   Save,
@@ -8,14 +9,17 @@ import {
   Trophy,
   User,
   Users,
+  X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { useAthleteProfile } from "../hooks/useAthleteProfile";
+import { useAvatarSignedUrl, useRemoveAvatar, useUploadAvatar } from "../hooks/useAvatarUpload";
 import { useUpdateAthleteProfile } from "../hooks/useAthleteProfileMutations";
+import { validateAvatarFile } from "../services/avatar.service";
 
 const EVENTS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
 
@@ -88,6 +92,119 @@ function ReservedCard({
         <p className="text-xs font-bold uppercase tracking-widest">{title}</p>
       </div>
       <p className="mt-2 text-sm leading-6 text-gray-500">{description}</p>
+    </div>
+  );
+}
+
+function AvatarUploader({
+  userId,
+  avatarPath,
+  displayName,
+  email,
+}: {
+  userId?: string;
+  avatarPath: string | null;
+  displayName: string;
+  email: string;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: signedUrl } = useAvatarSignedUrl(avatarPath);
+  const uploadAvatar = useUploadAvatar(userId);
+  const removeAvatar = useRemoveAvatar(userId);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setError(null);
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLocalPreview(URL.createObjectURL(file));
+    uploadAvatar.mutate(file, {
+      onError: (err) => setError((err as Error).message),
+      onSettled: () => setLocalPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      }),
+    });
+  }
+
+  function handleRemove() {
+    if (!avatarPath) return;
+    setError(null);
+    removeAvatar.mutate(avatarPath, {
+      onError: (err) => setError((err as Error).message),
+    });
+  }
+
+  const isBusy = uploadAvatar.isPending || removeAvatar.isPending;
+  const imageSrc = localPreview ?? signedUrl;
+
+  return (
+    <div className="flex items-center gap-4">
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isBusy}
+        className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F0600E] text-2xl font-black text-white disabled:cursor-not-allowed"
+        aria-label="Change profile photo"
+      >
+        {imageSrc ? (
+          <img src={imageSrc} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initialsFor(displayName, email)
+        )}
+
+        <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+          {isBusy ? (
+            <Loader2 className="h-5 w-5 animate-spin text-white" />
+          ) : (
+            <Camera className="h-5 w-5 text-white" />
+          )}
+        </span>
+      </button>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      <div>
+        <p className="text-sm font-bold text-gray-950">{displayName || "Unnamed athlete"}</p>
+        <div className="mt-1 flex items-center gap-3 text-xs">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isBusy}
+            className="font-bold text-[#F0600E] hover:text-orange-700 disabled:opacity-50"
+          >
+            {avatarPath ? "Change photo" : "Upload photo"}
+          </button>
+          {avatarPath && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isBusy}
+              className="inline-flex items-center gap-1 font-bold text-gray-500 hover:text-red-600 disabled:opacity-50"
+            >
+              <X className="h-3 w-3" />
+              Remove
+            </button>
+          )}
+        </div>
+        {error && <p className="mt-1 text-xs font-semibold text-red-600">{error}</p>}
+      </div>
     </div>
   );
 }
@@ -173,19 +290,12 @@ export default function AthleteProfile() {
 
       <form onSubmit={handleSubmit} className="mt-10 space-y-6">
         <div className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#F0600E] text-2xl font-black text-white">
-              {initialsFor(form.full_name, user?.email ?? "")}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-950">
-                {form.full_name || "Unnamed athlete"}
-              </p>
-              <p className="text-xs text-gray-500">
-                Photo upload is coming soon - your initials are shown until then.
-              </p>
-            </div>
-          </div>
+          <AvatarUploader
+            userId={user?.id}
+            avatarPath={data?.base?.avatar_url ?? null}
+            displayName={form.full_name}
+            email={user?.email ?? ""}
+          />
         </div>
 
         <div className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">

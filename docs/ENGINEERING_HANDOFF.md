@@ -2,7 +2,7 @@
 
 **Read this document fully before touching code.** It assumes zero memory of prior work. Where something is uncertain, unverified, or was deliberately left broken, that is stated explicitly — do not assume silence means "done and correct."
 
-Last updated: 2026-07-16. Work through commit `0d2211e` on `main` is described in §1-§19. **§20 (Athlete Console completion) is the most recent work and is not yet committed** as of this writing — read §20 first if you're starting fresh, then §19/§18, then the rest for backend/biomechanics depth.
+Last updated: 2026-07-16. Work through commit `ff5d3fc` on `main` is described in §1-§20 (Athlete Console completion). **§21 (profile photo upload) is the most recent work and is not yet committed** as of this writing — read §21 first if you're starting fresh, then §20/§19, then the rest for backend/biomechanics depth.
 
 ---
 
@@ -800,6 +800,46 @@ No changes to any existing RLS policy - the owner-only policies on `profiles`/`a
 - **Cross-page consistency confirmed as a side effect**: the Dashboard's Personal Best card, the Progress page's Personal Best card, and the Profile page all independently read the same freshly-saved value correctly - and the Dashboard's greeting switched from the email-derived fallback to the real saved full name ("QA Test Athlete") once the profile query had real data to read. Settings' "Connected Organizations" card correctly showed the real existing coach connection (`QA Test Coach`) via the reused `useAthleteConnections` hook - confirming that reuse works in a third consumer, not just the two it was built for.
 - Zero console errors and zero dev-server errors across the entire verification pass, on both the athlete and coach sides.
 
-### 20.6 Exact next task (current, supersedes §19.7)
+### 20.6 Exact next task (historical - profile photo upload was picked up next; see §21)
 
 This phase is done and fully verified, including every DB-dependent piece. Coach/Academy Console work may resume per the project owner's own gating instruction, now that the Athlete Console is feature-complete against the original 10-step spec. Two smaller items worth a pass whenever convenient, not urgent: profile photo upload (§20.4, needs a new Storage bucket) and a dedicated Reports page distinct from Performance History + Progress (currently `reports` stays `ComingSoon` with a note pointing at the two real pages that already cover it - revisit only if that turns out to be insufficient in practice).
+
+---
+
+## 21. Session update: profile photo upload
+
+Closes the last item deferred from Athlete Console completion (§20.4). Coach/Academy Console resumes after this, per the project owner's own sequencing.
+
+### 21.1 Design decision: private bucket, signed URLs - not public
+
+The coach-connection model (§18) gates *all* athlete data behind an accepted connection - a coach can't see an athlete's name, event, or performances without one. A public `avatars` bucket would have broken that model outright: anyone with the URL could view an athlete's photo with zero relationship to them, a real problem given this platform's repeated, explicit concern about apparent-minors' data. So: new `avatars` bucket, **private**, same folder-scoped `{userId}/...` ownership pattern already proven for `performance-recordings`. `profiles.avatar_url` stores the **storage path**, not a URL (same convention as `performances.video_url`); a signed URL is minted client-side on demand, reusing the exact pattern `createSignedVideoUrl()` already established in `analysis.service.ts`, just with a longer expiry (1 hour vs. 10 minutes) since avatars are shown on every page load rather than downloaded once.
+
+Storage key is fixed per user (`{userId}/avatar`, no extension in the key - `contentType` is set explicitly on upload) with `upsert: true`, so re-uploading always replaces the same object instead of accumulating orphaned files.
+
+### 21.2 Database changes
+
+`supabase/migrations/0008_add_avatars_bucket.sql` - `insert into storage.buckets` for `avatars` (private, 5MB limit, `image/jpeg`/`image/png`/`image/webp` only) plus 4 folder-scoped RLS policies on `storage.objects` (select/insert/update/delete, all `(storage.foldername(name))[1] = auth.uid()::text`). Bucket created via SQL rather than the dashboard - more reproducible than how `performance-recordings` was originally set up (an undocumented manual step, per the audit in §20.1).
+
+### 21.3 What shipped
+
+- `features/athlete/services/avatar.service.ts` (new) - `validateAvatarFile` (pure, unit-tested: type/size checks), `uploadAvatar`, `removeAvatar`, `getAvatarSignedUrl`.
+- `features/athlete/hooks/useAvatarUpload.ts` (new) - `useAvatarSignedUrl` (shared by any component that needs to render a photo from its storage path), `useUploadAvatar`, `useRemoveAvatar`.
+- `AthleteProfile.tsx` - the static "Photo upload is coming soon" note replaced with a real `AvatarUploader`: click the avatar circle or a text link to pick a file, instant local preview via `URL.createObjectURL` while the upload is in flight, inline validation errors, a "Remove" option once a photo exists.
+- `UserMenu.tsx` - shows the real photo (signed URL) instead of initials once one exists. Deliberately does **not** reuse `useAthleteProfile` (which also queries `athlete_profiles`, a table coach/academy accounts have no row in) - a small standalone `useOwnAvatarPath` query selects only `profiles.avatar_url`, the one column every role actually has, keeping this shared-across-all-three-layouts component role-agnostic.
+
+### 21.4 A real bug caught during live verification, fixed before shipping
+
+First live pass: removing a photo correctly updated the Profile page (via `useAthleteProfile`'s invalidation) but the header `UserMenu` kept showing the stale photo until a full page reload - `useUploadAvatar`/`useRemoveAvatar` only invalidated the `["athlete-profile", userId]` query key, not `UserMenu`'s separate `["own-avatar-path", userId]` cache (intentionally separate, per §21.3's reasoning, but that meant it needed its own invalidation, which was missed on the first pass). Fixed by having both mutations invalidate both query keys (plus the `["avatar-signed-url", path]` cache itself, so a same-path upsert re-upload doesn't keep serving a stale cached signed URL). Re-verified live: removing a photo now updates the Profile page and the header instantly, no reload needed.
+
+### 21.5 Verification
+
+- `validateAvatarFile` unit tests (5 cases: valid JPEG/PNG/WebP, rejects non-image, rejects oversized, accepts exactly-at-limit) - all passing. Full frontend suite: **44 passed** (39 prior + 5 new). `cd backend && pytest` unaffected (nothing under `backend/` changed) - **314 passed**. `npx tsc -b --force` clean throughout.
+- **Live, both migration-dependent and cross-account checks done**: the Browser pane's automation can't drive a native file picker (same limitation noted for video upload in §17.1's audit trace), so the upload path was exercised via the same real REST/API sequence the app's own `uploadAvatar()` makes (authenticate as the real seeded QA athlete, `POST` an image to `/storage/v1/object/avatars/{userId}/avatar`, `PATCH profiles.avatar_url`) - not a shortcut, the exact same calls the UI performs. Confirmed the athlete could self-sign the resulting path (200). **Confirmed the private bucket actually blocks cross-account access**: authenticated as the separate seeded QA coach account and attempted to sign the athlete's avatar path directly - rejected (`404 Object not found`, Supabase Storage's standard RLS-denial response, deliberately not `403` to avoid leaking existence information). Reloaded the Profile page in the real browser afterward and confirmed the photo rendered correctly in both the Profile page and the header `UserMenu` via the app's own signed-URL flow - not just the raw REST calls. The remove flow (§21.4) was exercised entirely through real UI clicks, no REST shortcut needed for that half. Zero console or server errors throughout.
+
+### 21.6 Explicitly out of scope (unchanged from the plan, not silently expanded)
+
+No image cropping/editing - raw upload only. No avatar visibility for coach/academy views yet - not requested; a `coach_athlete_connections`-gated `storage.objects` SELECT policy on this bucket would be the natural extension, same shape as the existing performance-data policies, when actually needed. No avatar in Talent Discovery (doesn't exist yet).
+
+### 21.7 Exact next task (current, supersedes §20.6)
+
+This phase is done and verified. Per the project owner's own sequencing, **Coach/Academy Console work resumes next** - the Athlete Console (§20) is feature-complete, and this was the last item explicitly deferred from it. See §17.4/§18 for what already exists there (real onboarding, a `PendingConsole`-replaced roster/notes/requests flow for the connected-athlete relationship) versus what a fuller Coach/Academy Console still needs (talent search/discovery, report comparisons, shortlists - none of which exist yet, all deliberately deferred pending real usage data per §18.6's original framing). Terms/Privacy remains explicitly parked per the project owner's own instruction until every other important platform aspect is done - do not pick it up unprompted despite the apparent-minors-data urgency flagged in §17.6/§17.7.
