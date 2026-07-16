@@ -1,6 +1,7 @@
 import { CheckCircle2, Loader2, Target, Trash2, XCircle } from "lucide-react";
 import { useState } from "react";
 
+import EmptyState from "../../../components/shared/EmptyState";
 import { useAuth } from "../../auth/context/AuthContext";
 import {
   useAthleteGoals,
@@ -183,14 +184,11 @@ export default function AthleteGoals() {
       )}
 
       {!isLoading && activeGoals.length === 0 && pastGoals.length === 0 && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <Target className="mx-auto h-11 w-11 text-gray-400" />
-          <h2 className="mt-5 text-2xl font-bold text-gray-950">No goals yet</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-            Add your first goal above to start tracking what you're working
-            toward.
-          </p>
-        </div>
+        <EmptyState
+          icon={Target}
+          title="No goals yet"
+          description="Add your first goal above to start tracking what you're working toward."
+        />
       )}
 
       {activeGoals.length > 0 && (

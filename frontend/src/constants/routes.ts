@@ -42,6 +42,8 @@ export const ROUTES = {
 
     GOALS: "/console/athlete/goals",
 
+    REPORTS: "/console/athlete/reports",
+
     PERFORMANCE_PROCESSING: (id: string) =>
       `/console/athlete/performances/${id}/processing`,
 

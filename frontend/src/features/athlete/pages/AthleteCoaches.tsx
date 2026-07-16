@@ -1,6 +1,7 @@
 import { Check, Loader2, Mail, Users, X } from "lucide-react";
 import { useState } from "react";
 
+import EmptyState from "../../../components/shared/EmptyState";
 import { useAuth } from "../../auth/context/AuthContext";
 import { useAthleteConnections } from "../../partners/hooks/useAthleteConnections";
 import {
@@ -228,16 +229,11 @@ export default function AthleteCoaches() {
         incoming.length === 0 &&
         connected.length === 0 &&
         outgoing.length === 0 && (
-          <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-            <Users className="mx-auto h-11 w-11 text-gray-400" />
-
-            <h2 className="mt-5 text-2xl font-bold text-gray-950">No coaches yet</h2>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-              Invite your coach or academy above, or wait for them to send
-              you a request.
-            </p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No coaches yet"
+            description="Invite your coach or academy above, or wait for them to send you a request."
+          />
         )}
     </div>
   );

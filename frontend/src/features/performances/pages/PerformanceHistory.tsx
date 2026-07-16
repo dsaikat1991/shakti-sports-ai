@@ -10,6 +10,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import EmptyState from "../../../components/shared/EmptyState";
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../hooks/usePerformances";
@@ -228,36 +229,29 @@ export default function PerformanceHistory() {
       )}
 
       {!isLoading && !error && performances.length === 0 && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <FileVideo className="mx-auto h-11 w-11 text-gray-400" />
-
-          <h2 className="mt-5 text-2xl font-bold text-gray-950">
-            No performances yet
-          </h2>
-
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-            Start your first session to create your timeline and prepare your
-            first Shakti Motion Intelligence™ report.
-          </p>
-
-          <Link
-            to={ROUTES.ATHLETE.NEW_PERFORMANCE}
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
-          >
-            <Plus className="h-4 w-4" />
-            Start First Performance
-          </Link>
-        </div>
+        <EmptyState
+          icon={FileVideo}
+          title="No performances yet"
+          description="Start your first session to create your timeline and prepare your first Shakti Motion Intelligence™ report."
+          action={
+            <Link
+              to={ROUTES.ATHLETE.NEW_PERFORMANCE}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
+            >
+              <Plus className="h-4 w-4" />
+              Start First Performance
+            </Link>
+          }
+        />
       )}
 
       {!isLoading && !error && performances.length > 0 && visiblePerformances.length === 0 && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <Search className="mx-auto h-9 w-9 text-gray-400" />
-          <h2 className="mt-4 text-xl font-bold text-gray-950">No matches</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-            Try a different search term or clear your filters.
-          </p>
-        </div>
+        <EmptyState
+          icon={Search}
+          tone="neutral"
+          title="No matches"
+          description="Try a different search term or clear your filters."
+        />
       )}
 
       {!isLoading && visiblePerformances.length > 0 && (

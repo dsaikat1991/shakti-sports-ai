@@ -2,7 +2,7 @@
 
 **Read this document fully before touching code.** It assumes zero memory of prior work. Where something is uncertain, unverified, or was deliberately left broken, that is stated explicitly — do not assume silence means "done and correct."
 
-Last updated: 2026-07-16. Work through commit `ff5d3fc` on `main` is described in §1-§20 (Athlete Console completion). **§21 (profile photo upload) is the most recent work and is not yet committed** as of this writing — read §21 first if you're starting fresh, then §20/§19, then the rest for backend/biomechanics depth.
+Last updated: 2026-07-16. Work through commit `5e0d895` on `main` (profile photo upload, §21) is committed and pushed. **§22 (Athlete Console UI/feature pass) is the most recent work and is not yet committed** as of this writing — read §22 first if you're starting fresh, then §21/§20/§18, then the rest for backend/biomechanics depth.
 
 ---
 
@@ -629,7 +629,7 @@ Whichever is picked: run `cd backend && ./.venv/Scripts/python.exe -m pytest` (2
 
 Same session as §17, done as a separate follow-up piece of work. **This section is the authoritative current state for coach/academy functionality** - §17.4's "onboarding only, `PendingConsole` placeholder" description is now historical.
 
-**Status as of writing: migrations `0005`/`0006` are applied to the real Supabase project, and the full connection lifecycle has been live-verified end-to-end in a real browser session with two real accounts (see §18.5) - not just automated checks.** Code is not yet committed to git - that's the project owner's call, still pending as of this writing.
+**Status as of writing: migrations `0005`/`0006` are applied to the real Supabase project, and the full connection lifecycle has been live-verified end-to-end in a real browser session with two real accounts (see §18.5) - not just automated checks.** ~~Code is not yet committed to git~~ **Update: committed in `40b884e`, confirmed via `git log` in the §22 session - this note was stale by the time it was next read.**
 
 ### 18.1 What this is
 
@@ -840,6 +840,59 @@ First live pass: removing a photo correctly updated the Profile page (via `useAt
 
 No image cropping/editing - raw upload only. No avatar visibility for coach/academy views yet - not requested; a `coach_athlete_connections`-gated `storage.objects` SELECT policy on this bucket would be the natural extension, same shape as the existing performance-data policies, when actually needed. No avatar in Talent Discovery (doesn't exist yet).
 
-### 21.7 Exact next task (current, supersedes §20.6)
+### 21.7 Exact next task (historical - an Athlete Console UI/feature pass was picked up next instead; see §22)
 
 This phase is done and verified. Per the project owner's own sequencing, **Coach/Academy Console work resumes next** - the Athlete Console (§20) is feature-complete, and this was the last item explicitly deferred from it. See §17.4/§18 for what already exists there (real onboarding, a `PendingConsole`-replaced roster/notes/requests flow for the connected-athlete relationship) versus what a fuller Coach/Academy Console still needs (talent search/discovery, report comparisons, shortlists - none of which exist yet, all deliberately deferred pending real usage data per §18.6's original framing). Terms/Privacy remains explicitly parked per the project owner's own instruction until every other important platform aspect is done - do not pick it up unprompted despite the apparent-minors-data urgency flagged in §17.6/§17.7.
+
+**What actually happened**: before starting Coach/Academy Console work, the project owner asked for one more Athlete Console pass - UI polish and feature gaps identified by a live audit rather than a pre-set list. See §22. Coach/Academy Console (talent search/discovery, report comparisons, shortlists) is still the next task after that.
+
+---
+
+## 22. Session update: Athlete Console UI/feature pass
+
+Same overall codebase, a fresh session. The project owner asked to develop the Athlete Console further "in terms of UI and features," with priority left to this session's own judgment ("both, my call on priority") rather than a pre-set list. **Code is not yet committed to git as of this writing** - that's the project owner's call, per this repo's standing convention.
+
+### 22.1 Audit performed before any code was written
+
+Signed in as the seeded QA athlete (`shakti.qa.athlete@example.com`) in a real browser and walked every athlete-facing page (Dashboard, Performance History, Performance Detail/Report, Progress, Goals, Coaches, Profile, Settings), then checked the mobile viewport and read the relevant source files directly rather than trusting the doc's own "feature-complete" claim from §20. Found:
+
+- **A real, confirmed bug, not a polish item**: `AthleteLayout.tsx`'s sidebar was `hidden lg:block` with **zero mobile fallback** - no hamburger, no drawer, nothing. Below 1024px width, an athlete could see the Dashboard and nothing else; Performances/Coaches/Progress/Goals/Reports/Profile/Settings were all unreachable. Given this platform's own stated design principle ("design for real Indian filming conditions - phone cameras," §13), this was the highest-priority finding.
+- **The AI Report (the actual product) was 100% plain tables** - biomechanics readiness checks and visibility percentages were text-in-a-table-cell with a pass/fail badge, no gauges or bars anywhere.
+- **Progress page was a bare vertical timeline** with two stat tiles - no trend visualization despite being the natural home for one.
+- **Reports** (`/console/athlete/reports`) was still a literal `ComingSoon` stub. With real multi-session data now flowing through the seeded QA account, the doc's own §20.6 "revisit only if insufficient" condition was judged met.
+- **Discover**, **Score Progression**, and the Guardian/Organization-Federation reserved cards were confirmed still correctly deferred (blocked on other unbuilt systems - Coach Console discovery, a future Performance Index, and a guardian model respectively) - explicitly left untouched.
+
+Proposed priority order was confirmed with the project owner before any code: (1) mobile nav fix, (2) AI Report/Progress data visualization, (3) real Reports page, (4) smaller polish (goal reminders, empty-state variety).
+
+### 22.2 Mobile navigation fix
+
+`AthleteLayout.tsx` - extracted the nav-item rendering into a small internal `AthleteNavLinks` component (shared between the desktop sidebar and the new mobile drawer, avoiding a second copy of the same 9-item list) and added a hamburger button (`lg:hidden`) in the header that opens a fixed, backdrop-blurred slide-in drawer with the same nav, sign-out button, and a close button. Tapping any link closes the drawer via an `onNavigate` callback. Live-verified at the mobile viewport (375×812): the drawer opens, all 9 links are reachable, and tapping "Reports" both navigated and closed the drawer correctly.
+
+**Not touched, but confirmed to have the identical bug**: `PartnerLayout.tsx` (coach/academy console) uses the exact same `hidden lg:block` sidebar pattern with no mobile fallback. Out of scope for this athlete-focused pass - worth fixing whenever Coach/Academy Console work resumes (§21.7).
+
+### 22.3 AI Report and Progress data visualization
+
+All additive - no changes to what data is computed, gated, or fetched; every existing `AnalysisReport.test.tsx` assertion (44 cases) still passes unmodified, since all new visuals were added alongside existing text rather than replacing it.
+
+- `PerformanceDetail.tsx`: added a `ScoreGauge` (lightweight inline SVG radial - no charting library added) for the overall biomechanics-readiness score at the top of the skipped-biomechanics breakdown; extended `CheckRow`/`buildGatingChecks`/`buildQualityChecks` with an optional `percent` field (only populated for checks that are inherently a 0-100 score - left `undefined` for the categorical "Camera angle" check rather than fabricating a number); added a "Level" bar column to `CheckTable` that reads that field; extended `StatTile` with an optional `percent` prop (renders a thin bar under the value) and used it for Detection Rate, Duty Factor, and Knee Symmetry; replaced the plain-text Recording Quality rating with a color-coded `RatingBadge` (Excellent=green, Good=blue, Fair=amber, Poor=red). `RatingBadge` was exported (previously module-private) for reuse in the new Reports page (§22.4).
+- `AthleteProgress.tsx`: added a `ReadinessTrendChart` - a small SVG-free bar chart (plain divs with computed heights) plotting each completed session's `analysis_readiness.score` in chronological order. **Deliberately not the same thing as the existing "Score progression" reserved card** (§20.4's future Performance Index, still correctly un-built) - labeled explicitly as a recording-quality trend, not an athletic score, so the two aren't confused. Handles 0 and 1 data points gracefully (the seeded QA account only has one performance; live-verified it renders a single labeled bar rather than breaking).
+
+### 22.4 Real Reports page
+
+`AthleteReports.tsx` (new) replaces the `ComingSoon` stub at `/console/athlete/reports` (route added to `AppRouter.tsx`, new `ROUTES.ATHLETE.REPORTS` constant). Shows only performances with a completed analysis (`upload_status === "completed" && analysis_result`) - a deliberately narrower set than Performance History, which shows every upload regardless of status. Each row shows the `RatingBadge`, a biomechanics-included/skipped badge, readiness score, detection rate, and camera view, linking to the full report. Filterable by event and sortable (newest/oldest/highest readiness score), with three distinct empty states: no performances at all, performances exist but none completed yet (distinct from "no matches" - points at Performance History for status), and no matches for the current filter. Live-verified: renders the seeded QA performance correctly, filter/sort controls work, and clicking through navigates to the correct full detail page.
+
+### 22.5 Goal target-date reminders and empty-state polish
+
+- `deriveNotifications.ts`: added a new `goal_target_date` notification type and a pure `deriveGoalNotifications()` helper (takes an explicit `now: Date` parameter rather than calling `new Date()` internally, keeping the function deterministically testable like the rest of the file). Active goals with a target date within 7 days emit an "approaching" reminder; active goals past their target date emit an "overdue" reminder; completed/abandoned goals and goals with no target date emit nothing. Wired through `useAthleteNotifications.ts` (now also fetches goals via the existing `useAthleteGoals` hook - no new query shape) and given an icon case (`Target`) in `AthleteHome.tsx`'s notification renderer. 5 new unit tests added (49 total, up from 44); live-verified by adding a real goal 2 days out through the actual UI and confirming "Goal target date approaching" appeared correctly in the Dashboard's notification feed, then cleaned up.
+- New `components/shared/EmptyState.tsx` - a small shared component (icon in a colored circular badge, title, description, optional action) replacing the identical hand-duplicated `border-dashed` block that existed in 7 files. Applied to the 5 athlete-facing occurrences (`AthleteGoals`, `AthleteProgress`, `PerformanceHistory`, `AthleteReports`, `AthleteCoaches`). A `tone` prop distinguishes genuine first-run empty states (`"primary"` - warm orange icon badge, used for "no goals/performances/reports/coaches yet") from search/filter-yielded-nothing states (`"neutral"` - muted gray, used for "no matches") - the two are conceptually different (one is a call to action, the other isn't) and are now visually distinguished instead of looking identical.
+- **Not touched**: `PartnerRoster.tsx`/`PartnerHome.tsx` (coach/academy console) use the same old duplicated pattern - out of scope for this athlete-focused pass, worth converting to `EmptyState` whenever Coach/Academy Console work resumes.
+
+### 22.6 Verification
+
+- `cd frontend && npm run test` - **49 passed** (44 prior + 5 new goal-reminder cases). `npx tsc -b --force` - clean, checked after every task in this pass, not just at the end.
+- `cd backend && pytest` not re-run - nothing under `backend/` changed this session.
+- **Live, in a real browser, signed in as the seeded QA athlete account**: every page in this section was re-verified after its corresponding change (not just once at the end) - mobile drawer open/close/navigate at 375×812, the readiness gauge and Level bars rendering with correct colors on the real seeded performance (49/100 readiness, correctly red; 100% detection, correctly green), the Progress page's single-bar trend chart, the new Reports page's filter/sort/empty-states and click-through to the full report, the goal reminder appearing in the Dashboard notification feed after a real goal was added through the UI (then removed to leave the QA account clean), and the `EmptyState` circular icon badge rendering correctly on Goals. Zero console errors and zero dev-server errors throughout.
+
+### 22.7 Exact next task (current, supersedes §21.7)
+
+This phase is done and verified. Per the project owner's own sequencing, **Coach/Academy Console work resumes next** - talent search/discovery, report comparisons, and shortlists, none of which exist yet (confirmed via a separate audit earlier in this session: `PartnerRoster.tsx` is a flat unselectable list, and the connection-gated RLS model means a coach/academy currently has zero visibility into any athlete outside an existing connection - the athlete Profile page's own reserved "Discoverability" placeholder confirms an opt-in flag was the intended shape, not open browsing). Two small carry-forward items when that work is picked up: `PartnerLayout.tsx` has the identical mobile-nav bug fixed in §22.2 for the athlete side, and `PartnerRoster.tsx`/`PartnerHome.tsx` could reuse the new `EmptyState` component from §22.5. Terms/Privacy remains explicitly parked per the project owner's own instruction - do not pick it up unprompted.

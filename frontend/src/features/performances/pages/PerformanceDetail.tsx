@@ -116,10 +116,12 @@ function StatTile({
   label,
   value,
   caveat,
+  percent,
 }: {
   label: string;
   value: string;
   caveat?: string;
+  percent?: number;
 }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
@@ -127,7 +129,65 @@ function StatTile({
         {label}
       </p>
       <p className="mt-1 text-lg font-bold text-gray-950">{value}</p>
+      {percent !== undefined && (
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+          <div
+            className="h-full rounded-full bg-[#F0600E]"
+            style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+          />
+        </div>
+      )}
       {caveat && <p className="mt-1 text-xs text-amber-600">{caveat}</p>}
+    </div>
+  );
+}
+
+// Small SVG radial gauge - no charting dependency needed for a single
+// ring. Used for the headline readiness/detection scores where a plain
+// number undersells how central that metric is to the whole report.
+function ScoreGauge({
+  score,
+  label,
+  passed,
+}: {
+  score: number;
+  label: string;
+  passed: boolean;
+}) {
+  const clamped = Math.min(100, Math.max(0, score));
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - clamped / 100);
+  const color = passed ? "#16a34a" : "#dc2626";
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative h-24 w-24 shrink-0">
+        <svg width="96" height="96" viewBox="0 0 96 96" className="-rotate-90">
+          <circle cx="48" cy="48" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="8" />
+          <circle
+            cx="48"
+            cy="48"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="text-2xl font-black text-gray-950">{Math.round(clamped)}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">/100</p>
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
+        <p className={`mt-1 text-sm font-bold ${passed ? "text-green-700" : "text-red-700"}`}>
+          {passed ? "Meets requirement" : "Below requirement"}
+        </p>
+      </div>
     </div>
   );
 }
@@ -185,6 +245,7 @@ function SegmentReport({ segment, index }: { segment: any; index: number }) {
               ? `${segment.duty_factor_percent.toFixed(1)}%`
               : "N/A"
           }
+          percent={segment.duty_factor_percent ?? undefined}
           caveat="Experimental - not yet validated for all camera angles"
         />
         <StatTile
@@ -203,6 +264,7 @@ function SegmentReport({ segment, index }: { segment: any; index: number }) {
               ? `${Math.round(segment.knee_symmetry_score)}%`
               : "N/A"
           }
+          percent={segment.knee_symmetry_score ?? undefined}
         />
       </div>
 
@@ -260,6 +322,11 @@ type CheckRow = {
   passed: boolean;
   value: string;
   required?: string;
+  // 0-100, only set for checks that are inherently a percentage/score -
+  // drives the visual bar in CheckTable. Left undefined for categorical
+  // checks (e.g. camera angle's "Side View"/"Front View") rather than
+  // fabricating a number for something that isn't one.
+  percent?: number;
 };
 
 // All of this reads fields the backend already sends in recording_quality
@@ -373,6 +440,7 @@ export function buildGatingChecks(quality: any): CheckRow[] {
         passed: value >= 70,
         value: `${Math.round(value)}%`,
         required: "≥ 70%",
+        percent: value,
       });
     }
   }
@@ -383,6 +451,7 @@ export function buildGatingChecks(quality: any): CheckRow[] {
       passed: metrics.full_body_visibility_score >= 75,
       value: `${Math.round(metrics.full_body_visibility_score)}%`,
       required: "≥ 75%",
+      percent: metrics.full_body_visibility_score,
     });
   }
 
@@ -392,6 +461,7 @@ export function buildGatingChecks(quality: any): CheckRow[] {
       passed: metrics.athlete_movement_score >= 50,
       value: `${Math.round(metrics.athlete_movement_score)}/100`,
       required: "≥ 50/100",
+      percent: metrics.athlete_movement_score,
     });
   }
 
@@ -401,6 +471,7 @@ export function buildGatingChecks(quality: any): CheckRow[] {
       passed: metrics.camera_height_score >= 60,
       value: `${Math.round(metrics.camera_height_score)}/100`,
       required: "≥ 60/100",
+      percent: metrics.camera_height_score,
     });
   }
 
@@ -410,6 +481,7 @@ export function buildGatingChecks(quality: any): CheckRow[] {
       passed: readiness.score >= 70,
       value: `${Math.round(readiness.score)}/100`,
       required: "≥ 70/100",
+      percent: readiness.score,
     });
   }
 
@@ -434,6 +506,7 @@ export function buildQualityChecks(quality: any): CheckRow[] {
       label,
       passed: metrics[key] >= 70,
       value: `${Math.round(metrics[key])}/100`,
+      percent: metrics[key],
     }));
 }
 
@@ -451,6 +524,7 @@ function CheckTable({ title, checks }: { title: string; checks: CheckRow[] }) {
             <tr className="text-xs font-bold uppercase tracking-widest text-gray-400">
               <th className="pb-2">Check</th>
               <th className="pb-2">Value</th>
+              <th className="pb-2">Level</th>
               <th className="pb-2">Required</th>
               <th className="pb-2">Result</th>
             </tr>
@@ -462,6 +536,22 @@ function CheckTable({ title, checks }: { title: string; checks: CheckRow[] }) {
                   {check.label}
                 </td>
                 <td className="py-2 text-gray-600">{check.value}</td>
+                <td className="py-2">
+                  {check.percent !== undefined ? (
+                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className={`h-full rounded-full ${
+                          check.passed ? "bg-green-500" : "bg-red-500"
+                        }`}
+                        style={{
+                          width: `${Math.min(100, Math.max(0, check.percent))}%`,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </td>
                 <td className="py-2 text-gray-500">{check.required ?? "—"}</td>
                 <td className="py-2">
                   <span
@@ -487,9 +577,20 @@ function QualityGateBreakdown({ quality }: { quality: any }) {
   const gatingChecks = buildGatingChecks(quality);
   const qualityChecks = buildQualityChecks(quality);
   const diagnosis = diagnoseSkipReason(quality);
+  const readinessScore = quality?.analysis_readiness?.score;
 
   return (
     <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
+      {typeof readinessScore === "number" && (
+        <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-5">
+          <ScoreGauge
+            score={readinessScore}
+            label="Overall Readiness Score"
+            passed={readinessScore >= 70}
+          />
+        </div>
+      )}
+
       <p className="text-sm leading-6 text-gray-700">
         Biomechanics analysis could not be completed because {diagnosis}
       </p>
@@ -497,6 +598,27 @@ function QualityGateBreakdown({ quality }: { quality: any }) {
       <CheckTable title="Biomechanics Readiness Checks" checks={gatingChecks} />
       <CheckTable title="General Recording Quality" checks={qualityChecks} />
     </div>
+  );
+}
+
+const RATING_STYLES: Record<string, string> = {
+  Excellent: "bg-green-100 text-green-700",
+  Good: "bg-blue-100 text-blue-700",
+  Fair: "bg-amber-100 text-amber-700",
+  Poor: "bg-red-100 text-red-700",
+};
+
+export function RatingBadge({ rating }: { rating?: string }) {
+  if (!rating) return <span className="text-lg font-bold text-gray-950">N/A</span>;
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${
+        RATING_STYLES[rating] ?? "bg-gray-100 text-gray-700"
+      }`}
+    >
+      {rating}
+    </span>
   );
 }
 
@@ -539,6 +661,7 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
           <StatTile
             label="Detection Rate"
             value={`${result.analysis?.detection_rate_percent?.toFixed(0) ?? "N/A"}%`}
+            percent={result.analysis?.detection_rate_percent}
           />
           <StatTile
             label="Duration"
@@ -550,10 +673,14 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
       <div>
         <SectionHeading>Recording Quality</SectionHeading>
         <div className="grid gap-4 sm:grid-cols-2">
-          <StatTile
-            label="Recording Quality"
-            value={quality?.rating ?? "N/A"}
-          />
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              Recording Quality
+            </p>
+            <p className="mt-2">
+              <RatingBadge rating={quality?.rating} />
+            </p>
+          </div>
           <StatTile
             label="Camera View"
             value={quality?.camera_view?.classification ?? "N/A"}

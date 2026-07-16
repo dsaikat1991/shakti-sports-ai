@@ -9,6 +9,7 @@ export type NotificationType =
   | "analysis_completed"
   | "recording_quality_insufficient"
   | "coach_connection_request"
+  | "goal_target_date"
   | "guardian_approval_required";
 
 export interface AthleteNotification {
@@ -29,16 +30,74 @@ interface PerformanceLike {
   analysis_result: { biomechanics?: { status?: string; reason?: string } } | null;
 }
 
+interface GoalLike {
+  id: string;
+  description: string;
+  target_date: string | null;
+  status: string;
+}
+
 function performanceReportHref(performanceId: string): string {
   return `/console/athlete/performances/${performanceId}`;
+}
+
+const GOAL_REMINDER_WINDOW_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Only active goals with a target date get a reminder - completed/
+// abandoned goals are done, and a goal with no target date has nothing
+// to remind about. `now` is a parameter (not `new Date()` inline) so
+// this stays a pure, deterministically-testable function like the rest
+// of this file.
+function deriveGoalNotifications(goals: GoalLike[], now: Date): AthleteNotification[] {
+  const notifications: AthleteNotification[] = [];
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  for (const goal of goals) {
+    if (goal.status !== "active" || !goal.target_date) continue;
+
+    const targetDate = new Date(goal.target_date);
+    const dueDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+    const daysUntilDue = Math.round((dueDate.getTime() - today.getTime()) / MS_PER_DAY);
+
+    const formattedDate = new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(targetDate);
+
+    if (daysUntilDue < 0) {
+      notifications.push({
+        id: `goal-overdue-${goal.id}`,
+        type: "goal_target_date",
+        title: "Goal target date passed",
+        description: `"${goal.description}" was due on ${formattedDate} - update its status or set a new target.`,
+        createdAt: now.toISOString(),
+        href: "/console/athlete/goals",
+      });
+    } else if (daysUntilDue <= GOAL_REMINDER_WINDOW_DAYS) {
+      notifications.push({
+        id: `goal-upcoming-${goal.id}`,
+        type: "goal_target_date",
+        title: "Goal target date approaching",
+        description: `"${goal.description}" is due on ${formattedDate}.`,
+        createdAt: now.toISOString(),
+        href: "/console/athlete/goals",
+      });
+    }
+  }
+
+  return notifications;
 }
 
 export function deriveNotifications(
   performances: PerformanceLike[],
   connections: EnrichedAthleteConnection[],
   viewerId?: string,
+  goals: GoalLike[] = [],
+  now: Date = new Date(),
 ): AthleteNotification[] {
-  const notifications: AthleteNotification[] = [];
+  const notifications: AthleteNotification[] = [...deriveGoalNotifications(goals, now)];
 
   for (const performance of performances) {
     if (performance.upload_status !== "completed") continue;

@@ -37,6 +37,8 @@ function notificationIcon(type: NotificationType) {
       return ShieldAlert;
     case "coach_connection_request":
       return Users;
+    case "goal_target_date":
+      return Target;
     default:
       return Bell;
   }

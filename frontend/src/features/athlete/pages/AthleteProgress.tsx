@@ -1,6 +1,7 @@
-import { CalendarClock, Loader2, TrendingUp, Trophy } from "lucide-react";
+import { BarChart3, CalendarClock, Loader2, TrendingUp, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import EmptyState from "../../../components/shared/EmptyState";
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../../performances/hooks/usePerformances";
@@ -67,6 +68,87 @@ function buildTimeline(performances: any[]): TimelineEntry[] {
   return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
+interface ReadinessPoint {
+  label: string;
+  score: number;
+  date: string;
+}
+
+// Real, already-computed recording-quality readiness scores pulled
+// straight from each session's analysis_result - deliberately not the
+// same thing as the "Score progression" card above, which is reserved
+// for a future athletic Performance Index (roadmap step 8) that doesn't
+// exist yet. This trend is about whether recordings are being captured
+// well enough to analyze, not an athletic score - kept clearly labeled
+// as such so the two aren't confused.
+function buildReadinessTrend(performances: any[]): ReadinessPoint[] {
+  return performances
+    .map((performance) => {
+      if (performance.upload_status !== "completed" || !performance.analysis_result) {
+        return null;
+      }
+
+      const result = performance.analysis_result as any;
+      const score = result?.recording_quality?.analysis_readiness?.score;
+
+      if (typeof score !== "number") return null;
+
+      return {
+        label: `#${String(performance.performance_number ?? 0).padStart(2, "0")}`,
+        score,
+        date: performance.performance_date ?? performance.created_at,
+      };
+    })
+    .filter((point): point is ReadinessPoint => point !== null)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+function ReadinessTrendChart({ points }: { points: ReadinessPoint[] }) {
+  if (points.length === 0) {
+    return (
+      <p className="mt-4 text-sm leading-6 text-gray-500">
+        Analyze a session to start seeing your recording-readiness trend here.
+      </p>
+    );
+  }
+
+  const chartHeight = 96;
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-end gap-3" style={{ height: chartHeight }}>
+        {points.map((point) => {
+          const barHeight = Math.max(6, (Math.min(100, Math.max(0, point.score)) / 100) * chartHeight);
+          const passed = point.score >= 70;
+
+          return (
+            <div key={point.label} className="flex flex-1 flex-col items-center justify-end gap-1">
+              <span className="text-[11px] font-bold text-gray-500">
+                {Math.round(point.score)}
+              </span>
+              <div
+                className={`w-full max-w-10 rounded-t-md ${passed ? "bg-green-500" : "bg-red-400"}`}
+                style={{ height: barHeight }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-2 flex gap-3">
+        {points.map((point) => (
+          <span
+            key={point.label}
+            className="flex-1 truncate text-center text-[11px] font-semibold text-gray-400"
+          >
+            {point.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function dotClasses(kind: TimelineEntry["kind"]) {
   switch (kind) {
     case "completed":
@@ -95,6 +177,7 @@ export default function AthleteProgress() {
   const { data: profileData } = useAthleteProfile(user?.id);
 
   const timeline = buildTimeline(performances);
+  const readinessTrend = buildReadinessTrend(performances);
   const personalBest = profileData?.sporting?.personal_best;
 
   return (
@@ -142,6 +225,20 @@ export default function AthleteProgress() {
         </div>
       </div>
 
+      {!isLoading && !error && (
+        <div className="mt-4 rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-[#F0600E]" />
+            <h2 className="font-bold text-gray-950">Recording Readiness Trend</h2>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            Overall readiness score from each analyzed session, in order.
+            Reflects recording quality, not an athletic performance score.
+          </p>
+          <ReadinessTrendChart points={readinessTrend} />
+        </div>
+      )}
+
       {isLoading && (
         <div className="mt-10 flex items-center gap-3 rounded-3xl border border-gray-200 bg-white p-6 text-sm font-semibold text-gray-600 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin text-[#F0600E]" />
@@ -156,15 +253,11 @@ export default function AthleteProgress() {
       )}
 
       {!isLoading && !error && timeline.length === 0 && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <CalendarClock className="mx-auto h-11 w-11 text-gray-400" />
-          <h2 className="mt-5 text-2xl font-bold text-gray-950">
-            Your timeline starts with your first upload
-          </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-            Upload a performance to begin building your journey.
-          </p>
-        </div>
+        <EmptyState
+          icon={CalendarClock}
+          title="Your timeline starts with your first upload"
+          description="Upload a performance to begin building your journey."
+        />
       )}
 
       {!isLoading && timeline.length > 0 && (

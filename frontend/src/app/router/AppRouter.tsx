@@ -27,6 +27,7 @@ import AthleteCoaches from "../../features/athlete/pages/AthleteCoaches";
 import AthleteProfile from "../../features/athlete/pages/AthleteProfile";
 import AthleteProgress from "../../features/athlete/pages/AthleteProgress";
 import AthleteGoals from "../../features/athlete/pages/AthleteGoals";
+import AthleteReports from "../../features/athlete/pages/AthleteReports";
 import AthleteSettings from "../../features/athlete/pages/AthleteSettings";
 
 import NewPerformance from "../../features/performances/pages/NewPerformance";
@@ -157,15 +158,7 @@ export default function AppRouter() {
 
   <Route path="goals" element={<AthleteGoals />} />
 
-  <Route
-    path="reports"
-    element={
-      <ComingSoon
-        title="Reports"
-        description="A dedicated view of all your Shakti Motion Intelligence reports is on its way. In the meantime, every report is available from Performances and your Progress timeline."
-      />
-    }
-  />
+  <Route path="reports" element={<AthleteReports />} />
 
   <Route path="progress" element={<AthleteProgress />} />
 

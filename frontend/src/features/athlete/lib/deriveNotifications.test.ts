@@ -14,6 +14,16 @@ function performance(overrides: Partial<Parameters<typeof deriveNotifications>[0
   };
 }
 
+function goal(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "goal-1",
+    description: "Break 11.5s in the 100m",
+    target_date: null,
+    status: "active",
+    ...overrides,
+  };
+}
+
 function connection(overrides: Record<string, unknown> = {}) {
   return {
     id: "conn-1",
@@ -106,5 +116,65 @@ describe("deriveNotifications", () => {
     const incoming = connection({ initiated_by: "coach", status: "pending" });
     const result = deriveNotifications([], [incoming], undefined);
     expect(result).toEqual([]);
+  });
+
+  describe("goal target-date reminders", () => {
+    const now = new Date("2026-07-16T12:00:00Z");
+
+    it("emits nothing for an active goal with no target date", () => {
+      const result = deriveNotifications([], [], "athlete-1", [goal()], now);
+      expect(result).toEqual([]);
+    });
+
+    it("emits nothing for a target date far in the future", () => {
+      const result = deriveNotifications(
+        [],
+        [],
+        "athlete-1",
+        [goal({ target_date: "2026-09-01" })],
+        now,
+      );
+      expect(result).toEqual([]);
+    });
+
+    it("emits an upcoming reminder within the 7-day window", () => {
+      const result = deriveNotifications(
+        [],
+        [],
+        "athlete-1",
+        [goal({ target_date: "2026-07-19" })],
+        now,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe("goal_target_date");
+      expect(result[0].title).toBe("Goal target date approaching");
+      expect(result[0].description).toContain("Break 11.5s in the 100m");
+    });
+
+    it("emits an overdue reminder once the target date has passed", () => {
+      const result = deriveNotifications(
+        [],
+        [],
+        "athlete-1",
+        [goal({ target_date: "2026-07-10" })],
+        now,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe("Goal target date passed");
+    });
+
+    it("ignores completed/abandoned goals even with a near target date", () => {
+      const result = deriveNotifications(
+        [],
+        [],
+        "athlete-1",
+        [
+          goal({ target_date: "2026-07-17", status: "completed" }),
+          goal({ id: "goal-2", target_date: "2026-07-17", status: "abandoned" }),
+        ],
+        now,
+      );
+      expect(result).toEqual([]);
+    });
   });
 });
