@@ -14,12 +14,13 @@ import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { AnalysisReport } from "../../performances/pages/PerformanceDetail";
-import { getAthletePerformances, getPerformanceById } from "../../performances/services/performance.service";
 import type { AnalysisResult } from "../../performances/types/analysis";
 import {
   addNote,
   deleteNote,
   getAthleteProfile,
+  getConnectedAthletePerformances,
+  getConnectedPerformanceById,
   getNotesForConnection,
 } from "../services/connections.service";
 import { usePartnerConnections } from "../hooks/usePartnerConnections";
@@ -65,7 +66,7 @@ function PerformanceCard({ performance }: { performance: any }) {
   const { data: full, isLoading } = useQuery({
     queryKey: ["coach-performance-detail", performance.id],
     queryFn: async () => {
-      const { data, error } = await getPerformanceById(performance.id);
+      const { data, error } = await getConnectedPerformanceById(performance.id);
       if (error) throw new Error(error.message);
       return data;
     },
@@ -158,7 +159,7 @@ export default function PartnerAthleteDetail() {
   const { data: performances = [], isLoading: performancesLoading } = useQuery({
     queryKey: ["coach-athlete-performances", athleteId],
     queryFn: async () => {
-      const { data, error } = await getAthletePerformances(athleteId!);
+      const { data, error } = await getConnectedAthletePerformances(athleteId!);
       if (error) throw new Error(error.message);
       return data ?? [];
     },

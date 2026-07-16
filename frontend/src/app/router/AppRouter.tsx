@@ -24,6 +24,10 @@ import AcademyOnboarding from "../../features/auth/pages/AcademyOnboarding";
 import AthleteLayout from "../../features/athlete/components/AthleteLayout";
 import AthleteHome from "../../features/athlete/pages/AthleteHome";
 import AthleteCoaches from "../../features/athlete/pages/AthleteCoaches";
+import AthleteProfile from "../../features/athlete/pages/AthleteProfile";
+import AthleteProgress from "../../features/athlete/pages/AthleteProgress";
+import AthleteGoals from "../../features/athlete/pages/AthleteGoals";
+import AthleteSettings from "../../features/athlete/pages/AthleteSettings";
 
 import NewPerformance from "../../features/performances/pages/NewPerformance";
 import PerformanceProcessing from "../../features/performances/pages/PerformanceProcessing";
@@ -151,25 +155,19 @@ export default function AppRouter() {
 
   <Route path="coaches" element={<AthleteCoaches />} />
 
+  <Route path="goals" element={<AthleteGoals />} />
+
   <Route
     path="reports"
     element={
       <ComingSoon
         title="Reports"
-        description="A dedicated view of all your Shakti Motion Intelligence reports is on its way."
+        description="A dedicated view of all your Shakti Motion Intelligence reports is on its way. In the meantime, every report is available from Performances and your Progress timeline."
       />
     }
   />
 
-  <Route
-    path="progress"
-    element={
-      <ComingSoon
-        title="Progress"
-        description="Track how your performance metrics change over time, session after session."
-      />
-    }
-  />
+  <Route path="progress" element={<AthleteProgress />} />
 
   <Route
     path="discover"
@@ -181,25 +179,9 @@ export default function AppRouter() {
     }
   />
 
-  <Route
-    path="profile"
-    element={
-      <ComingSoon
-        title="Profile"
-        description="Manage your athlete profile, personal bests, and academy details here soon."
-      />
-    }
-  />
+  <Route path="profile" element={<AthleteProfile />} />
 
-  <Route
-    path="settings"
-    element={
-      <ComingSoon
-        title="Settings"
-        description="Account and notification settings are on the way."
-      />
-    }
-  />
+  <Route path="settings" element={<AthleteSettings />} />
 </Route>
 </Route>
 </Route>

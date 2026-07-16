@@ -93,8 +93,10 @@ export async function getAthletePerformances(athleteId: string) {
       video_url,
       notes,
       created_at,
+      updated_at,
       analysis_job_id,
       analysis_error,
+      analysis_result,
       events (
         name,
         category

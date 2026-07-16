@@ -1,18 +1,46 @@
 import {
   ArrowRight,
+  Bell,
   CalendarDays,
   CheckCircle2,
   Clock3,
   FileVideo,
   Loader2,
   Plus,
-  TrendingUp,
+  ShieldAlert,
+  Target,
+  Trophy,
+  Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { useAthleteDashboard } from "../hooks/useAthleteDashboard";
+import { useAthleteProfile } from "../hooks/useAthleteProfile";
+import { useAthleteGoals } from "../hooks/useAthleteGoals";
+import { useAthleteNotifications } from "../hooks/useAthleteNotifications";
+import type { NotificationType } from "../lib/deriveNotifications";
+
+function formatTargetDate(date?: string | null) {
+  if (!date) return null;
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(date));
+}
+
+function notificationIcon(type: NotificationType) {
+  switch (type) {
+    case "recording_quality_insufficient":
+      return ShieldAlert;
+    case "coach_connection_request":
+      return Users;
+    default:
+      return Bell;
+  }
+}
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -92,8 +120,15 @@ export default function AthleteHome() {
     error,
   } = useAthleteDashboard(user?.id);
 
+  const { data: profileData } = useAthleteProfile(user?.id);
+  const { data: goals = [] } = useAthleteGoals(user?.id);
+  const { notifications } = useAthleteNotifications();
+
   const email = user?.email ?? "";
-  const displayName = email.split("@")[0] || "Athlete";
+  const fullName = profileData?.base?.full_name?.trim();
+  const displayName = fullName || email.split("@")[0] || "Athlete";
+  const sporting = profileData?.sporting;
+  const activeGoal = goals.find((goal) => goal.status === "active");
 
   const latestPerformance = performances[0];
   const recentPerformances = performances.slice(0, 5);
@@ -132,6 +167,14 @@ export default function AthleteHome() {
             Start a new session, review recent performances, and track your
             progress as Shakti Motion Intelligence™ prepares your reports.
           </p>
+
+          {sporting?.preferred_event && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-[#FFF8F3] px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#F0600E]">
+              <Trophy className="h-3.5 w-3.5" />
+              {sporting.preferred_event}
+              {sporting.academy && <span className="text-gray-400">· {sporting.academy}</span>}
+            </div>
+          )}
         </div>
 
         <Link
@@ -408,39 +451,116 @@ export default function AthleteHome() {
         )}
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div className="mt-6 grid gap-6 md:grid-cols-3">
         <div className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <TrendingUp className="h-5 w-5 text-[#F0600E]" />
-
-            <h3 className="font-bold text-gray-950">Progress Tracking</h3>
+            <Trophy className="h-5 w-5 text-[#F0600E]" />
+            <h3 className="font-bold text-gray-950">Personal Best</h3>
           </div>
 
-          <p className="mt-5 font-['Anton'] text-4xl uppercase text-gray-950">
-            Coming Next
-          </p>
+          {sporting?.personal_best ? (
+            <p className="mt-5 text-2xl font-bold text-gray-950">
+              {sporting.personal_best}
+            </p>
+          ) : (
+            <p className="mt-5 text-sm leading-6 text-gray-500">
+              Not set yet.
+            </p>
+          )}
 
-          <p className="mt-2 text-sm leading-6 text-gray-500">
-            Performance scores, personal bests, and progression charts will
-            appear after AI reports are generated.
-          </p>
+          <Link
+            to={ROUTES.ATHLETE.PROFILE}
+            className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#F0600E] hover:text-orange-700"
+          >
+            {sporting?.personal_best ? "Update" : "Add your personal best"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
         <div className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-5 w-5 text-green-700" />
-
-            <h3 className="font-bold text-gray-950">AI Report Status</h3>
+            <h3 className="font-bold text-gray-950">Recording Quality</h3>
           </div>
 
-          <p className="mt-5 font-['Anton'] text-5xl text-gray-950">
-            {completedReports}/{totalPerformances}
-          </p>
-
-          <p className="mt-2 text-sm leading-6 text-gray-500">
-            Completed reports out of your total uploaded performances.
-          </p>
+          {latestPerformance?.analysis_result ? (
+            <>
+              <p className="mt-5 text-2xl font-bold text-gray-950">
+                {(latestPerformance.analysis_result as any)?.recording_quality?.rating ?? "N/A"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                From your latest analyzed session.
+              </p>
+            </>
+          ) : (
+            <p className="mt-5 text-sm leading-6 text-gray-500">
+              Complete an analysis to see your recording quality here.
+            </p>
+          )}
         </div>
+
+        <div className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Target className="h-5 w-5 text-[#F0600E]" />
+            <h3 className="font-bold text-gray-950">Current Goal</h3>
+          </div>
+
+          {activeGoal ? (
+            <>
+              <p className="mt-5 font-bold text-gray-950">{activeGoal.description}</p>
+              {formatTargetDate(activeGoal.target_date) && (
+                <p className="mt-2 text-sm text-gray-500">
+                  Target: {formatTargetDate(activeGoal.target_date)}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="mt-5 text-sm leading-6 text-gray-500">
+              No active goal yet.
+            </p>
+          )}
+
+          <Link
+            to={ROUTES.ATHLETE.GOALS}
+            className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#F0600E] hover:text-orange-700"
+          >
+            {activeGoal ? "View goals" : "Set a goal"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3">
+          <Bell className="h-5 w-5 text-[#F0600E]" />
+          <h3 className="font-bold text-gray-950">Notifications</h3>
+        </div>
+
+        {notifications.length === 0 ? (
+          <p className="mt-5 text-sm leading-6 text-gray-500">
+            You're all caught up - nothing new to review.
+          </p>
+        ) : (
+          <div className="mt-5 divide-y divide-gray-100">
+            {notifications.slice(0, 5).map((notification) => {
+              const Icon = notificationIcon(notification.type);
+
+              return (
+                <Link
+                  key={notification.id}
+                  to={notification.href}
+                  className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 transition hover:opacity-70"
+                >
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[#F0600E]" />
+                  <div>
+                    <p className="text-sm font-bold text-gray-950">{notification.title}</p>
+                    <p className="text-sm text-gray-500">{notification.description}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

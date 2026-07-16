@@ -4,12 +4,20 @@ import {
   FileVideo,
   Loader2,
   Plus,
+  Search,
+  ShieldCheck,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../hooks/usePerformances";
+
+const EVENT_OPTIONS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
+const STATUS_OPTIONS = ["uploaded", "analyzing", "processing", "completed", "failed"];
+
+type SortOption = "newest" | "oldest" | "status";
 
 function getEventName(events: unknown) {
   if (Array.isArray(events)) {
@@ -60,6 +68,16 @@ function getStatusClasses(status: string | null) {
   }
 }
 
+function getRecordingQualityRating(analysisResult: unknown): string | null {
+  if (!analysisResult || typeof analysisResult !== "object") return null;
+  const quality = (analysisResult as any).recording_quality;
+  return quality?.rating ?? null;
+}
+
+function isReportAvailable(performance: { upload_status: string | null; analysis_result: unknown }) {
+  return performance.upload_status === "completed" && Boolean(performance.analysis_result);
+}
+
 function formatDate(date?: string | null) {
   if (!date) return "Date unavailable";
 
@@ -78,6 +96,46 @@ export default function PerformanceHistory() {
     isLoading,
     error,
   } = usePerformances(user?.id);
+
+  const [search, setSearch] = useState("");
+  const [eventFilter, setEventFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
+  const visiblePerformances = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    const filtered = performances.filter((performance) => {
+      if (eventFilter !== "all" && getEventName(performance.events) !== eventFilter) {
+        return false;
+      }
+      if (statusFilter !== "all" && (performance.upload_status ?? "uploaded") !== statusFilter) {
+        return false;
+      }
+      if (query) {
+        const haystack = `${performance.title ?? ""} ${performance.notes ?? ""}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
+    });
+
+    const sorted = [...filtered];
+    if (sortBy === "newest") {
+      sorted.sort(
+        (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+      );
+    } else if (sortBy === "oldest") {
+      sorted.sort(
+        (a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime(),
+      );
+    } else {
+      sorted.sort((a, b) =>
+        (a.upload_status ?? "").localeCompare(b.upload_status ?? ""),
+      );
+    }
+
+    return sorted;
+  }, [performances, search, eventFilter, statusFilter, sortBy]);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -105,6 +163,56 @@ export default function PerformanceHistory() {
           New Performance
         </Link>
       </div>
+
+      {!isLoading && !error && performances.length > 0 && (
+        <div className="mt-8 flex flex-col gap-3 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by title or notes..."
+              className="w-full rounded-xl border border-gray-200 py-2.5 pl-11 pr-4 text-sm outline-none focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+            />
+          </div>
+
+          <select
+            value={eventFilter}
+            onChange={(e) => setEventFilter(e.target.value)}
+            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#F0600E]"
+          >
+            <option value="all">All events</option>
+            {EVENT_OPTIONS.map((event) => (
+              <option key={event} value={event}>
+                {event}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#F0600E]"
+          >
+            <option value="all">All statuses</option>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {getStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#F0600E]"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="status">By status</option>
+          </select>
+        </div>
+      )}
 
       {isLoading && (
         <div className="mt-10 flex items-center gap-3 rounded-3xl border border-gray-200 bg-white p-6 text-sm font-semibold text-gray-600 shadow-sm">
@@ -142,63 +250,91 @@ export default function PerformanceHistory() {
         </div>
       )}
 
-      {!isLoading && performances.length > 0 && (
-        <div className="mt-10 space-y-4">
-          {performances.map((performance) => (
-            <article
-              key={performance.id}
-              className="group rounded-4xl border border-gray-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-gray-200/70"
-            >
-              <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-                <div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-[#F0600E]">
-                      Performance #
-                      {String(
-                        performance.performance_number ?? 0,
-                      ).padStart(2, "0")}
+      {!isLoading && !error && performances.length > 0 && visiblePerformances.length === 0 && (
+        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+          <Search className="mx-auto h-9 w-9 text-gray-400" />
+          <h2 className="mt-4 text-xl font-bold text-gray-950">No matches</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+            Try a different search term or clear your filters.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && visiblePerformances.length > 0 && (
+        <div className="mt-6 space-y-4">
+          {visiblePerformances.map((performance) => {
+            const qualityRating = getRecordingQualityRating(performance.analysis_result);
+            const reportAvailable = isReportAvailable(performance);
+
+            return (
+              <article
+                key={performance.id}
+                className="group rounded-4xl border border-gray-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-gray-200/70"
+              >
+                <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-[#F0600E]">
+                        Performance #
+                        {String(
+                          performance.performance_number ?? 0,
+                        ).padStart(2, "0")}
+                      </p>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(
+                          performance.upload_status,
+                        )}`}
+                      >
+                        {getStatusLabel(performance.upload_status)}
+                      </span>
+
+                      {qualityRating && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
+                          <ShieldCheck className="h-3 w-3" />
+                          {qualityRating}
+                        </span>
+                      )}
+
+                      {reportAvailable && (
+                        <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-700">
+                          Report Ready
+                        </span>
+                      )}
+                    </div>
+
+                    <h2 className="mt-3 text-2xl font-bold text-gray-950">
+                      {performance.title}
+                    </h2>
+
+                    <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                      <CalendarDays className="h-4 w-4" />
+
+                      <span>{formatDate(performance.performance_date)}</span>
+
+                      <span aria-hidden="true">·</span>
+
+                      <span>{getEventName(performance.events)}</span>
                     </p>
 
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(
-                        performance.upload_status,
-                      )}`}
-                    >
-                      {getStatusLabel(performance.upload_status)}
-                    </span>
+                    {performance.notes && (
+                      <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                        {performance.notes}
+                      </p>
+                    )}
                   </div>
 
-                  <h2 className="mt-3 text-2xl font-bold text-gray-950">
-                    {performance.title}
-                  </h2>
-
-                  <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                    <CalendarDays className="h-4 w-4" />
-
-                    <span>{formatDate(performance.performance_date)}</span>
-
-                    <span aria-hidden="true">·</span>
-
-                    <span>{getEventName(performance.events)}</span>
-                  </p>
-
-                  {performance.notes && (
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
-                      {performance.notes}
-                    </p>
-                  )}
+                  <Link
+                    to={ROUTES.ATHLETE.PERFORMANCE_REPORT(performance.id)}
+                    className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-gray-700 transition group-hover:text-[#F0600E]"
+                  >
+                    View Performance
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  </Link>
                 </div>
-
-                <Link
-                  to={ROUTES.ATHLETE.PERFORMANCE_REPORT(performance.id)}
-                  className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-gray-700 transition group-hover:text-[#F0600E]"
-                >
-                  View Performance
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

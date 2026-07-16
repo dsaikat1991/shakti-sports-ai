@@ -104,7 +104,7 @@ describe("buildGatingChecks / buildQualityChecks", () => {
 });
 
 describe("AnalysisReport - completed report rendering", () => {
-  it("renders recording quality warnings and recommendations together", () => {
+  it("renders recording quality warnings and recommendations in their own separate sections", () => {
     render(<AnalysisReport result={completedWithBiomechanicsFixture} />);
 
     expect(
@@ -139,15 +139,28 @@ describe("AnalysisReport - completed report rendering", () => {
     ]);
   });
 
-  it("renders per-segment limitations", () => {
+  it("rolls per-segment limitations up into one deduplicated, clearly-labeled section", () => {
     render(<AnalysisReport result={completedWithBiomechanicsFixture} />);
 
+    expect(screen.getByText("Limitations")).toBeInTheDocument();
     expect(
       screen.getByText(/angles remain projected 2d image-plane/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/not laboratory or force-plate validated/i),
     ).toBeInTheDocument();
+  });
+
+  it("separates Recording Quality, AI Analysis, Biomechanics, Limitations and Recommendations into distinct labeled sections", () => {
+    render(<AnalysisReport result={completedWithBiomechanicsFixture} />);
+
+    expect(screen.getByText("AI Analysis")).toBeInTheDocument();
+    // "Recording Quality" appears twice - the section heading and the
+    // stat tile label inside it - both are expected.
+    expect(screen.getAllByText("Recording Quality").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Biomechanics")).toBeInTheDocument();
+    expect(screen.getByText("Limitations")).toBeInTheDocument();
+    expect(screen.getByText("Recommendations")).toBeInTheDocument();
   });
 
   it("renders real segment metrics with correct units", () => {

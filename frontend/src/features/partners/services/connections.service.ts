@@ -97,6 +97,47 @@ export async function getAthleteProfile(athleteId: string) {
     .maybeSingle();
 }
 
+// Deliberately omits video_url. A coach's RLS grant is SELECT-only on
+// performances (see migration 0005), and storage RLS separately blocks
+// them from ever signing that path - so this isn't fixing an active
+// leak - but there's no reason the raw storage path should even land in
+// a coach's query cache when nothing here renders it. Athlete-owned
+// reads still use the full getAthletePerformances/getPerformanceById in
+// performance.service.ts, which do need video_url for playback/retry.
+const CONNECTED_PERFORMANCE_COLUMNS = `
+  id,
+  performance_number,
+  title,
+  performance_date,
+  upload_status,
+  notes,
+  created_at,
+  updated_at,
+  analysis_job_id,
+  analysis_error,
+  analysis_result,
+  events (
+    name,
+    category
+  )
+`;
+
+export async function getConnectedAthletePerformances(athleteId: string) {
+  return supabase
+    .from("performances")
+    .select(CONNECTED_PERFORMANCE_COLUMNS)
+    .eq("athlete_id", athleteId)
+    .order("created_at", { ascending: false });
+}
+
+export async function getConnectedPerformanceById(performanceId: string) {
+  return supabase
+    .from("performances")
+    .select(CONNECTED_PERFORMANCE_COLUMNS)
+    .eq("id", performanceId)
+    .single();
+}
+
 export async function getNotesForConnection(connectionId: string) {
   return supabase
     .from("coach_athlete_notes")

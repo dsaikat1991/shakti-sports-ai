@@ -26,3 +26,7 @@ export async function signInWithGoogle() {
 export async function signOut() {
   return supabase.auth.signOut();
 }
+
+export async function changePassword(newPassword: string) {
+  return supabase.auth.updateUser({ password: newPassword });
+}

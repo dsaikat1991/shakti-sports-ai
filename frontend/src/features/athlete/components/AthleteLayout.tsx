@@ -1,4 +1,4 @@
-import { Activity, BarChart3, FileText, Home, Settings, Target, User, Users } from "lucide-react";
+import { Activity, BarChart3, FileText, Flag, Home, Settings, Target, User, Users } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import Logo from "../../../components/shared/Logo";
 import { useAuth } from "../../auth/context/AuthContext";
@@ -8,8 +8,9 @@ const navItems = [
   { label: "Home", href: "/console/athlete", icon: Home },
   { label: "Performances", href: "/console/athlete/performances", icon: Activity },
   { label: "Coaches", href: "/console/athlete/coaches", icon: Users },
-  { label: "Reports", href: "/console/athlete/reports", icon: FileText },
   { label: "Progress", href: "/console/athlete/progress", icon: BarChart3 },
+  { label: "Goals", href: "/console/athlete/goals", icon: Flag },
+  { label: "Reports", href: "/console/athlete/reports", icon: FileText },
   { label: "Discover", href: "/console/athlete/discover", icon: Target },
   { label: "Profile", href: "/console/athlete/profile", icon: User },
   { label: "Settings", href: "/console/athlete/settings", icon: Settings },

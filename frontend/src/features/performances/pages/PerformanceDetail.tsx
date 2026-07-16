@@ -251,18 +251,6 @@ function SegmentReport({ segment, index }: { segment: any; index: number }) {
         </div>
       )}
 
-      {Array.isArray(segment.limitations) && segment.limitations.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
-            Limitations
-          </p>
-          <ul className="mt-2 space-y-1.5 text-xs leading-5 text-gray-500">
-            {segment.limitations.map((note: string, i: number) => (
-              <li key={i}>• {note}</li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
@@ -512,6 +500,14 @@ function QualityGateBreakdown({ quality }: { quality: any }) {
   );
 }
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-3 font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+      {children}
+    </p>
+  );
+}
+
 export function AnalysisReport({ result }: { result: AnalysisResult }) {
   const quality = result.recording_quality as any;
   const biomechanics = result.biomechanics as any;
@@ -522,55 +518,74 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
     ? quality.recommendations
     : [];
 
+  const segments: any[] = Array.isArray(biomechanics?.segments) ? biomechanics.segments : [];
+  const segmentLimitations = Array.from(
+    new Set(
+      segments.flatMap((segment) =>
+        Array.isArray(segment?.limitations) ? segment.limitations : [],
+      ),
+    ),
+  );
+  const limitations: string[] =
+    biomechanics?.status === "skipped"
+      ? ["Biomechanics analysis was skipped for this recording - see the readiness checks above for why."]
+      : segmentLimitations;
+
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Detection Rate"
-          value={`${result.analysis?.detection_rate_percent?.toFixed(0) ?? "N/A"}%`}
-        />
-        <StatTile
-          label="Duration"
-          value={`${result.video?.duration_seconds?.toFixed(1) ?? "N/A"}s`}
-        />
-        <StatTile
-          label="Recording Quality"
-          value={quality?.rating ?? "N/A"}
-        />
-        <StatTile
-          label="Camera View"
-          value={quality?.camera_view?.classification ?? "N/A"}
-        />
+      <div>
+        <SectionHeading>AI Analysis</SectionHeading>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <StatTile
+            label="Detection Rate"
+            value={`${result.analysis?.detection_rate_percent?.toFixed(0) ?? "N/A"}%`}
+          />
+          <StatTile
+            label="Duration"
+            value={`${result.video?.duration_seconds?.toFixed(1) ?? "N/A"}s`}
+          />
+        </div>
       </div>
 
-      {(warnings.length > 0 || recommendations.length > 0) && (
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-700" />
-            <p className="text-sm font-bold text-amber-900">
-              Recording Quality Notes
-            </p>
-          </div>
-
-          <ul className="mt-3 space-y-1 text-sm text-amber-800">
-            {[...warnings, ...recommendations].map((note) => (
-              <li key={note}>• {note}</li>
-            ))}
-          </ul>
+      <div>
+        <SectionHeading>Recording Quality</SectionHeading>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <StatTile
+            label="Recording Quality"
+            value={quality?.rating ?? "N/A"}
+          />
+          <StatTile
+            label="Camera View"
+            value={quality?.camera_view?.classification ?? "N/A"}
+          />
         </div>
-      )}
+
+        {warnings.length > 0 && (
+          <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-5">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-700" />
+              <p className="text-sm font-bold text-amber-900">
+                Recording Quality Notes
+              </p>
+            </div>
+
+            <ul className="mt-3 space-y-1 text-sm text-amber-800">
+              {warnings.map((note) => (
+                <li key={note}>• {note}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       <div>
-        <p className="mb-3 font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
-          Biomechanics
-        </p>
+        <SectionHeading>Biomechanics</SectionHeading>
 
         {biomechanics?.status === "skipped" ? (
           <QualityGateBreakdown quality={quality} />
-        ) : Array.isArray(biomechanics?.segments) &&
-          biomechanics.segments.length > 0 ? (
+        ) : segments.length > 0 ? (
           <div className="space-y-4">
-            {biomechanics.segments.map((segment: any, index: number) => (
+            {segments.map((segment: any, index: number) => (
               <SegmentReport key={index} segment={segment} index={index} />
             ))}
           </div>
@@ -581,6 +596,43 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
             </p>
           </div>
         )}
+      </div>
+
+      {limitations.length > 0 && (
+        <div>
+          <SectionHeading>Limitations</SectionHeading>
+          <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
+            <ul className="space-y-1.5 text-sm leading-6 text-gray-600">
+              {limitations.map((note) => (
+                <li key={note}>• {note}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {recommendations.length > 0 && (
+        <div>
+          <SectionHeading>Recommendations</SectionHeading>
+          <div className="rounded-3xl border border-blue-200 bg-blue-50 p-5">
+            <ul className="space-y-1.5 text-sm leading-6 text-blue-800">
+              {recommendations.map((note) => (
+                <li key={note}>• {note}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-5">
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          Coming Soon
+        </p>
+        <p className="mt-2 text-sm leading-6 text-gray-500">
+          Sprint Score and elite-athlete comparison are on the roadmap but not
+          built yet - they need real, licensed reference data before they can
+          ship responsibly.
+        </p>
       </div>
     </div>
   );

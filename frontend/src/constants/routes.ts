@@ -38,6 +38,10 @@ export const ROUTES = {
 
     SETTINGS: "/console/athlete/settings",
 
+    PROGRESS: "/console/athlete/progress",
+
+    GOALS: "/console/athlete/goals",
+
     PERFORMANCE_PROCESSING: (id: string) =>
       `/console/athlete/performances/${id}/processing`,
 
