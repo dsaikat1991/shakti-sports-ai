@@ -2,7 +2,7 @@
 
 **Read this document fully before touching code.** It assumes zero memory of prior work. Where something is uncertain, unverified, or was deliberately left broken, that is stated explicitly — do not assume silence means "done and correct."
 
-Last updated: 2026-07-16. Work through commit `c2b5d7c` on `main` (Athlete Console UI/feature pass, §22) is committed and pushed. **§23 (Coach/Academy Console Phase 2 — talent discovery, bookmarks, selection lists, comparisons) is the most recent work and is not yet committed** as of this writing — read §23 first if you're starting fresh, then §22/§21/§18, then the rest for backend/biomechanics depth.
+Last updated: 2026-07-16. Work through commit `008b42d` on `main` (Coach/Academy Console Phase 2, §23) is committed and pushed. **§24 (fix: repeat Google sign-in re-triggered onboarding and crashed) is the most recent work and is not yet committed** as of this writing — read §24 first if you're starting fresh, then §23/§22/§18, then the rest for backend/biomechanics depth.
 
 ---
 
@@ -958,6 +958,41 @@ Full test matrix run and passing, including catching the two bugs above before t
 - **`PartnerRoster.tsx`/`PartnerHome.tsx` still use the old hand-duplicated empty-state pattern**, not the `EmptyState` component from §22.5 - not touched this session, still open.
 - Terms of Use / Privacy Policy remains explicitly parked per the project owner's own instruction - not picked up, despite the apparent-minors-data urgency flagged repeatedly.
 
-### 23.8 Exact next task (current)
+### 23.8 Exact next task (historical - a real production bug was reported and fixed next; see §24)
 
 This phase is done and verified to the extent two real QA accounts allow. Reasonable next steps, not yet prioritized by the project owner: a live two-athlete comparison walkthrough once a second connected-athlete fixture exists; converting `PartnerRoster.tsx`/`PartnerHome.tsx` to `EmptyState`; a real coach/academy verification workflow (currently fully manual); or returning to ground-contact detection (§10/§10.1/§16 Option B), still blocked on real new footage or a different technical approach. Terms/Privacy remains parked - do not pick it up unprompted.
+
+---
+
+## 24. Session update: fixed a real production bug - repeat Google sign-in re-triggered onboarding and crashed
+
+Same overall session. The project owner reported this live, against a real (non-QA) account - not something this session's own testing surfaced.
+
+### 24.1 The bug, as reported
+
+A real user ("Sushmit Dey", Google account `bitefoodandbeverage@gmail.com`) had already completed coach onboarding in an earlier session - confirmed via a direct look at the `profiles` table (`role: coach`, `full_name: Sushmit Dey`, a real row already present). Signing in again with the same Google account sent them through **Choose Role** again, and clicking through coach onboarding a second time crashed on the Finish step (step 3→4) with `duplicate key value violates unique constraint "profiles_pkey"`.
+
+### 24.2 Root cause (confirmed by reading the actual code, not guessed)
+
+Two independent gaps compounded:
+
+1. **`signInWithGoogle()`** (`features/auth/services/auth.service.ts`) hardcoded `redirectTo: /choose-role` unconditionally - every Google login, first-time or the hundredth, lands there. This is unlike the email/password path (`AuthForm.tsx`), which explicitly calls `getUserRole()` after sign-in and routes via `roleHomeRoute()` - Google sign-in had no equivalent check.
+2. **`/choose-role` and `/onboarding/*` were not behind any "do you already have a role?" guard** - `ChooseRole.tsx` unconditionally sends every visitor into onboarding, and onboarding's `completeOnboarding()` calls `createBaseProfile()`, which was a plain `.insert()` into `profiles` keyed by the stable Supabase auth user id - already occupied by the row from the user's original onboarding, hence the `profiles_pkey` violation.
+
+No data was corrupted: the crash happened on the *first* insert (`profiles`) in `completeOnboarding()`, before the second insert (`coach_profiles`) ever ran, so the user's original, correctly-created `coach_profiles` row from their first onboarding was untouched throughout every repeat attempt.
+
+### 24.3 Fix
+
+- **New `app/router/RequireNoRole.tsx`** - mirrors the existing `RoleGate` pattern (same loading-state handling), wraps `/choose-role` and all three `/onboarding/*` routes in `AppRouter.tsx`. If `role` is already set once `roleLoading` resolves, redirects to `roleHomeRoute(role)` instead of rendering the picker/onboarding form - `role === null` (genuinely mid-onboarding, no profiles row yet) passes through unblocked, the normal case.
+- **`profile.service.ts`'s four `create*Profile` functions switched from `.insert()` to `.upsert()`** (`profiles`, `athlete_profiles`, `coach_profiles`, `academy_profiles`) - defense-in-depth so the write itself is idempotent even if `RequireNoRole` is ever bypassed, rather than crashing raw. Confirmed this doesn't interact badly with the `prevent_self_verification()` trigger from §23.3/migration `0013`: the upsert payload never includes `verified`, so on the update branch of an upsert `new.verified` never differs from `old.verified`, and the trigger's update-blocking branch simply never fires for this write - a coach re-submitting onboarding (now guarded against anyway) can't accidentally reset their own verified status back to `false` via this path.
+- **`signInWithGoogle()`'s `redirectTo` was deliberately left unchanged** - at the point that function runs, the OAuth handshake hasn't happened yet, so there's no way to know the user's role before redirecting; landing somewhere generic and letting a client-side check resolve the correct destination once the session resyncs is the standard, correct pattern for this, not a gap to close.
+
+### 24.4 Verification
+
+- `cd frontend && npm run test` - 49 passed, unaffected. `npx tsc -b --force` - clean.
+- **Live**: signed in as the seeded QA coach (already has `role: coach`) and manually navigated to both `/choose-role` and `/onboarding/coach` directly - both immediately redirected to `/console/coach` (confirmed via `window.location.pathname`) instead of showing the picker/onboarding form, meaning the crash-prone Finish step is now structurally unreachable for an already-onboarded user. Zero console errors.
+- **Not independently re-tested**: the real reported account (`bitefoodandbeverage@gmail.com`) itself, since that's the project owner's own personal Google account, not something this session can sign into - the QA-coach walkthrough above exercises the identical code path (same `RequireNoRole` guard, same `role` check), so this is considered equivalent verification, not a substitute that skips it.
+
+### 24.5 Exact next task (current)
+
+This fix is done and verified via the QA account substitute described above. Whoever picks this up next: confirm with the project owner that `bitefoodandbeverage@gmail.com` can now sign in via Google and lands directly on `/console/coach` without incident, closing the loop on the original report. Otherwise, the open items from §23.8 remain the candidates for genuinely new work.

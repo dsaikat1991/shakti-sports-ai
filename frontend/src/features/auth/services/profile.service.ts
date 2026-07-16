@@ -35,8 +35,15 @@ type CreateAcademyProfileInput = {
   description?: string;
 };
 
+// upsert, not insert: the RequireNoRole route guard should prevent an
+// already-onboarded user from ever reaching this a second time, but
+// making the write itself idempotent is a cheap, real safety net - a
+// plain insert crashes with a raw profiles_pkey duplicate-key violation
+// if it's ever reached anyway (confirmed live via Google OAuth, whose
+// redirectTo previously sent every login, new or returning, through
+// onboarding - see RequireNoRole.tsx).
 export async function createBaseProfile(input: CreateBaseProfileInput) {
-  return supabase.from("profiles").insert({
+  return supabase.from("profiles").upsert({
     id: input.id,
     email: input.email,
     role: input.role,
@@ -47,7 +54,7 @@ export async function createBaseProfile(input: CreateBaseProfileInput) {
 }
 
 export async function createAthleteProfile(input: CreateAthleteProfileInput) {
-  return supabase.from("athlete_profiles").insert({
+  return supabase.from("athlete_profiles").upsert({
     id: input.id,
     date_of_birth: input.dateOfBirth || null,
     gender: input.gender || null,
@@ -57,7 +64,7 @@ export async function createAthleteProfile(input: CreateAthleteProfileInput) {
 }
 
 export async function createCoachProfile(input: CreateCoachProfileInput) {
-  return supabase.from("coach_profiles").insert({
+  return supabase.from("coach_profiles").upsert({
     id: input.id,
     organization: input.organization || null,
     designation: input.designation || null,
@@ -68,7 +75,7 @@ export async function createCoachProfile(input: CreateCoachProfileInput) {
 }
 
 export async function createAcademyProfile(input: CreateAcademyProfileInput) {
-  return supabase.from("academy_profiles").insert({
+  return supabase.from("academy_profiles").upsert({
     id: input.id,
     academy_name: input.academyName || null,
     address: input.address || null,

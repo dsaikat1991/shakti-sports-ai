@@ -13,6 +13,7 @@ import Contact from "../pages/Contact";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleGate from "./RoleGate";
+import RequireNoRole from "./RequireNoRole";
 
 import SignIn from "../../features/auth/pages/SignIn";
 import SignUp from "../../features/auth/pages/SignUp";
@@ -125,16 +126,19 @@ export default function AppRouter() {
         <Route element={<AuthLayout />}>
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/choose-role" element={<ChooseRole />} />
-          <Route
-            path="/onboarding/athlete"
-            element={<AthleteOnboarding />}
-          />
-          <Route path="/onboarding/coach" element={<CoachOnboarding />} />
-          <Route
-            path="/onboarding/academy"
-            element={<AcademyOnboarding />}
-          />
+
+          <Route element={<RequireNoRole />}>
+            <Route path="/choose-role" element={<ChooseRole />} />
+            <Route
+              path="/onboarding/athlete"
+              element={<AthleteOnboarding />}
+            />
+            <Route path="/onboarding/coach" element={<CoachOnboarding />} />
+            <Route
+              path="/onboarding/academy"
+              element={<AcademyOnboarding />}
+            />
+          </Route>
         </Route>
 
         {/* ---------------------- */}
