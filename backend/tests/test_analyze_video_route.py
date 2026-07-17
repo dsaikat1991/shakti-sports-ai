@@ -25,6 +25,17 @@ class _FakeStreamResponse:
         return False
 
 
+class _ExplodingStreamResponse(_FakeStreamResponse):
+    """Raises an arbitrary (non-HTTPException, non-httpx.HTTPError)
+    exception partway through the download - simulates the class of
+    error the finally-block fix (Milestone C) now covers, e.g. a
+    disk-full OSError during buffer.write()."""
+
+    async def aiter_bytes(self):
+        yield b"partial-chunk"
+        raise OSError("simulated disk-full error")
+
+
 class _FakeAsyncClient:
     """Stands in for httpx.AsyncClient so tests never hit the network."""
 
@@ -236,6 +247,36 @@ class TestAnalyzeVideoUrlRoute(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 413)
+
+    def test_unexpected_error_during_download_still_cleans_up_temp_file(
+        self,
+    ) -> None:
+        """
+        Milestone C fix: previously, an exception during the download
+        loop that was neither HTTPException nor httpx.HTTPError (e.g. an
+        OSError from a disk-full write) propagated unhandled and left
+        temp_path on disk - the two `except` clauses only covered two of
+        the possible failure modes. The route now cleans up via a
+        `finally` block gated on a success flag, so this covers every
+        failure path, not just the two anticipated ones.
+        """
+        before = set(routes.TEMP_DIR.glob("*"))
+        fake_client = _FakeAsyncClient(_ExplodingStreamResponse(200, []))
+
+        with patch(
+            "app.api.routes.httpx.AsyncClient", return_value=fake_client
+        ):
+            with self.assertRaises(OSError):
+                self.client.post(
+                    "/api/analyze/video-url", json={"video_url": self.valid_url}
+                )
+
+        after = set(routes.TEMP_DIR.glob("*"))
+        self.assertEqual(
+            before,
+            after,
+            "an unexpected exception during download must not leave a temp file behind",
+        )
 
 
 if __name__ == "__main__":

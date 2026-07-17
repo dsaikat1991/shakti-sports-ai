@@ -21,6 +21,7 @@ import { useAthleteProfile } from "../hooks/useAthleteProfile";
 import { useAthleteGoals } from "../hooks/useAthleteGoals";
 import { useAthleteNotifications } from "../hooks/useAthleteNotifications";
 import type { NotificationType } from "../lib/deriveNotifications";
+import { formatSessionDate } from "../../performances/lib/analysisSummary";
 
 function formatTargetDate(date?: string | null) {
   if (!date) return null;
@@ -103,15 +104,6 @@ function getStatusClasses(status: string | null) {
   }
 }
 
-function formatDate(date?: string | null) {
-  if (!date) return "Date unavailable";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
-}
 
 export default function AthleteHome() {
   const { user } = useAuth();
@@ -327,7 +319,7 @@ export default function AthleteHome() {
 
               <p className="mt-2 flex items-center gap-2 text-sm text-gray-500">
                 <CalendarDays className="h-4 w-4" />
-                {formatDate(latestPerformance.performance_date)} ·{" "}
+                {formatSessionDate(latestPerformance.performance_date)} ·{" "}
                 {getEventName(latestPerformance.events)}
               </p>
 
@@ -416,7 +408,7 @@ export default function AthleteHome() {
 
                   <p className="mt-1 text-sm text-gray-500">
                     {getEventName(performance.events)} ·{" "}
-                    {formatDate(performance.performance_date)}
+                    {formatSessionDate(performance.performance_date)}
                   </p>
                 </div>
 

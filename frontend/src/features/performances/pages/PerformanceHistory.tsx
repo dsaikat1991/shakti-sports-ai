@@ -14,6 +14,7 @@ import EmptyState from "../../../components/shared/EmptyState";
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../hooks/usePerformances";
+import { formatSessionDate } from "../lib/analysisSummary";
 
 const EVENT_OPTIONS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
 const STATUS_OPTIONS = ["uploaded", "analyzing", "processing", "completed", "failed"];
@@ -79,15 +80,6 @@ function isReportAvailable(performance: { upload_status: string | null; analysis
   return performance.upload_status === "completed" && Boolean(performance.analysis_result);
 }
 
-function formatDate(date?: string | null) {
-  if (!date) return "Date unavailable";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
-}
 
 export default function PerformanceHistory() {
   const { user } = useAuth();
@@ -304,7 +296,7 @@ export default function PerformanceHistory() {
                     <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                       <CalendarDays className="h-4 w-4" />
 
-                      <span>{formatDate(performance.performance_date)}</span>
+                      <span>{formatSessionDate(performance.performance_date)}</span>
 
                       <span aria-hidden="true">·</span>
 

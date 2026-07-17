@@ -14,7 +14,7 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../../performances/hooks/usePerformances";
 import { RatingBadge } from "../../performances/pages/PerformanceDetail";
-import { extractAnalysisSummary } from "../../performances/lib/analysisSummary";
+import { extractAnalysisSummary, formatSessionDate } from "../../performances/lib/analysisSummary";
 
 const EVENT_OPTIONS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
 
@@ -28,15 +28,6 @@ function getEventName(events: unknown) {
     return (events as { name?: string }).name ?? "Performance";
   }
   return "Performance";
-}
-
-function formatDate(date?: string | null) {
-  if (!date) return "Date unavailable";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
 }
 
 export default function AthleteReports() {
@@ -231,7 +222,7 @@ export default function AthleteReports() {
 
                   <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                     <CalendarDays className="h-4 w-4" />
-                    <span>{formatDate(performance.performance_date)}</span>
+                    <span>{formatSessionDate(performance.performance_date)}</span>
                     <span aria-hidden="true">·</span>
                     <span>{getEventName(performance.events)}</span>
                     {summary?.cameraView && (

@@ -1,6 +1,7 @@
 import { ArrowRight, Inbox, Loader2, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import EmptyState from "../../../components/shared/EmptyState";
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePartnerConnections } from "../hooks/usePartnerConnections";
@@ -87,25 +88,19 @@ export default function PartnerHome() {
       )}
 
       {!isLoading && !error && connected.length === 0 && incoming.length === 0 && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <Users className="mx-auto h-11 w-11 text-gray-400" />
-
-          <h2 className="mt-5 text-2xl font-bold text-gray-950">
-            No connections yet
-          </h2>
-
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-            Invite an athlete by email from the Requests page to start
-            reviewing their performances.
-          </p>
-
-          <Link
-            to={routeSet.REQUESTS}
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
-          >
-            Invite an Athlete
-          </Link>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No connections yet"
+          description="Invite an athlete by email from the Requests page to start reviewing their performances."
+          action={
+            <Link
+              to={routeSet.REQUESTS}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
+            >
+              Invite an Athlete
+            </Link>
+          }
+        />
       )}
     </div>
   );

@@ -49,14 +49,13 @@ export const ROUTES = {
 
     REPORTS: "/console/athlete/reports",
 
+    DISCOVER: "/console/athlete/discover",
+
     PERFORMANCE_PROCESSING: (id: string) =>
       `/console/athlete/performances/${id}/processing`,
 
     PERFORMANCE_REPORT: (id: string) =>
       `/console/athlete/performances/${id}`,
-
-    PERFORMANCE_EDIT: (id: string) =>
-      `/console/athlete/performances/${id}/edit`,
   },
 
   COACH: {

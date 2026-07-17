@@ -15,6 +15,7 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { AnalysisReport } from "../../performances/pages/PerformanceDetail";
 import type { AnalysisResult } from "../../performances/types/analysis";
+import { formatSessionDate } from "../../performances/lib/analysisSummary";
 import {
   addNote,
   deleteNote,
@@ -26,15 +27,6 @@ import {
 import { usePartnerConnections } from "../hooks/usePartnerConnections";
 import { getConnectionViewState } from "../lib/getConnectionViewState";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-
-function formatDate(date?: string | null) {
-  if (!date) return "Date unavailable";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
-}
 
 function getStatusClasses(status: string | null) {
   switch (status) {
@@ -94,7 +86,7 @@ function PerformanceCard({ performance }: { performance: any }) {
           <h3 className="mt-2 text-lg font-bold text-gray-950">{performance.title}</h3>
           <p className="mt-1 flex items-center gap-2 text-sm text-gray-500">
             <CalendarDays className="h-4 w-4" />
-            {formatDate(performance.performance_date)}
+            {formatSessionDate(performance.performance_date)}
             <span aria-hidden="true">·</span>
             {getEventName(performance.events)}
           </p>
@@ -357,7 +349,7 @@ export default function PartnerAthleteDetail() {
               >
                 <div>
                   <p className="text-sm leading-6 text-gray-700">{note.note}</p>
-                  <p className="mt-1 text-xs text-gray-400">{formatDate(note.created_at)}</p>
+                  <p className="mt-1 text-xs text-gray-400">{formatSessionDate(note.created_at)}</p>
                 </div>
                 <button
                   type="button"

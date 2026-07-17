@@ -6,15 +6,15 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { ROUTES } from "../../../constants/routes";
 import UserMenu from "../../../components/layout/UserMenu";
 const navItems = [
-  { label: "Home", href: "/console/athlete", icon: Home },
-  { label: "Performances", href: "/console/athlete/performances", icon: Activity },
-  { label: "Coaches", href: "/console/athlete/coaches", icon: Users },
-  { label: "Digital Twin", href: "/console/athlete/twin", icon: Fingerprint },
-  { label: "Goals", href: "/console/athlete/goals", icon: Flag },
-  { label: "Reports", href: "/console/athlete/reports", icon: FileText },
-  { label: "Discover", href: "/console/athlete/discover", icon: Target },
-  { label: "Profile", href: "/console/athlete/profile", icon: User },
-  { label: "Settings", href: "/console/athlete/settings", icon: Settings },
+  { label: "Home", href: ROUTES.ATHLETE.HOME, icon: Home },
+  { label: "Performances", href: ROUTES.ATHLETE.HISTORY, icon: Activity },
+  { label: "Coaches", href: ROUTES.ATHLETE.COACHES, icon: Users },
+  { label: "Digital Twin", href: ROUTES.ATHLETE.TWIN, icon: Fingerprint },
+  { label: "Goals", href: ROUTES.ATHLETE.GOALS, icon: Flag },
+  { label: "Reports", href: ROUTES.ATHLETE.REPORTS, icon: FileText },
+  { label: "Discover", href: ROUTES.ATHLETE.DISCOVER, icon: Target },
+  { label: "Profile", href: ROUTES.ATHLETE.PROFILE, icon: User },
+  { label: "Settings", href: ROUTES.ATHLETE.SETTINGS, icon: Settings },
 ];
 
 function AthleteNavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -27,7 +27,7 @@ function AthleteNavLinks({ onNavigate }: { onNavigate?: () => void }) {
           <NavLink
             key={item.label}
             to={item.href}
-            end={item.href === "/console/athlete"}
+            end={item.href === ROUTES.ATHLETE.HOME}
             onClick={onNavigate}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${

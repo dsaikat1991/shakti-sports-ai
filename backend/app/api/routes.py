@@ -9,18 +9,24 @@ from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.services.jobs.store import JobStatus, job_store
+# analyze_video_mediapipe is intentionally imported but never called -
+# documented here (not removed), per docs/ENGINEERING_HANDOFF.md §4.11's
+# classification: MediaPipe is IMPLEMENTED BUT UNWIRED, not a live
+# fallback. No runtime branch selects it - `analyze_video` below is
+# unconditionally bound to the RTMPose path. If the RTMPose worker is
+# down, /api/analyze/video jobs fail with a clear error; nothing
+# switches to MediaPipe automatically, and nothing could without adding
+# real selection logic (health-check the worker, catch its specific
+# connection error, fall back) - not attempted here. Kept importable,
+# in-process, no external dependency, as a real (not stubbed) fallback
+# implementation a future pass could wire in deliberately.
 from app.services.pose.analyzer import analyze_video as analyze_video_mediapipe
 from app.services.pose_remote.live_analyzer import analyze_video as analyze_video_rtmpose
 
 # RTMPose is the live pipeline: multi-person tracking/selection, gap
 # interpolation, and the backend-aware confidence policy make it more
 # robust to real-world footage than the MediaPipe path, which just
-# takes the first detected pose per frame with no tracking. It does
-# require rtmpose_worker to be running separately (GPU-backed) -
-# analyze_video_rtmpose raises a clear, actionable error if it isn't,
-# which _run_analysis_job below turns into a failed job rather than a
-# server crash. analyze_video_mediapipe is kept available, in-process
-# and with no external dependency, as a fallback path if needed.
+# takes the first detected pose per frame with no tracking.
 analyze_video = analyze_video_rtmpose
 
 router = APIRouter()
@@ -217,6 +223,7 @@ async def analyze_video_from_url(
 
     temp_path = TEMP_DIR / f"{uuid.uuid4()}{suffix}"
     downloaded_bytes = 0
+    download_succeeded = False
 
     try:
         async with httpx.AsyncClient(
@@ -247,16 +254,24 @@ async def analyze_video_from_url(
 
                         buffer.write(chunk)
 
-    except HTTPException:
-        temp_path.unlink(missing_ok=True)
-        raise
+        download_succeeded = True
 
     except httpx.HTTPError as error:
-        temp_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=502,
             detail=f"Could not download video: {error}",
         ) from error
+
+    finally:
+        # Covers every failure path, not just the two exception types
+        # above - an unexpected error during the write loop (e.g. a
+        # disk-full OSError) previously propagated unhandled and left
+        # temp_path behind, since neither `except` clause would catch
+        # it. download_succeeded is only set True after the download
+        # loop finishes cleanly, so this never touches the file on the
+        # success path (where _run_analysis_job still needs it).
+        if not download_succeeded:
+            temp_path.unlink(missing_ok=True)
 
     job = job_store.create()
     background_tasks.add_task(_run_analysis_job, job.id, temp_path)
