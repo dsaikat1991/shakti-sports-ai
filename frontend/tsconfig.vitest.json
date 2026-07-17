@@ -10,6 +10,7 @@
 
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
@@ -24,6 +25,7 @@
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/__fixtures__/*.ts",
+    "src/**/__fixtures__/*.json",
     "vitest.setup.ts"
   ]
 }

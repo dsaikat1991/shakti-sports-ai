@@ -1,4 +1,4 @@
-import { Activity, BarChart3, FileText, Flag, Home, Menu, Settings, Target, User, Users, X } from "lucide-react";
+import { Activity, Fingerprint, FileText, Flag, Home, Menu, Settings, Target, User, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import Logo from "../../../components/shared/Logo";
@@ -9,7 +9,7 @@ const navItems = [
   { label: "Home", href: "/console/athlete", icon: Home },
   { label: "Performances", href: "/console/athlete/performances", icon: Activity },
   { label: "Coaches", href: "/console/athlete/coaches", icon: Users },
-  { label: "Progress", href: "/console/athlete/progress", icon: BarChart3 },
+  { label: "Digital Twin", href: "/console/athlete/twin", icon: Fingerprint },
   { label: "Goals", href: "/console/athlete/goals", icon: Flag },
   { label: "Reports", href: "/console/athlete/reports", icon: FileText },
   { label: "Discover", href: "/console/athlete/discover", icon: Target },

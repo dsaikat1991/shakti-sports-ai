@@ -52,6 +52,47 @@ function firstCompletedSegment(result: AnalysisResult): any | null {
   return segments.find((s: any) => s?.status !== "skipped") ?? null;
 }
 
+// One metric entry per joint, reading mean_degrees + coverage_percent
+// from segment.joint_angles[jointKey] (same nested shape rendered in
+// PerformanceDetail.tsx's per-segment joint-angle table). Joint angle
+// calculation itself isn't flagged unreliable anywhere in this codebase
+// (only the general "projected 2D, not true 3D" limitation applies,
+// same as every other angle in this report) - production status, but
+// gated on a real per-joint coverage threshold so a joint that was only
+// visible in a handful of frames doesn't quietly feed a trend/strength.
+const JOINT_ANGLE_DEFINITIONS: { key: string; label: string }[] = [
+  { key: "left_knee", label: "Left Knee Angle" },
+  { key: "right_knee", label: "Right Knee Angle" },
+  { key: "left_hip", label: "Left Hip Angle" },
+  { key: "right_hip", label: "Right Hip Angle" },
+  { key: "left_elbow", label: "Left Elbow Angle" },
+  { key: "right_elbow", label: "Right Elbow Angle" },
+];
+
+function buildJointAngleMetrics(): MetricDefinition[] {
+  return JOINT_ANGLE_DEFINITIONS.map(({ key, label }) => ({
+    key: `joint_angle_${key}`,
+    label,
+    unit: "deg",
+    category: "biomechanics",
+    applicableEvents: ["Sprint"],
+    status: "production",
+    minCoveragePercent: 60,
+    accessor: (result: AnalysisResult) => {
+      const segment = firstCompletedSegment(result);
+      const joint = segment?.joint_angles?.[key];
+      const value = joint?.mean_degrees;
+      if (typeof value !== "number") return null;
+      return {
+        value,
+        coveragePercent:
+          typeof joint?.coverage_percent === "number" ? joint.coverage_percent : undefined,
+      };
+    },
+    format: (m: ExtractedMetric) => `${Math.round(m.value)}°`,
+  }));
+}
+
 export const METRIC_REGISTRY: MetricDefinition[] = [
   {
     key: "detection_rate",
@@ -125,6 +166,43 @@ export const METRIC_REGISTRY: MetricDefinition[] = [
     format: (m) => `${Math.round(m.value)}%`,
   },
   {
+    key: "body_visibility",
+    label: "Body Visibility",
+    unit: "%",
+    // Categorized recording_quality, not biomechanics, deliberately -
+    // this measures whether the CAMERA captured the athlete's full body
+    // well, not what the athlete's body is doing. The Digital Twin must
+    // never present a rising trend here as "the athlete improved" (see
+    // docs/ENGINEERING_HANDOFF.md, Digital Twin architecture proposal).
+    category: "recording_quality",
+    applicableEvents: ["Sprint", "Hurdles", "Long Jump", "High Jump"],
+    status: "production",
+    accessor: (result) => {
+      const quality = result.recording_quality as any;
+      const value = quality?.metrics?.full_body_visibility_score;
+      return typeof value === "number" ? { value } : null;
+    },
+    format: (m) => `${Math.round(m.value)}%`,
+  },
+  {
+    key: "movement_quality",
+    label: "Movement Quality",
+    unit: "/100",
+    // Same reasoning as body_visibility above - this is the quality
+    // gate's athlete_movement_score (how much genuine athletic motion
+    // was detected on camera, used to reject a standing-pose recording),
+    // not a judgment of athletic ability. recording_quality category.
+    category: "recording_quality",
+    applicableEvents: ["Sprint", "Hurdles", "Long Jump", "High Jump"],
+    status: "production",
+    accessor: (result) => {
+      const quality = result.recording_quality as any;
+      const value = quality?.metrics?.athlete_movement_score;
+      return typeof value === "number" ? { value } : null;
+    },
+    format: (m) => `${Math.round(m.value)}/100`,
+  },
+  {
     key: "ground_contacts",
     label: "Ground Contacts",
     unit: "detected",
@@ -170,6 +248,7 @@ export const METRIC_REGISTRY: MetricDefinition[] = [
     },
     format: (m) => `${Math.round(m.value)} ms`,
   },
+  ...buildJointAngleMetrics(),
 ];
 
 export function getEventName(events: unknown): string {

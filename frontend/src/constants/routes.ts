@@ -38,7 +38,12 @@ export const ROUTES = {
 
     SETTINGS: "/console/athlete/settings",
 
+    // Kept as a permanent redirect target (see AppRouter.tsx) - old
+    // bookmarks/links to Progress now land on the Digital Twin's
+    // Progress section instead of 404ing.
     PROGRESS: "/console/athlete/progress",
+
+    TWIN: "/console/athlete/twin",
 
     GOALS: "/console/athlete/goals",
 

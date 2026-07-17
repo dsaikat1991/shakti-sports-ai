@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { ROUTES } from "../../constants/routes";
 
@@ -26,7 +26,7 @@ import AthleteLayout from "../../features/athlete/components/AthleteLayout";
 import AthleteHome from "../../features/athlete/pages/AthleteHome";
 import AthleteCoaches from "../../features/athlete/pages/AthleteCoaches";
 import AthleteProfile from "../../features/athlete/pages/AthleteProfile";
-import AthleteProgress from "../../features/athlete/pages/AthleteProgress";
+import DigitalTwin from "../../features/athlete/pages/DigitalTwin";
 import AthleteGoals from "../../features/athlete/pages/AthleteGoals";
 import AthleteReports from "../../features/athlete/pages/AthleteReports";
 import AthleteSettings from "../../features/athlete/pages/AthleteSettings";
@@ -170,7 +170,11 @@ export default function AppRouter() {
 
   <Route path="reports" element={<AthleteReports />} />
 
-  <Route path="progress" element={<AthleteProgress />} />
+  <Route path="twin" element={<DigitalTwin />} />
+
+  {/* Digital Twin absorbed the old Progress page (docs/ENGINEERING_HANDOFF.md) -
+      redirect kept permanently so old bookmarks/links don't break. */}
+  <Route path="progress" element={<Navigate to="/console/athlete/twin#progress" replace />} />
 
   <Route
     path="discover"

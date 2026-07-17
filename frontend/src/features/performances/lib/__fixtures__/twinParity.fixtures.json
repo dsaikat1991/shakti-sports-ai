@@ -1,0 +1,494 @@
+{
+  "trend": [
+    {
+      "scenario": "single_sample",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 1,
+        "first_value": 180.0,
+        "latest_value": 180.0,
+        "absolute_change": 0.0,
+        "slope_per_session": null,
+        "coefficient_of_variation_percent": null,
+        "direction": "insufficient_data"
+      }
+    },
+    {
+      "scenario": "two_samples_improving",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 188.0
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 2,
+        "first_value": 180.0,
+        "latest_value": 188.0,
+        "absolute_change": 8.0,
+        "slope_per_session": 8.0,
+        "coefficient_of_variation_percent": 2.17,
+        "direction": "improving"
+      }
+    },
+    {
+      "scenario": "two_samples_stable",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 180.2
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 2,
+        "first_value": 180.0,
+        "latest_value": 180.2,
+        "absolute_change": 0.2,
+        "slope_per_session": 0.2,
+        "coefficient_of_variation_percent": 0.06,
+        "direction": "stable"
+      }
+    },
+    {
+      "scenario": "three_samples_improving",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 186.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 191.0
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 3,
+        "first_value": 180.0,
+        "latest_value": 191.0,
+        "absolute_change": 11.0,
+        "slope_per_session": 5.5,
+        "coefficient_of_variation_percent": 2.42,
+        "direction": "improving"
+      }
+    },
+    {
+      "scenario": "three_samples_regressing",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 191.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 186.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 180.0
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 3,
+        "first_value": 191.0,
+        "latest_value": 180.0,
+        "absolute_change": -11.0,
+        "slope_per_session": -5.5,
+        "coefficient_of_variation_percent": 2.42,
+        "direction": "regressing"
+      }
+    },
+    {
+      "scenario": "three_samples_stable",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 185.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 185.4
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 184.8
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 3,
+        "first_value": 185.0,
+        "latest_value": 184.8,
+        "absolute_change": -0.2,
+        "slope_per_session": -0.1,
+        "coefficient_of_variation_percent": 0.13,
+        "direction": "stable"
+      }
+    },
+    {
+      "scenario": "five_samples_high_variability",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 150.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 220.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 140.0
+          },
+          {
+            "recorded_at": "2026-08-20",
+            "value": 215.0
+          },
+          {
+            "recorded_at": "2026-11-05",
+            "value": 155.0
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 5,
+        "first_value": 150.0,
+        "latest_value": 155.0,
+        "absolute_change": 5.0,
+        "slope_per_session": 0.5,
+        "coefficient_of_variation_percent": 19.47,
+        "direction": "high_variability"
+      }
+    },
+    {
+      "scenario": "five_samples_gradual_improvement",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 178.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 181.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 184.0
+          },
+          {
+            "recorded_at": "2026-08-20",
+            "value": 187.0
+          },
+          {
+            "recorded_at": "2026-11-05",
+            "value": 189.0
+          }
+        ]
+      },
+      "python_output": {
+        "samples": 5,
+        "first_value": 178.0,
+        "latest_value": 189.0,
+        "absolute_change": 11.0,
+        "slope_per_session": 2.8,
+        "coefficient_of_variation_percent": 2.16,
+        "direction": "improving"
+      }
+    }
+  ],
+  "personal_best": [
+    {
+      "scenario": "single_sample",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 180.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 180.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "two_samples_improving",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 188.0
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 188.0,
+        "performance_id": "perf-1",
+        "recorded_at": "2026-03-15",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 180.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "two_samples_stable",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 180.2
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 180.2,
+        "performance_id": "perf-1",
+        "recorded_at": "2026-03-15",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 180.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "three_samples_improving",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 180.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 186.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 191.0
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 191.0,
+        "performance_id": "perf-2",
+        "recorded_at": "2026-06-02",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 180.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "three_samples_regressing",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 191.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 186.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 180.0
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 191.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 180.0,
+        "performance_id": "perf-2",
+        "recorded_at": "2026-06-02",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "three_samples_stable",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 185.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 185.4
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 184.8
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 185.4,
+        "performance_id": "perf-1",
+        "recorded_at": "2026-03-15",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 184.8,
+        "performance_id": "perf-2",
+        "recorded_at": "2026-06-02",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "five_samples_high_variability",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 150.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 220.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 140.0
+          },
+          {
+            "recorded_at": "2026-08-20",
+            "value": 215.0
+          },
+          {
+            "recorded_at": "2026-11-05",
+            "value": 155.0
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 220.0,
+        "performance_id": "perf-1",
+        "recorded_at": "2026-03-15",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 140.0,
+        "performance_id": "perf-2",
+        "recorded_at": "2026-06-02",
+        "objective": "minimum"
+      }
+    },
+    {
+      "scenario": "five_samples_gradual_improvement",
+      "input": {
+        "points": [
+          {
+            "recorded_at": "2026-01-10",
+            "value": 178.0
+          },
+          {
+            "recorded_at": "2026-03-15",
+            "value": 181.0
+          },
+          {
+            "recorded_at": "2026-06-02",
+            "value": 184.0
+          },
+          {
+            "recorded_at": "2026-08-20",
+            "value": 187.0
+          },
+          {
+            "recorded_at": "2026-11-05",
+            "value": 189.0
+          }
+        ]
+      },
+      "python_output_higher_is_better": {
+        "metric_name": "metric",
+        "value": 189.0,
+        "performance_id": "perf-4",
+        "recorded_at": "2026-11-05",
+        "objective": "maximum"
+      },
+      "python_output_lower_is_better": {
+        "metric_name": "metric",
+        "value": 178.0,
+        "performance_id": "perf-0",
+        "recorded_at": "2026-01-10",
+        "objective": "minimum"
+      }
+    }
+  ]
+}

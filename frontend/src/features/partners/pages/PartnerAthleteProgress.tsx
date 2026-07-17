@@ -1,35 +1,46 @@
-import { ArrowLeft, BarChart3, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import {
-  METRIC_REGISTRY,
-  getEventName,
-} from "../../performances/lib/metricRegistry";
-import {
-  ReadinessTrendChart,
-  buildMetricTrend,
-  buildReadinessTrend,
-  MetricTrendChart,
-} from "../../performances/lib/readinessTrend";
-import { getConnectedAthletePerformances } from "../services/connections.service";
+  buildTwinPersonalBests,
+  computeConsistency,
+  computeTwinConfidence,
+  deriveDevelopmentAreas,
+  deriveDevelopmentStage,
+  deriveStrengths,
+  dominantEventName,
+  generateEvolutionStatements,
+  toTwinSessionInput,
+  type TwinSessionInput,
+} from "../../performances/lib/twinEngine";
+import TwinSummary from "../../performances/components/twin/TwinSummary";
+import TwinProgress from "../../performances/components/twin/TwinProgress";
+import TwinStrengths from "../../performances/components/twin/TwinStrengths";
+import TwinDevelopmentAreas from "../../performances/components/twin/TwinDevelopmentAreas";
+import TwinConsistency from "../../performances/components/twin/TwinConsistency";
+import TwinPersonalBests from "../../performances/components/twin/TwinPersonalBests";
+import TwinEvolution from "../../performances/components/twin/TwinEvolution";
+import { getAthleteProfile, getConnectedAthletePerformances } from "../services/connections.service";
 import { usePartnerConnections } from "../hooks/usePartnerConnections";
 import { getConnectionViewState } from "../lib/getConnectionViewState";
 
-// One connected athlete's sessions over time, from the coach's side -
-// reuses the exact same trend-building logic as the athlete's own
-// Progress page (features/performances/lib/readinessTrend.tsx), not a
-// re-implementation. Adds production-status biomechanics metric trends
-// (cadence, knee symmetry) on top of the recording-readiness trend,
-// since a coach cares more about those than an athlete reviewing their
-// own recording quality does - experimental metrics (ground contacts,
-// duty factor, flight time) are deliberately left off a trend view,
-// where a rising/falling line would read as a real signal even though
-// §10.1 already proved this detector cannot be trusted.
-const PROGRESS_METRIC_KEYS = ["cadence", "knee_symmetry"];
-
+// The coach-side view of one connected athlete's Digital Twin - reuses
+// every twinEngine.ts function and Twin* component as-is, the same way
+// the athlete's own DigitalTwin.tsx does, rather than the bespoke
+// readiness-trend-only rendering this page used before the Twin existed.
+// This is the reusable-architecture payoff the Twin was explicitly built
+// for (§25/§26 of docs/ENGINEERING_HANDOFF.md).
+//
+// Two sections are deliberately not reused here:
+// - TwinAchievements/goals: athlete_goals RLS is owner-only (migration
+//   0007, auth.uid() = athlete_id) - a coach query returns zero rows, so
+//   this would render as a permanently, confusingly empty section.
+// - TwinTimeline: PartnerAthleteDetail.tsx already lists this athlete's
+//   full performance history - a second timeline here would be redundant.
 export default function PartnerAthleteProgress() {
   const { athleteId } = useParams();
   const { user, role } = useAuth();
@@ -50,6 +61,62 @@ export default function PartnerAthleteProgress() {
     },
     enabled: Boolean(isConnected && athleteId),
   });
+
+  // Shares PartnerAthleteDetail.tsx's exact query key, so navigating
+  // between the two pages doesn't refetch. BaseProfile (from
+  // usePartnerConnections) has no personal_best field - that lives on
+  // AthleteProfileSummary, fetched separately here same as there.
+  const { data: athleteProfile } = useQuery({
+    queryKey: ["partner-athlete-profile", athleteId],
+    queryFn: async () => {
+      const { data, error } = await getAthleteProfile(athleteId!);
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: Boolean(isConnected && athleteId),
+  });
+
+  const twinSessions: TwinSessionInput[] = useMemo(
+    () => performances.map(toTwinSessionInput),
+    [performances],
+  );
+
+  const eventName = useMemo(() => dominantEventName(twinSessions), [twinSessions]);
+  const developmentStage = useMemo(() => deriveDevelopmentStage(twinSessions), [twinSessions]);
+  const confidence = useMemo(() => computeTwinConfidence(twinSessions), [twinSessions]);
+  const consistency = useMemo(() => computeConsistency(twinSessions), [twinSessions]);
+  const strengths = useMemo(() => deriveStrengths(twinSessions), [twinSessions]);
+  const developmentAreas = useMemo(() => deriveDevelopmentAreas(twinSessions), [twinSessions]);
+  const evolutionStatements = useMemo(
+    () => generateEvolutionStatements(twinSessions),
+    [twinSessions],
+  );
+  const personalBests = useMemo(() => buildTwinPersonalBests(twinSessions), [twinSessions]);
+
+  const completedPerformances = useMemo(
+    () => performances.filter((p: any) => p.upload_status === "completed"),
+    [performances],
+  );
+  const latestAnalysisDate =
+    completedPerformances.length > 0
+      ? completedPerformances
+          .map((p: any) => p.performance_date ?? p.created_at)
+          .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime())[0]
+      : null;
+
+  // No coach-side single-performance route exists yet (PartnerAthleteDetail
+  // shows the full history inline, §18.4) - link back to the athlete
+  // detail page rather than a specific report. A disclosed v1
+  // simplification, same spirit as PartnerCompare.tsx's "most recent
+  // performance only" simplification.
+  const personalBestItems = useMemo(
+    () =>
+      personalBests.map((pb) => ({
+        ...pb,
+        reportHref: routeSet.ATHLETE_DETAIL(athleteId!),
+      })),
+    [personalBests, routeSet, athleteId],
+  );
 
   if (connectionsLoading) {
     return (
@@ -73,16 +140,8 @@ export default function PartnerAthleteProgress() {
     );
   }
 
-  const readinessTrend = buildReadinessTrend(performances);
-
-  const completedEventNames = new Set(
-    performances
-      .filter((p: any) => p.upload_status === "completed")
-      .map((p: any) => getEventName(p.events)),
-  );
-
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <Link
         to={routeSet.ATHLETE_DETAIL(athleteId!)}
         className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 transition hover:text-[#F0600E]"
@@ -90,17 +149,6 @@ export default function PartnerAthleteProgress() {
         <ArrowLeft className="h-4 w-4" />
         Back to Athlete
       </Link>
-
-      <p className="mt-6 font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-[#F0600E]">
-        Progress Over Time
-      </p>
-      <h1 className="mt-3 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
-        {connection?.athleteProfile?.full_name ?? "Athlete"}
-      </h1>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600">
-        Built entirely from this athlete's real completed sessions - no
-        scores or trend lines are invented where data doesn't exist yet.
-      </p>
 
       {performancesLoading && (
         <div className="mt-10 flex items-center gap-3 rounded-3xl border border-gray-200 bg-white p-6 text-sm font-semibold text-gray-600 shadow-sm">
@@ -110,38 +158,48 @@ export default function PartnerAthleteProgress() {
       )}
 
       {!performancesLoading && (
-        <div className="mt-8 space-y-4">
-          <div className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-[#F0600E]" />
-              <h2 className="font-bold text-gray-950">Recording Readiness Trend</h2>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              Reflects recording quality, not an athletic performance score -
-              see the biomechanics metrics below for that.
-            </p>
-            <ReadinessTrendChart points={readinessTrend} />
-          </div>
+        <div className="mt-8 space-y-14">
+          <section>
+            <TwinSummary
+              athleteName={connection?.athleteProfile?.full_name ?? "Athlete"}
+              eventName={eventName}
+              developmentStageLabel={developmentStage.label}
+              sessionCount={completedPerformances.length}
+              latestAnalysisDate={latestAnalysisDate}
+              personalBestLabel={(athleteProfile as any)?.personal_best ?? null}
+              confidence={confidence}
+            />
+          </section>
 
-          {METRIC_REGISTRY.filter(
-            (m) => PROGRESS_METRIC_KEYS.includes(m.key) && m.status === "production",
-          ).map((metric) => {
-            const applicable = metric.applicableEvents.some((e) => completedEventNames.has(e));
-            if (!applicable) return null;
+          <section>
+            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Progress Engine</h2>
+            <TwinProgress performances={twinSessions} />
+          </section>
 
-            const points = buildMetricTrend(performances, metric);
+          <section>
+            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Strengths</h2>
+            <TwinStrengths strengths={strengths} />
+          </section>
 
-            return (
-              <div key={metric.key} className="rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 className="font-bold text-gray-950">{metric.label} Trend</h2>
-                <p className="mt-2 text-sm leading-6 text-gray-500">
-                  {metric.unit ? `Measured in ${metric.unit}.` : ""} Only completed sessions with
-                  this metric available are shown.
-                </p>
-                <MetricTrendChart points={points} format={(v) => metric.format({ value: v })} />
-              </div>
-            );
-          })}
+          <section>
+            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Development Areas</h2>
+            <TwinDevelopmentAreas areas={developmentAreas} />
+          </section>
+
+          <section>
+            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Consistency</h2>
+            <TwinConsistency consistency={consistency} />
+          </section>
+
+          <section>
+            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Personal Bests</h2>
+            <TwinPersonalBests items={personalBestItems} />
+          </section>
+
+          <section>
+            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Evolution</h2>
+            <TwinEvolution statements={evolutionStatements} />
+          </section>
         </div>
       )}
     </div>
