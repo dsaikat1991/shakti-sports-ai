@@ -4,8 +4,10 @@ AI-powered athlete talent discovery platform built for India.
 
 ## Structure
 
-- frontend → React + Vite + Tailwind
-- server → FastAPI backend
-- ai-engine → Pose estimation & AI
-- docs → Product documentation
-- assets → Logos & branding
+- `frontend/` → React + Vite + Tailwind + Supabase (auth/storage/DB)
+- `backend/` → FastAPI backend, pose estimation, and biomechanics analysis (see `backend/README` structure in `docs/ENGINEERING_HANDOFF.md` §2 for the full tree)
+- `backend/rtmpose_worker/` → separate GPU-backed pose-inference microservice
+- `supabase/migrations/` → hand-run SQL migrations (see `docs/ENGINEERING_HANDOFF.md` §5)
+- `docs/` → engineering handoff and workflow documentation
+
+`server/`, `ai-engine/`, `datasets/`, and `models/` are empty placeholders left over from the project's original scaffolding - the real backend and pose-estimation code lives entirely under `backend/`. See `docs/ENGINEERING_HANDOFF.md` for the authoritative, continuously-updated technical record, including which subsystems are actually live versus experimental or unwired.

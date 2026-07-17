@@ -2,7 +2,7 @@
 
 **Read this document fully before touching code.** It assumes zero memory of prior work. Where something is uncertain, unverified, or was deliberately left broken, that is stated explicitly — do not assume silence means "done and correct."
 
-Last updated: 2026-07-17. Work through commit `517d556` on `main` (fix: repeat Google sign-in re-triggered onboarding and crashed, §24) is committed and pushed. **§25 (the Digital Athlete Twin), §26 (its 2-session live verification), §27 (wiring the Twin into the Coach Console), and §28 (rigorous multi-sample verification/hardening, 4 real bugs found and fixed) are the most recent work and are not yet committed** as of this writing — read §25 through §28 in order if you're starting fresh, then §23/§22/§18, then the rest for backend/biomechanics depth.
+Last updated: 2026-07-17. Work through commit `184d909` on `main` (feat: the Digital Athlete Twin, its Coach Console wiring, and §25-§28 hardening) is committed and pushed. **§29 (consolidating `AthleteReports.tsx`) and §30 (documentation-truthfulness correction, Milestone A of a three-milestone plan - see §30.6 for Milestones B/C, currently in progress) are the most recent work and are not yet committed** as of this writing — read §25 through §30 in order if you're starting fresh, and pay particular attention to §4.11's subsystem classification table, which is now the authoritative source for "is X actually live." Then §23/§22/§18, then the rest for backend/biomechanics depth.
 
 ---
 
@@ -45,11 +45,11 @@ backend/
       jobs/
         store.py                 In-memory async job store (see §6, §9)
       pose/
-        analyzer.py               MediaPipe pipeline (legacy live path, now a fallback)
-        detector.py                MediaPipe PoseLandmarker factory
-        landmark_usability.py      Shared backend-aware confidence policy (mediapipe vs rtmpose) - CRITICAL FILE, see §8
+        analyzer.py               MediaPipe pipeline. **IMPLEMENTED BUT UNWIRED** (corrected §A) - `routes.py` imports this as `analyze_video_mediapipe` but never calls it; `analyze_video = analyze_video_rtmpose` is the only path actually assigned. Callable directly by a script, but no live HTTP route ever invokes it - "fallback" describes intent, not current runtime behavior. See §4.11.
+        detector.py                MediaPipe PoseLandmarker factory (same unwired status as analyzer.py)
+        landmark_usability.py      Shared backend-aware confidence policy (mediapipe vs rtmpose) - CRITICAL FILE, LIVE (used by both the rtmpose path and, if ever invoked, the mediapipe path), see §8
         landmarks.py, serializer.py, pose_quality_policy.py
-      pose_remote/                 RTMPose-side pipeline (the one that's actually live now)
+      pose_remote/                 RTMPose-side pipeline - **LIVE IN PRODUCTION PIPELINE**, see §4.11
         client.py                  RTMPoseWorkerClient - HTTP client to the separate GPU worker service
         video_pipeline.py          analyze_video_with_tracking() - runs tracked pose inference over a whole video
         athlete_selection.py       AthleteTracker - multi-person selection/tracking state machine
@@ -57,8 +57,8 @@ backend/
         biomechanics_bridge.py     Converts UnifiedPoseFrame -> FrameMetrics -> sprint biomechanics analysis
         adapter.py                 to_shakti_landmarks() - raw worker response -> landmark list
         live_analyzer.py           RTMPose-backed equivalent of pose/analyzer.py - THE LIVE PIPELINE for /api/analyze/video
-        stride_velocity_bridge.py  Camera-motion-robust velocity signal for sprint phase detection (see §8, §9)
-      pose_adapters/                DEAD CODE - see §11
+        stride_velocity_bridge.py  Camera-motion-robust velocity signal for sprint phase detection. **IMPLEMENTED BUT UNWIRED** (corrected §A, was previously described here as if part of the live path) - `biomechanics_bridge.py` does not import this file; zero production callers. See §4.11/§9 bug #6/Milestone B audit.
+      pose_adapters/                **MIXED status, corrected §A** (was previously blanket-labeled "DEAD CODE" here, which was imprecise) - `models.py`/`compatibility.py` are LIVE (imported by `biomechanics_bridge.py`/`pose_stream.py`, see below); `base.py`/`mediapipe_adapter.py`/`registry.py`/`rtmpose_adapter.py`/`skeleton.py` are genuinely DEPRECATED/DEAD (zero importers outside their own package and their own tests - `rtmpose_adapter.py` additionally has a confirmed input-schema bug, see §11). See §4.11.
       quality/                     Recording-quality / analysis-readiness scoring (see §6, §8)
         scoring.py                 build_quality_result() - the whole quality gate
         frame_quality.py           brightness/sharpness/fps/camera-height scoring functions
@@ -78,19 +78,19 @@ backend/
         sprint_analyzer.py           build_sprint_biomechanics_preview() - orchestrates the above into one result
         frame_metrics.py             FrameMetrics dataclass (carries `backend` field)
         joint_names.py, posture.py, motion_filter.py, motion_reconstruction.py, arm_drive.py, stride.py (mostly empty/stub), gait_signals.py, gait_event_*.py (v2/v3 variants, mostly unvalidated)
-      pose_adapters/models.py       UnifiedPoseFrame / UnifiedKeypoint dataclasses (used throughout)
-      athletics/                    Per-event registry + sprint phase detection
-        sprint_phase.py             detect_sprint_phases() - acceleration/transition/max-velocity/maintenance/deceleration
+      pose_adapters/models.py, compatibility.py    UnifiedPoseFrame / UnifiedKeypoint dataclasses + conversion helpers - **LIVE**, imported directly by `pose_remote/biomechanics_bridge.py` and `pose_remote/pose_stream.py`. (The rest of `pose_adapters/` is not - see above.)
+      athletics/                    Per-event registry + sprint phase detection. **IMPLEMENTED BUT UNWIRED, entire package** (corrected §A, previously described here with no such caveat) - nothing under `app/api/` or `app/main.py` imports anything from `athletics/`; every file below is only reachable from another file inside this same disconnected package. See §4.11/Milestone B audit.
+        sprint_phase.py             detect_sprint_phases() - acceleration/transition/max-velocity/maintenance/deceleration. Verified once, historically, via a since-uncommitted harness against one real clip (§9 bug #6) - not reproducible from the current repo, not reachable from any live route today.
         registry.py, router.py, sprint.py, hurdles.py, long_jump.py, high_jump.py, models.py, base.py
-      sprint/                       ~40 files, deep sprint-specific engines (stride geometry, propulsion, leg spring, mechanical efficiency, etc.) - see §11 for validation status
-        stride_geometry_engine.py   analyze_stride_geometry() - wired to real data this session, not otherwise
+      sprint/                       ~40 files, deep sprint-specific engines (stride geometry, propulsion, leg spring, mechanical efficiency, etc.) - see §4.11 for the corrected, per-file validation status
+        stride_geometry_engine.py   analyze_stride_geometry(). **IMPLEMENTED BUT UNWIRED** (corrected §A - previously said "wired to real data this session, not otherwise," which overstated current status) - zero live or CLI callers; referenced only in a docstring comment inside the also-unwired `stride_velocity_bridge.py` and in its own test, which uses synthetic contact-event fixtures, not real footage.
         stride_geometry_models.py   FootContactEvent, StrideGeometryContext dataclasses
-        (all other files in this directory: UNVALIDATED - built but never run against real footage or checked this session)
+        (all other files in this directory, including `phase_detector.py`/`sprint_intelligence.py`/`sprint_intelligence_fusion.py`/`sprint_pro_bundle.py`: EXPERIMENTAL - built, unit-tested with synthetic data in isolation, never run against real footage, never wired to any live or CLI path)
       reports/
-        sprint_segment_report.py    build_sprint_segment_report() / format_segment_report_text() - the human-readable report builder
-        coach.py, scoring.py, recommendations.py    EMPTY STUB FILES (1 line each)
+        sprint_segment_report.py    build_sprint_segment_report() / format_segment_report_text() - the human-readable report builder - **LIVE**, this is the actual API response shaper
+        coach.py, scoring.py, recommendations.py    EMPTY STUB FILES (0 bytes each, corrected from "1 line" - PLANNED, no implementation yet)
       digital_twin/, digital_twin_v2/, physics/, fusion/, motion/, coach/, talent/, validation/, research/, readiness/, athlete_intelligence/, feature_store/, pipeline/
-        UNVALIDATED. Built (substantial code exists in all of these), never exercised against real data, never reviewed this session. Treat as unverified.
+        **IMPLEMENTED BUT UNWIRED.** Substantial code exists in all of these; zero live API callers confirmed via exhaustive grep (unchanged from prior sessions). One exception as of this pass: `digital_twin`/`digital_twin_v2` now have a real consumer - `backend/scripts/generate_twin_parity_fixtures.py`, a dev-time harness that runs their statistics functions to generate parity fixtures for the frontend TypeScript port (see §25) - which makes those two specifically CLI/HARNESS ONLY rather than fully dead, though the live product feature ("the Digital Twin") is the frontend TypeScript engine, not this Python code. The other eleven directories remain wholly unvalidated/unreviewed. See §4.11.
   rtmpose_worker/                  SEPARATE FastAPI microservice - GPU pose inference
     app.py                          FastAPI app: /health, /initialize, /infer/image
     core.py                         RTMPoseRuntime - wraps MMPoseInferencer (RTMPose-t model + RTMDet-m detector)
@@ -203,10 +203,14 @@ Both pipelines feed into the **same shared biomechanics code** (`app/services/bi
 `app/services/quality/`. Scores: pose detection rate, lighting, sharpness, fps, full-body visibility, athlete movement, camera occupancy (distance), camera angle/rotation (`Side View` required for `biomechanics_ready`), and — new this session — **camera height/tilt** (headroom-based). Produces `warnings`/`recommendations` for the user, and hard-gates whether biomechanics gets computed at all (`biomechanics: {"status": "skipped", "reason": ...}` if not ready).
 
 ### 4.6 Sprint-specific report generation
-`app/services/reports/sprint_segment_report.py` reshapes the raw biomechanics output into a compact per-segment report (cadence, stride frequency, ground contacts, flight time, duty factor, knee symmetry, per-joint angle mean/min/max/coverage). `app/services/sprint/stride_geometry_engine.py` (existed already, wired to real data this session via `pose_remote/stride_velocity_bridge.py`) computes step length, symmetry, crossover rate from contact events.
+`app/services/reports/sprint_segment_report.py` reshapes the raw biomechanics output into a compact per-segment report (cadence, stride frequency, ground contacts, flight time, duty factor, knee symmetry, per-joint angle mean/min/max/coverage) - **this is the live report shape returned by the API today.**
 
-### 4.7 Sprint phase detection
+**Corrected in the §A documentation-truthfulness pass**: this section previously also described `app/services/sprint/stride_geometry_engine.py` as "wired to real data this session via `pose_remote/stride_velocity_bridge.py`," implying it feeds the report above. It does not - `sprint_segment_report.py`'s own code has no dependency on `stride_geometry_engine.py` or `stride_velocity_bridge.py`, and neither of those two files is imported anywhere in the live call chain. `analyze_stride_geometry()` (step length, symmetry, crossover rate from contact events) is real, tested code, but it is **IMPLEMENTED BUT UNWIRED** - see §4.11 for the full classification and Milestone B (§30) for the standalone audit of whether/how to wire it in.
+
+### 4.7 Sprint phase detection (not currently live - see §4.11)
 `app/services/athletics/sprint_phase.py`. `detect_sprint_phases()` takes a `timestamps_ms` + `horizontal_progression` (position-like) series, differentiates it into velocity/acceleration, and segments into acceleration → transition → maximum_velocity → maintenance → deceleration.
+
+**Corrected in the §A documentation-truthfulness pass**: this subsystem is listed here alongside genuinely-live subsystems (§4.1-§4.6, §4.8-§4.9), which previously implied it was part of the same live set. It is not - `detect_sprint_phases` and the entire `athletics/` package it lives in are **IMPLEMENTED BUT UNWIRED**: nothing under `app/api/` or `app/main.py` imports anything from `athletics/`. Today's `/api/analyze/video` response contains no race-phase segmentation. See §4.11 for the classification table and §9 bug #6 for the historical fix this section describes (which was real, but verified via a harness that no longer exists in this repo, not the live pipeline).
 
 ### 4.8 Async job processing
 `app/services/jobs/store.py`. In-memory `JobStore` (thread-safe, `threading.Lock`), FastAPI `BackgroundTasks` runs the actual analysis in Starlette's threadpool. See §6 for the API contract, §11 for limitations.
@@ -216,6 +220,44 @@ Standard React/Vite/Tailwind SPA, Supabase for auth/storage/DB, React Router, Ta
 
 ### 4.10 Everything under `backend/app/services/{digital_twin,digital_twin_v2,physics,fusion,motion,coach,talent,validation,research,readiness,athlete_intelligence,feature_store,pipeline}/`
 Substantial code exists (dozens of files). **None of it has been touched, reviewed, or validated this session.** Do not assume it works. Do not assume it doesn't. It's simply unknown — treat any claim about it as unverified until checked.
+
+### 4.11 Subsystem status classification (added in the §A documentation-truthfulness pass)
+
+Several sections of this document (§4.6, §4.7, §8, §9, §13, and parts of the repo tree above) previously described sprint-phase detection and stride-geometry code using language like "built and improved this session" or "wired to real data" without making clear whether that meant *live in the API today* or *verified once, historically, via a script that no longer exists in this repo*. Those sections have been corrected in place (each now cross-references this table) rather than silently rewritten — the original historical narrative (what was built, what problem it fixed, what evidence was seen) is preserved; only the *current-status* framing was inaccurate and is fixed here. This table is the single source of truth for "is X actually running when a real user uploads a video" — every major subsystem, classified as one of:
+
+- **LIVE IN PRODUCTION PIPELINE** — reachable today from `POST /api/analyze/video` or `/api/analyze/video-url`, with a real caller chain traced and confirmed (not assumed) this pass.
+- **LIVE IN FRONTEND ONLY** — a real, working feature, but implemented client-side with no backend counterpart in the live request path.
+- **CLI / HARNESS ONLY** — real code, exercised by a developer script or ad-hoc harness, never reachable from any live route.
+- **IMPLEMENTED BUT UNWIRED** — real, non-stub code exists; confirmed via grep that nothing in the live call chain (`app/api/`, `app/main.py`, or anything they transitively import) imports it.
+- **EXPERIMENTAL** — built and unit-tested against synthetic/fabricated data only; never run against real footage; not wired to anything live.
+- **DEPRECATED / DEAD** — zero importers anywhere outside the module's own package and its own tests; safe to consider inert.
+- **PLANNED** — an intentional stub (empty or near-empty file) marking a future feature, not yet started.
+
+| Subsystem | Files | Classification | Basis |
+|---|---|---|---|
+| RTMPose pose estimation, tracking, gap-fill | `pose_remote/{client,video_pipeline,athlete_selection,pose_stream,adapter,live_analyzer}.py` | **LIVE IN PRODUCTION PIPELINE** | Traced this pass: `routes.py` → `live_analyzer.analyze_video()` → `video_pipeline.analyze_video_with_tracking()` → these files, directly. |
+| MediaPipe pose estimation | `pose/analyzer.py`, `pose/detector.py` | **IMPLEMENTED BUT UNWIRED** | `routes.py:12` imports it as `analyze_video_mediapipe` but never calls it - `routes.py:24` assigns `analyze_video = analyze_video_rtmpose` only. No runtime branch ever selects the MediaPipe path. Confirmed by direct read of `routes.py` this pass. |
+| Backend-aware landmark confidence policy | `pose/landmark_usability.py`, `pose_quality_policy.py` | **LIVE IN PRODUCTION PIPELINE** | Used by the live `biomechanics/` code regardless of which pose backend produced the data. |
+| Quality / analysis-readiness gate | `quality/*.py` | **LIVE IN PRODUCTION PIPELINE** | Called directly from `live_analyzer.py`, confirmed in §7's pipeline walkthrough. |
+| Biomechanics core (angles, cadence, contact events, flight time, gait phase, centre of mass, signal processing, orchestrator) | `biomechanics/{angles,cadence,contact_events,flight_time,gait_phase,centre_of_mass,signal_processing,sprint_analyzer,frame_metrics}.py` | **LIVE IN PRODUCTION PIPELINE** | `pose_remote/biomechanics_bridge.py` imports `sprint_analyzer.build_sprint_biomechanics_preview` directly (confirmed via import list this pass), which imports the rest. Ground-contact-derived values specifically (`contact_events.py` and its downstream duty-factor/flight-time consumers) remain **confirmed unreliable for some camera angles** (§10/§11) - live, but low-trust; already labeled "experimental" in the API response and the frontend metric registry, not a documentation gap. |
+| `pose_adapters/models.py`, `compatibility.py` | same | **LIVE IN PRODUCTION PIPELINE** | Imported directly by `biomechanics_bridge.py` (`pose_adapters.compatibility`, `pose_adapters.models`) and `pose_stream.py`, confirmed this pass. |
+| `pose_adapters/{base,mediapipe_adapter,registry,rtmpose_adapter,skeleton}.py` | same | **DEPRECATED / DEAD** | Zero importers outside their own package and their own unit tests, confirmed this pass. `rtmpose_adapter.py` additionally has a real input-schema bug (expects an indexable `keypoints` list; the live worker response is a dict keyed by joint name) that would raise at runtime if anything ever called it - moot while it stays unwired, but a landmine if reused. |
+| Sprint-specific report shaping | `reports/sprint_segment_report.py` | **LIVE IN PRODUCTION PIPELINE** | This is the function that actually builds the `biomechanics.segments[]` shape returned by the API. |
+| `reports/coach.py`, `scoring.py`, `recommendations.py` | same | **PLANNED** | 0-byte stub files (corrected from an earlier "1 line each" note) - no implementation. |
+| Sprint phase detection | `athletics/sprint_phase.py::detect_sprint_phases` | **IMPLEMENTED BUT UNWIRED** (historically CLI/HARNESS ONLY once, per §9 bug #6) | `biomechanics_bridge.py`'s import list (checked directly this pass) does not include `athletics` anything. Its only caller, `athletics/sprint.py`, is itself unwired (next row). The "coherent acceleration-to-peak-then-steady-pace pattern" result described in §9 bug #6 is a real historical event, but it was produced by a script that is not present in the current repo - not reproducible from `backend/` as it stands today. |
+| Rest of the `athletics/` package | `registry.py`, `router.py`, `sprint.py`, `hurdles.py`, `long_jump.py`, `high_jump.py`, `models.py`, `base.py` | **IMPLEMENTED BUT UNWIRED** | Grepped this pass: nothing under `app/api/` or `app/main.py` imports anything from `app/services/athletics/` - every cross-import found is internal to the package itself. |
+| Stride-velocity bridge | `pose_remote/stride_velocity_bridge.py::build_stride_based_progression` | **IMPLEMENTED BUT UNWIRED** (historically CLI/HARNESS ONLY once) | Zero importers outside its own test, `tests/test_stride_velocity_bridge.py` - which was read this pass and uses entirely synthetic, hand-constructed landmark coordinates, not real footage. The real-footage verification described in §9 bug #6 happened via something not in this repo today. |
+| Stride geometry engine | `sprint/stride_geometry_engine.py::analyze_stride_geometry` | **IMPLEMENTED BUT UNWIRED** | Zero live/CLI callers. Referenced only in a docstring comment inside the also-unwired `stride_velocity_bridge.py`, and in its own test (`test_stride_geometry_engine_v01.py`), which uses synthetic contact-event fixtures. |
+| Rest of `sprint/` (~38 files: propulsion, leg spring, mechanical efficiency, `phase_detector.py`, `sprint_intelligence.py`, `sprint_intelligence_fusion.py`, `sprint_pro_bundle.py`, etc.) | same | **EXPERIMENTAL** | Unit-tested with synthetic data in isolation (many `test_*_v01/v10/v20/v2/v3.py` files exist), never run against real footage, never wired anywhere live - unchanged classification, now made explicit here rather than only implied by §11's general statement. |
+| Hurdles / long jump / high jump | `athletics/{hurdles,long_jump,high_jump}.py` | **PLANNED / EXPERIMENTAL** | Code stubs, never run against real footage (unchanged) - also unwired per the `athletics/` package finding above, which wasn't previously stated explicitly. |
+| `digital_twin/`, `digital_twin_v2/` (Python) | `app/services/digital_twin/`, `digital_twin_v2/` | **CLI / HARNESS ONLY** | Zero live API callers (confirmed unchanged). As of this session, do have one real consumer: `backend/scripts/generate_twin_parity_fixtures.py`, a dev-time harness that runs `digital_twin.personal_bests`/`digital_twin_v2.trends` to generate parity fixtures consumed by `frontend/src/features/performances/lib/twinEngine.parity.test.ts`. The actual live "Digital Twin" product feature is the frontend TypeScript port (next row), not this Python code - see §25. |
+| Digital Athlete Twin (product feature) | `frontend/src/features/performances/lib/twinEngine.ts` + `Twin*` components | **LIVE IN FRONTEND ONLY** | Computed entirely client-side from `performances.analysis_result` already fetched by the frontend; no backend route serves any Twin-specific data. Live-verified against real data, §25-§28. |
+| `physics/`, `fusion/`, `motion/`, `coach/`, `talent/`, `validation/`, `research/`, `readiness/`, `athlete_intelligence/`, `feature_store/`, `pipeline/` | same | **IMPLEMENTED BUT UNWIRED** | Zero live callers confirmed (unchanged). Not independently re-audited for internal correctness this pass - "implemented" describes wiring status only, not a claim that the code inside is correct. |
+| Job queue | `jobs/store.py` | **LIVE IN PRODUCTION PIPELINE** | In-memory, single-process - a known scaling limitation (§11), not a wiring gap. |
+| RTMPose worker service | `rtmpose_worker/` | **LIVE IN PRODUCTION PIPELINE** | Separate process, called over HTTP by `pose_remote/client.py`. |
+| CLI scripts | `backend/scripts/*.py` | **CLI / HARNESS ONLY** | By design - developer tooling, intentionally outside the live API. |
+
+**How to keep this table honest going forward**: when a subsystem's wiring status changes (something gets connected to the live pipeline, or something live gets removed), update its row here in the same commit as the code change - don't let this table drift the way §4.6-§4.13's prior wording did.
 
 ---
 
@@ -315,9 +357,11 @@ The MediaPipe path (`pose/analyzer.py`) follows the same conceptual shape but ru
 
 ---
 
-## 8. Algorithms currently in use
+## 8. Algorithms currently in use in the live pipeline
 
-- **Pose estimation**: RTMPose-t (top-down, Halpe26 26-keypoint schema) + RTMDet-m detector (live path); MediaPipe Pose Landmarker (fallback path).
+**Corrected in the §A documentation-truthfulness pass**: this section previously included three algorithms (stride-based velocity signal, sprint phase segmentation, stride geometry) under a "currently in use" heading despite none of them being reachable from the live API. They've been moved to their own subsection below (§8.1) with accurate framing. Everything remaining in this main list is genuinely live, re-confirmed via direct import-chain tracing this pass.
+
+- **Pose estimation**: RTMPose-t (top-down, Halpe26 26-keypoint schema) + RTMDet-m detector - the only pose backend actually invoked by any live route today. MediaPipe Pose Landmarker exists and is fully implemented (`pose/analyzer.py`) but is **not** currently reachable from `/api/analyze/video` or any other route - see §4.11.
 - **Multi-person selection**: weighted scoring (bbox area, centre proximity, confidence, landmark completeness).
 - **Multi-person tracking**: frame-to-frame matching (bbox IoU, centre-motion, size similarity, landmark similarity, track-id), with a coasting/reselection state machine.
 - **Backend-aware landmark confidence policy** (`pose/landmark_usability.py`): MediaPipe uses `visibility >= 0.50 AND presence >= 0.50`; RTMPose uses `confidence >= 0.35` (RTMPose's own detection confidence, not a visibility heuristic). This distinction matters — several bugs this session came from code that didn't use this shared policy.
@@ -326,13 +370,20 @@ The MediaPipe path (`pose/analyzer.py`) follows the same conceptual shape but ru
 - **Signal preparation for cyclical biomechanical signals** (`signal_processing.py`): multi-segment extrema detection (NOT single-longest-segment — see bug #1 below) + **local Hampel-style outlier filter** (compares each sample only to its immediate temporal neighbours, not the whole-clip median — see bug #1) + 5-frame moving average smoothing.
 - **Cyclical event (peak flexion/extension) detection** (`gait_phase.py`): two-pass — first pass finds every strict turning point vs. immediate neighbours (for location), second pass computes **topographic prominence** relative to the nearest opposite-type turning point (not a fixed narrow window — see bug #1).
 - **Cadence estimation**: alternating peak-knee-flexion timestamps → step interval → steps/min, with plausibility filtering (120-1000ms intervals).
-- **Ground-contact detection** (`contact_events.py`): local maxima in smoothed foot-height (y-coordinate) trajectory, same two-pass turning-point + prominence approach as cyclical events, with a separate narrow-window prominence just for sizing the contact-duration window. **CONFIRMED UNRELIABLE for some camera angles — see §10, §11.**
+- **Ground-contact detection** (`contact_events.py`): local maxima in smoothed foot-height (y-coordinate) trajectory, same two-pass turning-point + prominence approach as cyclical events, with a separate narrow-window prominence just for sizing the contact-duration window. Live, but **CONFIRMED UNRELIABLE for some camera angles — see §10, §11.**
 - **Stride/running-cycle detection**: same-side contact interval → stride duration/frequency.
-- **Stride-based velocity signal for phase detection** (`stride_velocity_bridge.py`, new this session): **same-frame leg-split** (horizontal distance between both ankles within a single frame at a contact event) — chosen specifically because it is camera-motion-invariant, unlike raw on-screen position or cross-time foot-position differences (see §9).
-- **Sprint phase segmentation** (`sprint_phase.py`): differentiate position → velocity → acceleration (each 5-frame smoothed), normalize to [0,1] via 5th/95th percentile, threshold-crossing detection for acceleration-end / transition-end / maintenance-start / deceleration-start.
 - **Camera view classification** (`quality/orientation.py`): shoulder-width-to-torso-height ratio → Side View / Three-Quarter View / Front View.
-- **Camera height/tilt detection** (`quality/frame_quality.py::score_camera_height`, new this session): headroom (empty space above head, from bounding box `y_min`) — empirically thresholded from 3 real clips (see §9, §12).
-- **Stride geometry** (`sprint/stride_geometry_engine.py`): step length = horizontal distance between consecutive opposite-foot contact points; various symmetry/stability/crossover scores derived from that.
+- **Camera height/tilt detection** (`quality/frame_quality.py::score_camera_height`): headroom (empty space above head, from bounding box `y_min`) — empirically thresholded from 3 real clips (see §9, §12).
+
+### 8.1 Algorithms that exist, were historically exercised against real data via a harness, but are NOT in the live pipeline today
+
+These three are real, non-stub implementations - not vaporware - but none of them are reachable from `/api/analyze/video` or `/api/analyze/video-url` as the code stands today (see §4.11 for the full classification and traced import chains). Grouped separately here specifically so this section can't be misread as "currently in use" again.
+
+- **Stride-based velocity signal for phase detection** (`pose_remote/stride_velocity_bridge.py::build_stride_based_progression`): **same-frame leg-split** (horizontal distance between both ankles within a single frame at a contact event) — chosen specifically because it is camera-motion-invariant, unlike raw on-screen position or cross-time foot-position differences (see §9 bug #6 for the original historical writeup). Verified once against one real clip via a script that is no longer in this repo; its own current unit test uses synthetic landmark data, not real footage. Zero production callers.
+- **Sprint phase segmentation** (`athletics/sprint_phase.py::detect_sprint_phases`): differentiate position → velocity → acceleration (each 5-frame smoothed), normalize to [0,1] via 5th/95th percentile, threshold-crossing detection for acceleration-end / transition-end / maintenance-start / deceleration-start. The entire `athletics/` package this lives in has zero live callers.
+- **Stride geometry** (`sprint/stride_geometry_engine.py::analyze_stride_geometry`): step length = horizontal distance between consecutive opposite-foot contact points; various symmetry/stability/crossover scores derived from that. Zero live or CLI callers; its own test uses synthetic contact-event fixtures.
+
+See §30 (Milestone B) for the standalone audit of whether/how these should be wired into the live pipeline.
 
 ---
 
@@ -358,6 +409,7 @@ All fixes below are on `main`, commits `fbe057a` through `b6b75cf`. Each was ver
 5. **Backend-aware threshold bypass in three files.** `contact_events.py`, `centre_of_mass.py`, `gait_signals.py`, and (found later, during RTMPose live-wiring) `quality/movement.py::calculate_pose_movement` each had their own hardcoded `visibility >= 0.50 AND presence >= 0.50` check, bypassing the shared `landmark_is_usable()` policy (which correctly uses `confidence >= 0.35` for RTMPose). Fix: added a `backend` field to `FrameMetrics`, threaded `backend` through each function, replaced hardcoded checks with `landmark_is_usable(landmark, backend=backend)`.
 
 6. **`detect_sprint_phases` fed a camera-motion-fragile velocity signal.** Raw on-screen horizontal position only reflects real running speed when the camera is fixed and the athlete moves in a straight line across it. On a real clip, net on-screen progress stalled after ~2s of a 15.7s continuous, steadily-cadenced run (the camera didn't move; the athlete just wasn't covering net ground — a drill, not a straight sprint), which the old signal misread as ~14 continuous seconds of "deceleration." Fix: built `stride_velocity_bridge.py`'s `build_stride_based_progression()` — computes **same-frame leg-split** (both ankles within one frame, at each contact event) instead of cross-time position, then cumulative-sums it as a "distance covered" proxy, fed into the *existing, unmodified* `detect_sprint_phases`. Result: went from an implausible single 14-second deceleration phase to a coherent acceleration-to-peak-then-steady-pace pattern. **Residual limitation, not fixed**: `detect_sprint_phases`'s phase-boundary model still can't distinguish "settled at a new lower pace" from "still decelerating" — once velocity crosses below the maintenance threshold, everything after is labelled deceleration.
+   **Current status, corrected in the §A documentation-truthfulness pass**: the fix and the result described above are a real historical event, not fabricated - but the verification was run through a script that is no longer present in this repo, not the live `/api/analyze/video` pipeline, and neither `stride_velocity_bridge.py` nor `detect_sprint_phases` has ever been imported by the live pipeline (confirmed via direct import-chain tracing). Today, this fix is **not reproducible from the current codebase** and **not part of the live product**. See §4.11 for the classification and §30 (Milestone B) for the audit of what it would take to actually wire this in.
 
 7. **Quality gate had no signal for camera height/tilt.** `classify_camera_view` only measures rotation (shoulder/hip width vs. torso height) — confirmed directly that the clip which caused bug #4/#8's underlying camera problem was classified "Side View" at 94-100% confidence on all 787 frames, `suitable_for_sprint: True` throughout. Fix: added `score_camera_height()` (headroom-based, empirically thresholded from 3 real clips), wired into `build_quality_result` as both a scored component and a hard requirement in `biomechanics_ready`.
 
@@ -399,13 +451,13 @@ This directly followed up on the "more labeled data" ask above. Built `backend/s
 - **Camera angle, not the algorithm, looks like the dominant variable** for ground-contact accuracy — confirmed the same unmodified detector went from 0/9 (later 1/6 on a wider uniform sample) visually-correct samples on a bad-angle clip to 3/6 on a good-angle clip — but good-angle footage has its *own* unresolved confounds (background occlusion, ambiguous ground-plane texture — see §10.1) that blocked confident labeling this session. "Good camera angle" is necessary but not sufficient for labelable ground truth.
 - **Low-quality/archival footage can break pose tracking itself, independent of the camera-angle problem.** On `my_sprint.mp4` the tracked landmark was observed jumping to background clutter in places. Any future ground-truth clip selection should check tracking confidence, not just camera geometry, before use.
 - **Left vs. right leg-split asymmetry is unexplained.** In `stride_velocity_bridge.py` work, left-side same-frame leg-split values trended suspiciously near zero compared to a clean, sustained right-side signal. Could be a real gait asymmetry in the specific athlete filmed, or a timing/detection quirk specific to left-side contact events. Not root-caused.
-- **`detect_sprint_phases` can't represent a "settled at new pace" scenario** — see bug #6's residual limitation above.
+- **Sprint phase detection (`detect_sprint_phases`) and stride geometry (`analyze_stride_geometry`) are not reachable from the live pipeline at all**, corrected in the §A documentation-truthfulness pass (this line previously described only `detect_sprint_phases`'s residual *algorithmic* limitation - the "settled at new pace" issue - without stating that the function isn't wired to the live API in the first place; the algorithmic limitation is real and would still apply if it were ever wired in). See §4.11 for the full classification and §30 (Milestone B) for the standalone audit.
 - **Job queue is in-memory and single-process.** State is lost on restart; will not work correctly across multiple server worker processes (requests could round-robin to a process that never ran the job). Needs a Redis/DB-backed store or a real task queue (Celery/RQ) before scaling beyond one process.
-- **MediaPipe fallback is not automatic.** If the RTMPose worker is down, `/api/analyze/video` jobs fail with a clear error; nothing currently switches to the MediaPipe path automatically.
-- **`app/services/pose_adapters/` is dead code.** `RTMPoseAdapter` + `registry.py` are never imported by any live or CLI code path, and its expected input format (raw MMPose-style `keypoints` list + parallel `keypoint_scores` list) doesn't match what the actual worker returns (a dict keyed by joint name, already normalized). If someone wires this up later expecting it to work like the rest of the pipeline, it will silently misbehave. Flagged, never fixed or removed.
-- **Only sprint has been validated.** Hurdles/long jump/high jump code exists but has never touched real footage.
-- **`backend/app/services/{digital_twin,digital_twin_v2,physics,fusion,motion,coach,talent,validation,research,readiness,athlete_intelligence,feature_store,pipeline}/`** — substantial code, zero validation this session. Unknown state.
-- **`reports/coach.py`, `reports/scoring.py`, `reports/recommendations.py`** are empty 1-line stub files.
+- **MediaPipe is implemented but not wired to any live route**, corrected in the §A pass (previously called "fallback," implying an automatic runtime switch exists - it does not; `routes.py` imports it but never calls it). If the RTMPose worker is down, `/api/analyze/video` jobs fail with a clear error; nothing currently switches to the MediaPipe path automatically, and nothing could without new code, since no selection logic exists today.
+- **`app/services/pose_adapters/`'s dead-code claim needed narrowing**, corrected in the §A pass. `RTMPoseAdapter` + `registry.py` (+ `base.py`, `mediapipe_adapter.py`, `skeleton.py`) are never imported by any live or CLI code path, and `RTMPoseAdapter`'s expected input format (raw MMPose-style `keypoints` list + parallel `keypoint_scores` list) doesn't match what the actual worker returns (a dict keyed by joint name, already normalized) - if someone wires this up later expecting it to work like the rest of the pipeline, it will silently misbehave. Flagged, never fixed or removed. **`models.py` and `compatibility.py` are not dead** - both are live, imported directly by `pose_remote/biomechanics_bridge.py` and `pose_stream.py`.
+- **Only sprint has been validated.** Hurdles/long jump/high jump code exists but has never touched real footage, and (also corrected in the §A pass) the entire `athletics/` package they live in - registry, router, and all four event modules - has zero live callers, not just the unvalidated-against-real-footage status previously noted here.
+- **`backend/app/services/{digital_twin,digital_twin_v2,physics,fusion,motion,coach,talent,validation,research,readiness,athlete_intelligence,feature_store,pipeline}/`** — substantial code, zero validation this session. Unknown state. `digital_twin`/`digital_twin_v2` do now have one real consumer (a dev-time parity-fixture script, §4.11) - the other eleven directories remain wholly unexercised.
+- **`reports/coach.py`, `reports/scoring.py`, `reports/recommendations.py`** are empty stub files (0 bytes each, corrected from "1-line" in the §A pass).
 - **Database schema is not version-controlled** beyond one table (`digital_twin_v2/supabase_schema.sql`). See §5.
 - ~~Frontend routing is broken in several places~~ **Fixed in §17.5.** All routes now resolve (real pages or honest `ComingSoon` placeholders); 404 fallback added; anchor links fixed.
 - ~~Frontend is not connected to the backend at all~~ **Fixed in §17.1.** Full upload → analysis → report flow now works end-to-end via a signed-URL submission architecture. See §17.
@@ -437,8 +489,8 @@ Test suite: **294 tests passing**, `pytest` from `backend/` with no arguments ne
 Original 20-step roadmap phases (as stated by the product owner), annotated with status:
 
 - **Step 1 (Validate biomechanics layer)** — mostly done for sprint: cadence/contact/phase-detection fixed and cross-validated. Ground-contact timing accuracy still open (§10/§11).
-- **Step 2 (Sprint phase detection)** — built and improved this session (camera-robust signal), but the phase-boundary model has a known limitation (§9 bug #6, §11).
-- **Steps 3-6 (Contact detection, stride metrics, joint metrics, symmetry)** — partially exist already in `biomechanics/` and `sprint/stride_geometry_engine.py`; contact detection specifically still unreliable.
+- **Step 2 (Sprint phase detection)** — code built and improved in a past session (camera-robust signal), but corrected in the §A documentation-truthfulness pass: **not currently live** - `detect_sprint_phases` has zero callers from the API today, and the phase-boundary model also has a known algorithmic limitation on top of that (§9 bug #6, §11). See §4.11/§30.
+- **Steps 3-6 (Contact detection, stride metrics, joint metrics, symmetry)** — contact detection exists in `biomechanics/` and is live (though still unreliable for bad camera angles). Stride metrics (`sprint/stride_geometry_engine.py`) exist but are **not currently live** - corrected in the §A pass (previously said "partially exist" with no wiring caveat). See §4.11.
 - **Steps 7-9 (AI coach feedback, sprint score, elite comparison)** — not started. `reports/coach.py`/`scoring.py`/`recommendations.py` are empty stubs. **Elite comparison specifically flagged as needing real licensed reference data before attempting — a claims/liability risk, not just an engineering task.** When sprint score (step 8) is picked up: the `analysis_reports` table already exists for this exact purpose (`performance_score`, `confidence`, `analysis` jsonb) - see §5's "Architectural decision" writeup before building a new storage mechanism.
 - **Steps 10-12 (Multi-camera, camera quality, auto-cropping)** — camera quality gating substantially improved this session (rotation + height/tilt); multi-camera and auto-cropping not started.
 - **Step 13-15 (Digital twin, performance history, injury prediction)** — `digital_twin`/`digital_twin_v2` code exists, unvalidated. **Injury prediction flagged as needing real rigor before attempting — same class of risk as elite comparison, arguably higher given it's health-adjacent.**
@@ -1249,6 +1301,90 @@ No backend, database, route, or component changes. No new dependencies. No new T
 
 **Verdict**: the Digital Twin's recording-quality-metric multi-sample logic, its incompatible-version handling, its experimental-metric isolation, and its degenerate-input safety are now proven correct against real, independently-checked data plus 123 passing tests, including 4 real bugs found and fixed by this exercise. Its biomechanics-metric multi-sample logic remains proven only at the unit-test level, not yet against real ≥2-sample biomechanics-complete data - this specific gap should be closed before calling that part of the Twin production-validated, per the brief's own standard.
 
-### 28.15 Exact next task (current)
+### 28.15 Exact next task (historical - the `AthleteReports.tsx` consolidation below was picked up next; see §29)
 
 Not yet prioritized by the project owner. Reasonable next steps: source or shoot a real clip that clears the live `biomechanics_ready` gate to finally close the biomechanics-metric multi-sample verification gap (§28.14); consolidate `AthleteReports.tsx`'s duplicate extraction logic onto `analysisSummary.ts`; build the real coach/academy verification workflow; convert `PartnerRoster.tsx`/`PartnerHome.tsx` to `EmptyState`. Terms/Privacy remains explicitly parked - do not pick it up unprompted.
+
+---
+
+## 29. Session update: consolidated `AthleteReports.tsx` onto `analysisSummary.ts`
+
+Same overall session. Closes the smallest of the open items flagged repeatedly since §25.8/§28.14 - `AthleteReports.tsx` had its own independent, ad-hoc `extractReportSummary` function, written before `analysisSummary.ts` existed, duplicating the exact same `analysis_result` field extraction the Digital Twin's `extractAnalysisSummary` already does canonically.
+
+### 29.1 What changed
+
+- **`frontend/src/features/athlete/pages/AthleteReports.tsx`** - removed the local `extractReportSummary` function entirely; now imports and calls `extractAnalysisSummary` from `../../performances/lib/analysisSummary` instead. Confirmed field-for-field compatible before switching: `extractAnalysisSummary` already returns every field `extractReportSummary` did (`rating`, `readinessScore`, `detectionRate`, `cameraView`, `biomechanicsReady`), reading the same underlying `analysis_result` paths via `metricRegistry.ts`'s accessors rather than raw property chains - a strict superset (it also returns `bodyVisibility`/`movementQuality`/`provider`, unused here but harmless). No other line in the file needed to change - `summary?.rating`, `summary?.readinessScore`, etc. all still resolve identically.
+- **`frontend/src/features/performances/lib/analysisSummary.ts`** - updated its own header comment, which had explicitly flagged this exact duplication as unresolved ("AthleteReports.tsx has an independent, ad-hoc version... not rewritten here") - now states it's consolidated.
+- `formatDate` (local to `AthleteReports.tsx`) was deliberately **not** switched to the shared `formatSessionDate` - that's a separate, broader duplication (also present in `PerformanceDetail.tsx`/`PartnerAthleteDetail.tsx`, explicitly documented as intentionally left alone everywhere per `analysisSummary.ts`'s own comment) and out of the scope actually requested (consolidating the *extraction* logic, not every date formatter in the codebase).
+
+### 29.2 Verification
+
+- `cd frontend && npm run test` - **123 passed**, unchanged (no test covered the removed local function). `npx tsc -b --force` - clean.
+- **Live, in a real browser, signed in as the seeded QA athlete**: `/console/athlete/reports` renders both real sessions identically to before the change - same readiness scores (40, 49), same 100% detection rates, same "Biomechanics skipped" badges, same "Side View" camera classification, same Excellent rating badges - confirming `extractAnalysisSummary` produces byte-identical output to the old `extractReportSummary` for real data. A stale-HMR console error from mid-edit (a typo in the `RatingBadge` import, caught and fixed via `tsc` before this browser pass) was confirmed historical the same way as the precedent in §25.7/§27.3/§28.7 - a fresh tab with no buffered console history showed zero errors.
+
+### 29.3 Exact next task (historical - a full backend+frontend red-flag audit was requested next, followed by a three-milestone correction/investigation/cleanup plan; see §30)
+
+Not yet prioritized by the project owner. Remaining open items, all previously flagged and still open: sourcing/shooting a real clip that clears the live `biomechanics_ready` gate (§28.14); the real coach/academy verification workflow (§18.3/§23.7); `PartnerRoster.tsx`/`PartnerHome.tsx` `EmptyState` conversion (§22.7/§23.8/§25.8); ground-contact detection (§10/§10.1). Terms/Privacy remains explicitly parked - do not pick it up unprompted.
+
+---
+
+## 30. Session update: documentation-truthfulness correction (Milestone A of a three-milestone plan)
+
+Same overall session. The project owner requested a full read-only audit of the entire backend and frontend for red flags, broken links, and undocumented/missing functionality. Two parallel audit passes (backend, frontend) plus direct verification of the most significant finding surfaced a real gap between this document's claims and the live system's actual behavior - **sprint-phase detection and stride-geometry code were described in multiple places as built, improved, and verified against real footage, with no indication that none of it is reachable from the live `/api/analyze/video` pipeline today.** The project owner then requested this be corrected as a standalone, documentation-only milestone (Milestone A), before any code investigation (Milestone B) or cleanup (Milestone C) - explicitly not combined into one commit.
+
+### 30.1 Exact inaccurate statements found (verified by direct import-chain tracing this pass, not assumed)
+
+1. **Repo-tree listing** (old §2, `pose_remote/` block): `stride_velocity_bridge.py` was listed directly under `pose_remote/` alongside `live_analyzer.py "THE LIVE PIPELINE"` with no indication it isn't part of that pipeline.
+2. **Repo-tree listing**: `pose_adapters/` was blanket-labeled "DEAD CODE" in one line, while three lines later `pose_adapters/models.py` was correctly noted as "used throughout" - an internal contradiction. `compatibility.py` (also live) wasn't mentioned at all.
+3. **Repo-tree listing** (`athletics/`, `sprint/` blocks): presented `athletics/` as "Per-event registry + sprint phase detection" and `sprint/stride_geometry_engine.py` as "wired to real data this session, not otherwise" with no caveat that neither is reachable from the live app.
+4. **§4.6** ("Sprint-specific report generation"): stated `stride_geometry_engine.py` was "wired to real data this session via `pose_remote/stride_velocity_bridge.py`," directly implying it feeds the live report - it does not; `sprint_segment_report.py` has no dependency on either file.
+5. **§4.7** ("Sprint phase detection"): presented as its own numbered subsystem in the same list as genuinely-live subsystems (§4.1-§4.9), with no caveat that it's unreachable from any live route.
+6. **§8** ("Algorithms currently in use"): the section header itself claims current/live status; three algorithms with zero live callers (stride-based velocity signal, sprint phase segmentation, stride geometry) were listed there without qualification.
+7. **§9 bug #6**: described a real fix and a real verification result ("went from an implausible single 14-second deceleration phase to a coherent acceleration-to-peak-then-steady-pace pattern") with no note that this verification is not reproducible from the current repo (the harness that produced it no longer exists) and that neither function has ever been imported by the live pipeline.
+8. **§11** (known limitations): listed `detect_sprint_phases`'s residual *algorithmic* limitation ("can't represent a settled-at-new-pace scenario") without stating the more basic fact that it isn't wired to the live API at all. Also: the MediaPipe entry called it a "fallback" implying automatic runtime failover, when no such switching logic exists anywhere in the code (`routes.py` imports `analyze_video_mediapipe` but never calls it). Also: `reports/*.py` stub files were described as "1-line," when they are 0 bytes.
+9. **§13** (roadmap): "Step 2 (Sprint phase detection) — built and improved this session" reads as a shipped-feature status update with no wiring caveat.
+10. **`README.md`**: "Structure" section described `server/` as containing the FastAPI backend and `ai-engine/` as containing pose estimation/AI code - both directories are empty; the real backend (`backend/`, 111 files) wasn't mentioned at all.
+
+### 30.2 Corrected wording
+
+Each item above was corrected in place, not deleted - the original historical narrative (what was built, what problem it was meant to solve, what result was observed) is preserved verbatim; only the *current-status* framing was fixed, with an explicit "**Corrected in the §A documentation-truthfulness pass**" marker at each edit site so the correction itself is traceable. A new §4.11 "Subsystem status classification" table was added, giving every major backend subsystem one of seven explicit tags (LIVE IN PRODUCTION PIPELINE / LIVE IN FRONTEND ONLY / CLI-HARNESS ONLY / IMPLEMENTED BUT UNWIRED / EXPERIMENTAL / DEPRECATED-DEAD / PLANNED) with the specific evidence checked this pass for each. §8 was split into "algorithms currently in use" (genuinely live only) and a new §8.1 "algorithms that exist... but are NOT in the live pipeline today." `README.md` now points at `backend/` and correctly marks `server/`/`ai-engine/`/`datasets/`/`models/` as empty scaffolding.
+
+### 30.3 Current live-call graph (traced this pass, ground truth for §4.11)
+
+```
+POST /api/analyze/video  or  POST /api/analyze/video-url        (app/api/routes.py)
+  -> live_analyzer.analyze_video()                               (pose_remote/live_analyzer.py)
+       -> video_pipeline.analyze_video_with_tracking()            (pose_remote/video_pipeline.py)
+            -> RTMPoseWorkerClient                                (pose_remote/client.py)
+                 -> rtmpose_worker service (separate process, HTTP)
+            -> AthleteTracker                                     (pose_remote/athlete_selection.py)
+       -> quality.scoring.build_quality_result()                  (quality/*)  <- the readiness gate
+       -> IF biomechanics_ready:
+            -> biomechanics_bridge.analyze_sprint_stream()        (pose_remote/biomechanics_bridge.py)
+                 -> pose_stream.py (fill_gaps / split_into_segments)
+                 -> pose_adapters/{compatibility.py, models.py}   (UnifiedPoseFrame conversion - LIVE)
+                 -> biomechanics/{angles, frame_metrics}.py
+                 -> biomechanics.sprint_analyzer.build_sprint_biomechanics_preview()
+                      -> cadence.py, centre_of_mass.py, contact_events.py,
+                         flight_time.py, gait_phase.py, running_cycle.py,
+                         signal_processing.py
+       -> reports.sprint_segment_report.build_sprint_stream_report()   <- shapes the final API response
+  <- JSON response (provider, video, analysis, recording_quality, tracking_summary, biomechanics)
+```
+
+**Confirmed NOT in this graph** (zero live callers, verified by reading every import statement in the chain above): `app/services/athletics/*` (`sprint_phase.py::detect_sprint_phases`, `sprint.py`, `registry.py`, `router.py`, `hurdles.py`, `long_jump.py`, `high_jump.py`); `pose_remote/stride_velocity_bridge.py`; `sprint/stride_geometry_engine.py` and the rest of the ~40-file `sprint/` tree; `pose/analyzer.py` (MediaPipe - imported in `routes.py` but the assignment `analyze_video = analyze_video_rtmpose` never selects it); `pose_adapters/{base,mediapipe_adapter,registry,rtmpose_adapter,skeleton}.py`; `reports/{coach,scoring,recommendations}.py` (empty); all thirteen `digital_twin`/`digital_twin_v2`/`physics`/`fusion`/`motion`/`coach`/`talent`/`validation`/`research`/`readiness`/`athlete_intelligence`/`feature_store`/`pipeline` directories.
+
+### 30.4 Files changed
+
+- `README.md` - corrected "Structure" section.
+- `docs/ENGINEERING_HANDOFF.md` - new §4.11 (subsystem classification table), corrected §2 repo tree, §4.6, §4.7, §8 (+ new §8.1), §9 bug #6, §11, §13, this §30, and the top-of-file "Last updated" pointer.
+
+No application code changed - this milestone is documentation-only, per explicit instruction.
+
+### 30.5 Verification
+
+Every classification and every corrected claim in §4.11/§30.1-§30.3 was checked directly against the current codebase this pass (import statements read, grep results confirmed, not carried over from memory or the earlier background-agent audit without re-verification) - see §30.3's call graph, which was traced file-by-file. No automated test suite covers documentation content, so "verification" here means direct source-reading, cited inline at each correction site.
+
+### 30.6 Exact next task (current)
+
+**Milestone B** (§10 audit standard, applied to sprint-phase/stride-geometry code specifically): a standalone investigation - not implementation - of whether/how `detect_sprint_phases`/`stride_velocity_bridge.py`/`analyze_stride_geometry()` should be wired into the live pipeline. Per explicit instruction, no production wiring will be committed until that audit is reviewed and approved. **Milestone C** (low-risk cleanup pass covering the remaining backend/frontend/infra findings from the full audit) is held until both A and B are resolved.
