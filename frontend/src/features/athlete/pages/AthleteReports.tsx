@@ -14,6 +14,7 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../../performances/hooks/usePerformances";
 import { RatingBadge } from "../../performances/pages/PerformanceDetail";
+import { extractAnalysisSummary } from "../../performances/lib/analysisSummary";
 
 const EVENT_OPTIONS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
 
@@ -38,29 +39,6 @@ function formatDate(date?: string | null) {
   }).format(new Date(date));
 }
 
-// A "report" here means a completed analysis with a real result - not
-// just an uploaded/processing performance (that's what Performance
-// History is for). Pulls the same fields the full detail report shows,
-// just compacted into one row.
-function extractReportSummary(analysisResult: unknown) {
-  if (!analysisResult || typeof analysisResult !== "object") return null;
-  const result = analysisResult as any;
-
-  return {
-    rating: result?.recording_quality?.rating as string | undefined,
-    readinessScore: result?.recording_quality?.analysis_readiness?.score as
-      | number
-      | undefined,
-    detectionRate: result?.analysis?.detection_rate_percent as
-      | number
-      | undefined,
-    cameraView: result?.recording_quality?.camera_view?.classification as
-      | string
-      | undefined,
-    biomechanicsReady: result?.biomechanics?.status !== "skipped",
-  };
-}
-
 export default function AthleteReports() {
   const { user } = useAuth();
   const { data: performances = [], isLoading, error } = usePerformances(user?.id);
@@ -72,7 +50,7 @@ export default function AthleteReports() {
   const reports = useMemo(() => {
     return performances
       .filter((p) => p.upload_status === "completed" && Boolean(p.analysis_result))
-      .map((p) => ({ performance: p, summary: extractReportSummary(p.analysis_result) }));
+      .map((p) => ({ performance: p, summary: extractAnalysisSummary(p.analysis_result) }));
   }, [performances]);
 
   const visibleReports = useMemo(() => {

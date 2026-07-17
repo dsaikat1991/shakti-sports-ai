@@ -1,9 +1,8 @@
 // Canonical "extract the useful summary fields from one analysis_result"
-// function - the Digital Twin's own consumer of this. AthleteReports.tsx
-// has an independent, ad-hoc version of this same extraction
-// (extractReportSummary) written before this module existed; flagged in
-// the architecture audit as a consolidation opportunity, not rewritten
-// here (out of scope - "do not rewrite working components").
+// function - used by the Digital Twin and by AthleteReports.tsx, which
+// previously had its own independent, ad-hoc version of this same
+// extraction (extractReportSummary, consolidated onto this function - see
+// docs/ENGINEERING_HANDOFF.md).
 import type { AnalysisResult } from "../types/analysis";
 import { METRIC_REGISTRY } from "./metricRegistry";
 
