@@ -1,21 +1,17 @@
 import { AlertTriangle } from "lucide-react";
-import type { TwinMetricTrend } from "../../lib/twinEngine";
+import { interpretTrendForDisplay, type TwinMetricTrend } from "../../lib/twinEngine";
 import { MetricTrendChart, type MetricTrendPoint } from "../../lib/readinessTrend";
 
-const DIRECTION_LABEL: Record<string, string> = {
-  improving: "Improving",
-  regressing: "Regressing",
-  stable: "Stable",
-  high_variability: "High variability",
-  insufficient_data: "Not enough data yet",
-};
-
-const DIRECTION_CLASS: Record<string, string> = {
-  improving: "bg-green-100 text-green-700",
-  regressing: "bg-red-100 text-red-700",
-  stable: "bg-gray-100 text-gray-600",
-  high_variability: "bg-amber-100 text-amber-700",
-  insufficient_data: "bg-gray-100 text-gray-400",
+// Tone -> Tailwind classes, driven by interpretTrendForDisplay's
+// comparisonMode-aware label/tone (docs/ENGINEERING_HANDOFF.md §33) -
+// replaces the old DIRECTION_LABEL map, which applied "Improving"/
+// "Regressing" to every metric unconditionally, including joint angles
+// that have no better/worse direction at all.
+const TONE_CLASS: Record<string, string> = {
+  positive: "bg-green-100 text-green-700",
+  negative: "bg-red-100 text-red-700",
+  neutral: "bg-gray-100 text-gray-600",
+  warning: "bg-amber-100 text-amber-700",
 };
 
 // One metric's trend card - the honest "Not enough data yet" state
@@ -52,6 +48,8 @@ export default function TwinTrendChart({ twinTrend }: { twinTrend: TwinMetricTre
     date: p.recordedAt,
   }));
 
+  const display = interpretTrendForDisplay(metric, trend);
+
   return (
     <div className={`rounded-3xl border p-5 shadow-sm ${isExperimental ? "border-amber-200 bg-amber-50/30" : "border-gray-200 bg-white"}`}>
       <div className="flex items-center justify-between">
@@ -63,8 +61,8 @@ export default function TwinTrendChart({ twinTrend }: { twinTrend: TwinMetricTre
               Experimental
             </span>
           )}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${DIRECTION_CLASS[trend.direction]}`}>
-            {DIRECTION_LABEL[trend.direction]}
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TONE_CLASS[display.tone]}`}>
+            {display.label}
           </span>
         </div>
       </div>

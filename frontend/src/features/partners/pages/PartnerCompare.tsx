@@ -10,6 +10,7 @@ import {
   checkPairComparability,
   getEventName,
 } from "../../performances/lib/metricRegistry";
+import type { ComparisonMode } from "../../performances/lib/metricRegistry";
 import { getConnectedAthletePerformances } from "../services/connections.service";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePartnerConnections } from "../hooks/usePartnerConnections";
@@ -242,7 +243,9 @@ function ComparisonTable({
 
       <MetricSection
         title="Recording Quality"
-        metrics={METRIC_REGISTRY.filter((m) => m.category === "recording_quality")}
+        metrics={METRIC_REGISTRY.filter(
+          (m) => m.category === "recording_quality" && m.status === "production" && m.supportsCoachComparison && !m.hidden,
+        )}
         resultA={resultA}
         resultB={resultB}
         eventName={eventName}
@@ -250,7 +253,9 @@ function ComparisonTable({
 
       <MetricSection
         title="Biomechanics"
-        metrics={METRIC_REGISTRY.filter((m) => m.category === "biomechanics" && m.status === "production")}
+        metrics={METRIC_REGISTRY.filter(
+          (m) => m.category === "biomechanics" && m.status === "production" && m.supportsCoachComparison && !m.hidden,
+        )}
         resultA={resultA}
         resultB={resultB}
         eventName={eventName}
@@ -267,7 +272,9 @@ function ComparisonTable({
         </p>
         <MetricSection
           title=""
-          metrics={METRIC_REGISTRY.filter((m) => m.category === "biomechanics" && m.status === "experimental")}
+          metrics={METRIC_REGISTRY.filter(
+            (m) => m.category === "biomechanics" && m.status === "experimental" && m.supportsCoachComparison && !m.hidden,
+          )}
           resultA={resultA}
           resultB={resultB}
           eventName={eventName}
@@ -278,7 +285,37 @@ function ComparisonTable({
   );
 }
 
-function MetricSection({
+// The single place a "winner" is decided between two values of the same
+// metric - derived entirely from comparisonMode, never from the raw
+// number alone (docs/ENGINEERING_HANDOFF.md §33). TARGET_RANGE has no
+// winner today because no metric in the registry actually uses it (no
+// validated target range has ever been defined in this codebase) - if
+// one is added later with a real range, this function is the one place
+// that would need a new case, not every call site that renders a
+// comparison.
+function winningSide(comparisonMode: ComparisonMode, valueA: number, valueB: number): "a" | "b" | null {
+  if (valueA === valueB) return null;
+
+  switch (comparisonMode) {
+    case "HIGHER_IS_BETTER":
+      return valueA > valueB ? "a" : "b";
+    case "LOWER_IS_BETTER":
+      return valueA < valueB ? "a" : "b";
+    case "SYMMETRY":
+      // knee_symmetry_score (the only current SYMMETRY metric) already
+      // encodes "closer to symmetric" as a higher score - so higher wins,
+      // same arithmetic as HIGHER_IS_BETTER but kept as its own case since
+      // a future symmetry-style metric might not share that encoding.
+      return valueA > valueB ? "a" : "b";
+    case "NEUTRAL":
+    case "EXPERIMENTAL":
+    case "TARGET_RANGE":
+    case "NOT_COMPARABLE":
+      return null;
+  }
+}
+
+export function MetricSection({
   title,
   metrics,
   resultA,
@@ -291,6 +328,10 @@ function MetricSection({
   resultA: AnalysisResult;
   resultB: AnalysisResult;
   eventName: string;
+  // Visual treatment only (the amber tint below) - winner suppression for
+  // experimental metrics comes from comparisonMode ("EXPERIMENTAL" always
+  // yields no winner, enforced by the registry itself), not from this
+  // prop. Kept because the section header/styling still needs to know.
   experimental?: boolean;
 }) {
   if (metrics.length === 0) return null;
@@ -305,10 +346,8 @@ function MetricSection({
           const b = metric.accessor(resultB);
           const comparability = checkMetricComparability(metric, eventName, a, b);
 
-          let winner: "a" | "b" | null = null;
-          if (comparability.comparable && a && b && !experimental) {
-            if (a.value !== b.value) winner = a.value > b.value ? "a" : "b";
-          }
+          const winner: "a" | "b" | null =
+            comparability.comparable && a && b ? winningSide(metric.comparisonMode, a.value, b.value) : null;
 
           return (
             <div key={metric.key} className="grid grid-cols-3 items-center gap-3 border-t border-gray-100 pt-3 first:border-t-0 first:pt-0">

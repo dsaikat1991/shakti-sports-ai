@@ -12,10 +12,12 @@ import {
   dominantEventName,
   generateEvolutionStatements,
   groupByDominantProvider,
+  interpretTrendForDisplay,
   traceMetricInclusion,
+  type TrendResult,
   type TwinSessionInput,
 } from "./twinEngine";
-import { METRIC_REGISTRY } from "./metricRegistry";
+import { METRIC_REGISTRY, defineMetric, type ExtractedMetric } from "./metricRegistry";
 
 let idCounter = 0;
 
@@ -33,6 +35,16 @@ function buildSession(overrides: {
   includeCadence?: boolean;
   cadenceExplicitNull?: boolean;
   leftKneeCoveragePercent?: number;
+  // Additive overrides (docs/ENGINEERING_HANDOFF.md §33) - defaults match
+  // the pre-existing hardcoded constants below exactly, so no existing
+  // test that doesn't pass these changes behavior at all. Added so new
+  // tests can vary a NEUTRAL metric (joint angle) or an EXPERIMENTAL
+  // metric (ground contact/duty factor/flight time) across sessions,
+  // which the original fixture never needed to do.
+  leftKneeDegrees?: number;
+  groundContactEvents?: number;
+  dutyFactorPercent?: number;
+  flightTimeMs?: number;
   id?: string;
 }): TwinSessionInput {
   idCounter += 1;
@@ -50,6 +62,10 @@ function buildSession(overrides: {
     includeCadence = true,
     cadenceExplicitNull = false,
     leftKneeCoveragePercent = 80,
+    leftKneeDegrees = 150,
+    groundContactEvents = 40,
+    dutyFactorPercent = 24,
+    flightTimeMs = 130,
     id,
   } = overrides;
 
@@ -85,11 +101,11 @@ function buildSession(overrides: {
                 cadence: cadenceField,
                 stride: { stride_frequency_hz: cadence / 120 },
                 knee_symmetry_score: kneeSymmetry,
-                ground_contact: { events: 40 },
-                duty_factor_percent: 24,
-                flight_time: { median_flight_time_ms: 130 },
+                ground_contact: { events: groundContactEvents },
+                duty_factor_percent: dutyFactorPercent,
+                flight_time: { median_flight_time_ms: flightTimeMs },
                 joint_angles: {
-                  left_knee: { mean_degrees: 150, coverage_percent: leftKneeCoveragePercent },
+                  left_knee: { mean_degrees: leftKneeDegrees, coverage_percent: leftKneeCoveragePercent },
                   right_knee: { mean_degrees: 148, coverage_percent: 82 },
                 },
               },
@@ -808,5 +824,154 @@ describe("traceMetricInclusion (§28 verification, debug/test-only helper)", () 
     expect(trace.find((t) => t.performanceId === skipped.id)?.reason).toMatch(/no value/i);
     expect(trace.find((t) => t.performanceId === failedUpload.id)?.reason).toMatch(/upload_status/i);
     expect(trace.find((t) => t.performanceId === wrongProvider.id)?.reason).toMatch(/different pipeline/i);
+  });
+});
+
+describe("NEUTRAL and EXPERIMENTAL metrics never generate a directional Twin narrative (docs/ENGINEERING_HANDOFF.md §33)", () => {
+  // Strongly increasing joint-angle (NEUTRAL) and ground-contact/duty-
+  // factor/flight-time (EXPERIMENTAL) values across three sessions - a
+  // real, unambiguous upward trend by every arithmetic measure. Proves
+  // the Twin's eligibility gate actually reads comparisonMode, not just
+  // "does a trend exist." Everything else (cadence, knee symmetry,
+  // readiness, etc.) is held at its constant default so it can't produce
+  // an incidental strength/personal-best that would muddy the assertion.
+  const sessions = [
+    buildSession({
+      date: "2026-01-01",
+      leftKneeDegrees: 140,
+      groundContactEvents: 40,
+      dutyFactorPercent: 22,
+      flightTimeMs: 120,
+    }),
+    buildSession({
+      date: "2026-02-01",
+      leftKneeDegrees: 160,
+      groundContactEvents: 45,
+      dutyFactorPercent: 24,
+      flightTimeMs: 130,
+    }),
+    buildSession({
+      date: "2026-03-01",
+      leftKneeDegrees: 180,
+      groundContactEvents: 50,
+      dutyFactorPercent: 26,
+      flightTimeMs: 140,
+    }),
+  ];
+
+  it("sanity check: the underlying joint-angle/experimental trends really are strongly increasing", () => {
+    // A negative result on the tests below would only be meaningful if
+    // there was genuinely something to exclude - this confirms there is.
+    const leftKneeMetric = METRIC_REGISTRY.find((m) => m.key === "joint_angle_left_knee")!;
+    const groundContactsMetric = METRIC_REGISTRY.find((m) => m.key === "ground_contacts")!;
+    expect(buildTwinMetricTrend(sessions, leftKneeMetric).trend.direction).toBe("improving");
+    expect(buildTwinMetricTrend(sessions, groundContactsMetric).trend.direction).toBe("improving");
+  });
+
+  it("buildTwinPersonalBests never selects a NEUTRAL joint angle or an EXPERIMENTAL metric", () => {
+    const pbs = buildTwinPersonalBests(sessions);
+    expect(pbs.find((pb) => pb.metricKey === "joint_angle_left_knee")).toBeUndefined();
+    expect(pbs.find((pb) => pb.metricKey === "ground_contacts")).toBeUndefined();
+    expect(pbs.find((pb) => pb.metricKey === "duty_factor")).toBeUndefined();
+    expect(pbs.find((pb) => pb.metricKey === "flight_time")).toBeUndefined();
+  });
+
+  it("deriveStrengths never cites a NEUTRAL joint angle or an EXPERIMENTAL metric", () => {
+    const strengths = deriveStrengths(sessions);
+    expect(strengths.some((s) => s.key.startsWith("joint_angle_left_knee"))).toBe(false);
+    expect(strengths.some((s) => s.key.startsWith("ground_contacts"))).toBe(false);
+    expect(strengths.some((s) => s.key.startsWith("duty_factor"))).toBe(false);
+    expect(strengths.some((s) => s.key.startsWith("flight_time"))).toBe(false);
+  });
+
+  it("deriveDevelopmentAreas never cites a NEUTRAL joint angle or an EXPERIMENTAL metric", () => {
+    const areas = deriveDevelopmentAreas(sessions);
+    expect(areas.some((a) => a.key.startsWith("joint_angle_left_knee"))).toBe(false);
+    expect(areas.some((a) => a.key.startsWith("ground_contacts"))).toBe(false);
+    expect(areas.some((a) => a.key.startsWith("duty_factor"))).toBe(false);
+    expect(areas.some((a) => a.key.startsWith("flight_time"))).toBe(false);
+  });
+
+  it("generateEvolutionStatements never uses improvement/regression language for a NEUTRAL joint angle or an EXPERIMENTAL metric", () => {
+    const statements = generateEvolutionStatements(sessions);
+    expect(statements.some((s) => s.includes("Left Knee Angle"))).toBe(false);
+    expect(statements.some((s) => s.includes("Ground Contacts"))).toBe(false);
+    expect(statements.some((s) => s.includes("Duty Factor"))).toBe(false);
+    expect(statements.some((s) => s.includes("Flight Time"))).toBe(false);
+  });
+});
+
+describe("interpretTrendForDisplay (docs/ENGINEERING_HANDOFF.md §33)", () => {
+  function buildTrend(direction: TrendResult["direction"]): TrendResult {
+    return {
+      samples: 2,
+      firstValue: 10,
+      latestValue: direction === "improving" ? 12 : 8,
+      absoluteChange: direction === "improving" ? 2 : -2,
+      percentChange: direction === "improving" ? 20 : -20,
+      slopePerSession: direction === "improving" ? 2 : -2,
+      coefficientOfVariationPercent: 5,
+      direction,
+    };
+  }
+
+  function buildSyntheticMetric(comparisonMode: "NEUTRAL" | "HIGHER_IS_BETTER" | "LOWER_IS_BETTER") {
+    return defineMetric({
+      key: `synthetic-${comparisonMode.toLowerCase()}`,
+      label: "Synthetic Metric",
+      unit: "unit",
+      category: "biomechanics",
+      applicableEvents: ["Sprint"],
+      status: "production",
+      accessor: (): ExtractedMetric | null => ({ value: 1 }),
+      format: (m: ExtractedMetric) => `${m.value}`,
+      backendSource: "test-fixture",
+      analysisResultPath: "test.fixture.path",
+      comparisonMode,
+      aggregationMethod: "FIRST_SEGMENT",
+    });
+  }
+
+  it("NEUTRAL: rising values produce observational 'Increased' language with neutral tone", () => {
+    const display = interpretTrendForDisplay(buildSyntheticMetric("NEUTRAL"), buildTrend("improving"));
+    expect(display.label).toBe("Increased");
+    expect(display.tone).toBe("neutral");
+  });
+
+  it("NEUTRAL: falling values produce observational 'Decreased' language with neutral tone", () => {
+    const display = interpretTrendForDisplay(buildSyntheticMetric("NEUTRAL"), buildTrend("regressing"));
+    expect(display.label).toBe("Decreased");
+    expect(display.tone).toBe("neutral");
+  });
+
+  it("HIGHER_IS_BETTER: rising values retain positive interpretation", () => {
+    const display = interpretTrendForDisplay(buildSyntheticMetric("HIGHER_IS_BETTER"), buildTrend("improving"));
+    expect(display.label).toBe("Improving");
+    expect(display.tone).toBe("positive");
+  });
+
+  it("HIGHER_IS_BETTER: falling values retain negative interpretation", () => {
+    const display = interpretTrendForDisplay(buildSyntheticMetric("HIGHER_IS_BETTER"), buildTrend("regressing"));
+    expect(display.label).toBe("Regressing");
+    expect(display.tone).toBe("negative");
+  });
+
+  // LOWER_IS_BETTER: analyzeTrend/classifyDirection (untouched, parity-
+  // tested elsewhere, not re-verified here) are what translate "the raw
+  // value fell" into direction: "improving" for a LOWER_IS_BETTER metric -
+  // by the time interpretTrendForDisplay runs, that translation has
+  // already happened. These two cases test interpretTrendForDisplay's own
+  // comparisonMode-driven label/tone mapping, which is intentionally
+  // identical for any objectively-comparable mode once direction is known.
+  it("LOWER_IS_BETTER: a falling value (already classified 'improving' upstream) produces positive interpretation", () => {
+    const display = interpretTrendForDisplay(buildSyntheticMetric("LOWER_IS_BETTER"), buildTrend("improving"));
+    expect(display.label).toBe("Improving");
+    expect(display.tone).toBe("positive");
+  });
+
+  it("LOWER_IS_BETTER: a rising value (already classified 'regressing' upstream) produces negative interpretation", () => {
+    const display = interpretTrendForDisplay(buildSyntheticMetric("LOWER_IS_BETTER"), buildTrend("regressing"));
+    expect(display.label).toBe("Regressing");
+    expect(display.tone).toBe("negative");
   });
 });

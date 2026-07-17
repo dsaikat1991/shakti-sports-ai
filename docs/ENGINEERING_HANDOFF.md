@@ -1531,6 +1531,195 @@ Documentation: `docs/ENGINEERING_HANDOFF.md` (this section, plus §15's environm
 
 No stride-geometry, sprint-phase, FastAPI response-schema, Digital Twin, or Coach-Console-logic file touched - confirmed via `git status` before and after this pass, per explicit instruction.
 
-### 32.7 Exact next task (current)
+### 32.7 Exact next task (historical - the Canonical Metric Registry milestone below was picked up next; see §33)
 
 Not yet prioritized by the project owner. Remaining backlog: research items A/B/C from §31.9 (each needs its own scoped audit-and-approve pass, not to be started opportunistically); the real coach/academy verification workflow (§18.3/§23.7, still fully manual); the four near-duplicate date formatters deliberately left alone in §32.2, if a future pass wants to unify their contracts too (would need a small design decision - string vs. `null` return - not just a mechanical swap). Terms/Privacy remains explicitly parked - do not pick it up unprompted.
+
+---
+
+## 33. Session update: the Canonical Metric Registry
+
+Same overall session, immediate follow-up to the Athlete Console / Digital Twin metric-provenance audit (recorded separately). That audit found every athlete-facing number traces to a live backend field - no fabricated data anywhere - but surfaced one real product issue: `PartnerCompare.tsx`'s coach-comparison view highlighted a "winner" (larger value, in green) for **every** metric it displayed, including the six joint-angle metrics, which is scientifically meaningless - a bigger knee angle isn't "better." Investigating that bug surfaced a second, already-live instance of the same problem inside the Digital Twin itself (§33.7). This section documents the fix: one canonical `MetricDefinition` registry, extending the registry that already existed (`metricRegistry.ts`, built for the Coach Console comparison work and extended again for the Digital Twin - see the Digital Twin sections above), so that comparison and trend semantics live in exactly one place and no component decides "is a bigger number better" on its own.
+
+Went through this project's standing workflow - architecture proposal → project-owner review → three rounds of mandatory correction (naming/blast-radius/cadence-semantics concerns, each addressed before continuing) → implementation → verification - rather than a single unreviewed pass. The corrections materially changed the shipped design from the first draft; §33.3-§33.5 describe what actually shipped, not the first proposal.
+
+### 33.1 Purpose
+
+Before this pass, "is a higher value better for this metric" was answered independently, and inconsistently, in at least three places: `PartnerCompare.tsx` (assumed yes, always), `twinEngine.ts`'s strength/development-area/personal-best generators (assumed yes, always, for every `status: "production"` metric), and an empty `LOWER_IS_BETTER` set that existed but was never populated. The registry makes this a single, explicit, per-metric fact (`comparisonMode`) that every consumer reads instead of assuming. The goal stated at the outset - and the bar this section holds itself to - was that a future metric (a Performance Index, an AI Potential Score, a Talent Score) should require a new registry entry, not a new `if` statement in three different components.
+
+### 33.2 Final `MetricDefinition` shape
+
+```ts
+interface MetricDefinition {
+  key: string;                    // unique id - kept this name, not renamed to "id" (§33.3)
+  label: string;
+  description?: string;           // longer-form explanation; inert metadata, not yet rendered anywhere
+  unit: string;
+  category: "recording_quality" | "biomechanics";
+  subcategory?: string;           // e.g. "gait_timing", "joint_angle", "tracking" - inert metadata today
+  applicableEvents: string[];
+  status: MetricStatus;           // "production" | "experimental" - kept this name (§33.3)
+  limitationText?: string;
+  minCoveragePercent?: number;
+  accessor: (result: AnalysisResult) => ExtractedMetric | null;
+  format: (metric: ExtractedMetric) => string;
+  precision?: number;
+  backendSource: string;          // e.g. "quality/scoring.py::build_quality_result"
+  analysisResultPath: string;     // e.g. "recording_quality.metrics.full_body_visibility_score"
+  confidenceAware: boolean;       // = minCoveragePercent !== undefined
+  requiresBiomechanicsReady: boolean; // = category === "biomechanics"
+  experimental: boolean;          // mirrors status === "experimental"
+  hidden: boolean;                // default false - see §33.9
+  comparisonMode: ComparisonMode;
+  trendMode: TrendMode;
+  aggregationMethod: "FIRST_SEGMENT" | "SESSION_LEVEL";
+  supportsRanking: boolean;
+  supportsTwin: boolean;
+  supportsCoachComparison: boolean;
+  supportsPerformanceIndex: boolean;  // hardcoded false everywhere - no such feature exists
+  supportsFutureScoring: boolean;     // hardcoded false everywhere - no such feature exists
+  documentationReference?: string;    // e.g. "§10, §31"
+}
+```
+
+`ComparisonMode` = `"HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "TARGET_RANGE" | "SYMMETRY" | "NEUTRAL" | "EXPERIMENTAL" | "NOT_COMPARABLE"`. `TrendMode` = `"INCREASING" | "DECREASING" | "MAINTAIN" | "NEUTRAL" | "UNKNOWN" | "EXPERIMENTAL"`.
+
+### 33.3 Naming decisions - what was kept, what was corrected
+
+The first implementation pass renamed `status` to `validationStatus` (and the `MetricStatus` type to `ValidationStatus`) to read more clearly next to the new comparison fields. On review, this was **reverted** - the project owner's standing instruction was to minimize repository churn, and a field-name-only rename with no behavior change didn't earn the ~15-call-site diff it produced. `status`/`MetricStatus` are the pre-existing, unchanged names; "validation status" is the intended reading, established here in documentation rather than in the type name. There is exactly one canonical field - no compatibility alias was kept for the abandoned `validationStatus` name.
+
+Every other field name follows the same minimize-churn principle: `key` (not `id`), `format` (not `displayFormatter`), `limitationText` (not `limitations`), `minCoveragePercent` (not `minimumConfidence`) are all pre-existing, already-tested, already-consumed-everywhere names kept as-is rather than renamed to match an initial proposal's vocabulary. `backendModule` was never added as a separate field from `backendSource` - for every metric in this codebase, "which module" and "which source" are the same fact, so a second field would just duplicate the string.
+
+### 33.4 `defineMetric` factory and derived-but-overridable defaults
+
+Every registry entry is built by `defineMetric(input)` rather than authored as a raw object literal. `defineMetric` computes the mechanically-derivable fields (`confidenceAware`, `requiresBiomechanicsReady`, `experimental`) and provides sensible *defaults* for four fields that most entries don't need to think about, but **can** override:
+
+```ts
+trendMode: input.trendMode ?? deriveDefaultTrendMode(input.comparisonMode),
+supportsRanking: input.supportsRanking ?? defaults.supportsRanking,
+supportsTwin: input.supportsTwin ?? defaults.supportsTwin,
+supportsCoachComparison: input.supportsCoachComparison ?? defaults.supportsCoachComparison,
+```
+
+`deriveDefaultTrendMode` maps `comparisonMode` → `trendMode` (`HIGHER_IS_BETTER`→`INCREASING`, `LOWER_IS_BETTER`→`DECREASING`, `SYMMETRY`/`TARGET_RANGE`→`MAINTAIN`, `NEUTRAL`→`NEUTRAL`, `EXPERIMENTAL`→`EXPERIMENTAL`, `NOT_COMPARABLE`→`UNKNOWN`). `deriveDefaultSupportFlags` computes `supportsRanking` from `supportsObjectiveComparison(comparisonMode) && status === "production"`, and defaults `supportsTwin`/`supportsCoachComparison` to `true`. No entry in the shipped registry currently overrides `trendMode` or `supportsRanking`; the 10 entries in §33.9 do override `supportsTwin`/`supportsCoachComparison` to `false`. `metricRegistry.test.ts` exercises the override mechanism itself directly (via the exported `defineMetric`), not just the entries that happen to use it, since every current entry's `trendMode`/`supportsRanking` relies on the default.
+
+### 33.5 `validateMetricRegistry` - why it does not auto-run in production
+
+The first implementation pass had `defineMetric` `throw` at module-load time if an `"experimental"`-status entry didn't have `comparisonMode: "EXPERIMENTAL"`. On review, this was identified as a real, disproportionate risk: since `metricRegistry.ts` is imported by nearly every page in the app, a single malformed *future* entry would crash the entire frontend on import, not just fail a test. This was corrected: `defineMetric` never throws. Instead, `validateMetricRegistry(registry: MetricDefinition[]): MetricRegistryViolation[]` is a pure function - checked for duplicate keys and the experimental/comparisonMode invariant, returning violations as data - called only from `metricRegistry.test.ts` (`validateMetricRegistry(METRIC_REGISTRY)` must return `[]`). Nothing in the module calls it automatically; importing `metricRegistry.ts` cannot crash the app in production, by construction, confirmed by a dedicated test asserting the import itself doesn't throw.
+
+### 33.6 Comparison modes, in use today
+
+| Mode | Metrics using it | Meaning |
+|---|---|---|
+| `HIGHER_IS_BETTER` | `detection_rate`, `readiness_score`, `body_visibility`, `movement_quality`, `cadence`, `stride_frequency`, + the 10 hidden entries (§33.9) | An objective direction exists (recording-quality scores), or a disclosed product-level interpretation (cadence/stride frequency, §33.8). |
+| `LOWER_IS_BETTER` | none today | Reserved; the registry-derived compatibility Set (§33.7.1) is empty, matching pre-existing behavior. |
+| `SYMMETRY` | `knee_symmetry` | Already encodes "closer to symmetric" as a single higher-is-better score. |
+| `NEUTRAL` | the 6 joint-angle metrics | No validated better/worse direction - a joint angle has an ideal range dependent on many factors, not a bigger-or-smaller-is-better reading. |
+| `EXPERIMENTAL` | `ground_contacts`, `duty_factor`, `flight_time` | The underlying ground-contact detector is confirmed unreliable for some camera angles (§10/§11) - comparison is meaningless regardless of raw direction. Enforced invariant: every `status: "experimental"` metric **must** have `comparisonMode: "EXPERIMENTAL"` (checked by `validateMetricRegistry`). |
+| `TARGET_RANGE` / `NOT_COMPARABLE` | none today | Reserved for a future metric with a genuinely validated ideal band, or a categorical/non-directional value - not used to avoid inventing semantics no current metric needs. |
+
+`supportsObjectiveComparison(comparisonMode)` is `true` only for `HIGHER_IS_BETTER`/`LOWER_IS_BETTER`/`SYMMETRY` - the one shared definition of "can this metric ever have an objective winner," used by personal-best eligibility, coach-comparison winner-highlighting, and Twin strength/development-area generation alike (previously three separate, independently-driftable checks).
+
+### 33.7 Trend modes and the parity-preserved compatibility layer
+
+`trendMode` is the declarative, per-metric answer to "what does a rising value mean" (derived from `comparisonMode`, §33.4) - inert metadata today, consumed nowhere directly, but establishing the vocabulary a future generic trend-summary UI would read instead of re-deriving it from `comparisonMode` itself.
+
+The actual runtime interpretation of a computed trend lives in a new pure function, `interpretTrendForDisplay(metric, trend): { label: string; tone: "positive" | "negative" | "neutral" | "warning" }` (`twinEngine.ts`). For a metric where `supportsObjectiveComparison(comparisonMode)` is true, `trend.direction === "improving"` renders "Improving"/positive and `"regressing"` renders "Regressing"/negative, exactly as before. For `NEUTRAL`/`EXPERIMENTAL`/`TARGET_RANGE`/`NOT_COMPARABLE` metrics, the same two directions render as value-neutral "Increased"/"Decreased" with a neutral tone - the raw change is still reported, but never framed as good or bad.
+
+#### 33.7.1 `analyzeTrend()` / `classifyDirection()` remain untouched - the registry-derived `LOWER_IS_BETTER` Set
+
+Both functions keep their exact pre-existing signatures (`metricKey: string`, not a full `MetricDefinition`) and their exact pre-existing math (OLS slope, population CV) - **nothing about them changed this pass**, including because `twinEngine.parity.test.ts` checks their numeric output against a captured Python reference and calls them with a literal `"metric"` string key that doesn't exist in the registry at all. `classifyDirection`'s `LOWER_IS_BETTER` Set - previously a hand-authored, permanently-empty literal (`new Set<string>([])`) with a comment asserting "no current metric is lower-is-better" - is now **generated from the registry's own `comparisonMode` field** at module load:
+
+```ts
+const LOWER_IS_BETTER = new Set<string>(
+  METRIC_REGISTRY.filter((m) => m.comparisonMode === "LOWER_IS_BETTER").map((m) => m.key),
+);
+```
+
+This exists solely as a compatibility layer preserving the parity-tested signatures above - no metric's direction is hardcoded here or anywhere else; the Set is a derived view of registry metadata, not an independent source of truth. It is currently empty (no metric uses `LOWER_IS_BETTER` today, §33.6), matching pre-existing behavior exactly.
+
+### 33.8 Cadence and stride frequency: `HIGHER_IS_BETTER`, with disclosed limits
+
+This was re-evaluated twice during review. The first pass classified `cadence`/`stride_frequency` as `NEUTRAL`, reasoning from real sprint biomechanics: speed = cadence × stride length, the two trade off against each other differently by athlete, sprint phase, and event, and no file in this codebase had ever validated a "higher cadence is always better" claim - the only place that claim existed was an unexamined code comment. Running the full suite against that change broke **8 pre-existing `twinEngine.test.ts` assertions** (from the earlier §28 hardening pass) that the live Digital Twin already generates Personal Bests, Strengths, and Evolution Statements from cadence - i.e., the actual shipped, test-locked product behavior already treats cadence as rankable, independent of whether that was ever a deliberately validated scientific position.
+
+The project owner's resolution, applied here: **this migration centralizes existing semantics, it does not redefine product behavior.** `cadence` and `stride_frequency` are `HIGHER_IS_BETTER`, matching the pre-existing shipped behavior exactly (all 8 previously-failing tests pass again, unmodified) - but each now carries an explicit `limitationText` that a bare `HIGHER_IS_BETTER` tag alone would not have disclosed:
+
+> "This platform currently interprets a higher cadence [/ stride frequency] positively for longitudinal Digital Twin comparisons. Optimal cadence [/ stride frequency] depends on the individual athlete, sprint phase, event, and running speed - this interpretation should not be treated as a universally validated coaching rule."
+
+This is the intended distinction throughout the registry: `comparisonMode` records a **product interpretation** (sometimes inherited from pre-existing behavior, sometimes a genuine scientific fact like "more detected frames is better tracking"), and `limitationText` is where the difference between the two is made explicit - never silently conflated. No target range was invented for either metric (that would have fabricated a threshold this codebase has never validated) - `TARGET_RANGE` remains unused, reserved for a metric with an actually-cited ideal band.
+
+### 33.9 Joint angles: `NEUTRAL` - the one case treated as an objective correction
+
+Unlike cadence/stride frequency, the six joint-angle metrics (`joint_angle_left_knee`, `_right_knee`, `_left_hip`, `_right_hip`, `_left_elbow`, `_right_elbow`) were reclassified from an implicit "treated as directional" to `NEUTRAL` **and kept that way** - this is the one place the project owner's own standing principle ("preserve existing product behavior unless the previous behavior is objectively incorrect") was judged to point the other way, because a joint angle has an ideal range dependent on the athlete's technique and the instant in the gait cycle, not a bigger-or-smaller-is-better reading, in a way cadence's trade-off-but-still-somewhat-directional relationship to speed does not resemble. §33.10/§33.11 describe the two live bugs this fixes.
+
+### 33.10 Live bug #1 (Coach Console): `PartnerCompare.tsx` no longer highlights a false winner
+
+**Before**: `MetricSection`'s winner logic (`PartnerCompare.tsx`) was `winner = a.value > b.value ? "a" : "b"`, applied unconditionally to every comparable, non-"experimental-section" metric - including the six joint-angle rows, which sat in the same "Biomechanics" section as cadence/stride/knee-symmetry. A coach comparing two athletes would see one athlete's knee-angle number highlighted green as if it had "won," with no such better/worse relationship actually existing.
+
+**After**: winner selection is a single function, `winningSide(comparisonMode, valueA, valueB)`, called per-metric:
+- `HIGHER_IS_BETTER` → higher value wins
+- `LOWER_IS_BETTER` → lower value wins
+- `SYMMETRY` → higher score wins (matches `knee_symmetry_score`'s existing "bigger = more symmetric" encoding)
+- `NEUTRAL` / `EXPERIMENTAL` / `TARGET_RANGE` / `NOT_COMPARABLE` → no winner, values still shown side by side
+
+The section-level `experimental` boolean prop is now purely a visual flag (the amber-tinted card styling) - winner suppression for experimental metrics comes from `comparisonMode` being forced to `"EXPERIMENTAL"` by the registry invariant (§33.6), not from this prop; it no longer does double duty as both styling and suppression logic. `MetricSection` is now an exported function (previously module-private) specifically so `PartnerCompare.test.tsx` can render and assert against it directly, without inventing router/query-client mocking infrastructure this repository has never needed (§33.13).
+
+Section filters were also tightened to read `status === "production"`, `supportsCoachComparison`, and `!hidden` from the registry (previously: category alone) - the 10 hidden entries (§33.12) would otherwise have appeared in the Coach Console comparison the moment they were added to the registry, which was not the intent of this pass.
+
+### 33.11 Live bug #2 (Digital Twin): rising joint angles no longer read as "improvement"
+
+This was found while implementing the fix above, not part of the original audit. `twinEngine.ts`'s `deriveStrengths`, `deriveDevelopmentAreas`, and `generateEvolutionStatements` looped over every `status === "production"` metric with no further gate - meaning a joint angle trending upward across sessions was, before this pass, capable of generating live UI text reading **"Improving Left Knee Angle"**, and `buildTwinPersonalBests` (same ungated loop) was capable of rendering a **"Personal Best: Left Knee Angle"** card. Both are real, reproducible consequences of the pre-existing code, not hypothetical.
+
+**Fix**: all four functions, plus `TwinTrendChart.tsx`'s trend-direction badge, now gate through `isTwinNarrativeEligible(metric)` / `interpretTrendForDisplay(metric, trend)` (§33.7), both driven by `comparisonMode`. A metric only generates a strength, a development area, an evolution statement, or a personal best if `supportsObjectiveComparison(comparisonMode)` is true (i.e. `HIGHER_IS_BETTER`/`LOWER_IS_BETTER`/`SYMMETRY`), it is `status: "production"`, not `hidden`, and `supportsTwin`. `buildTwinPersonalBests` additionally now reads `comparisonMode === "LOWER_IS_BETTER"` for its min/max direction, instead of a hardcoded `false` justified only by "no current metric is lower-is-better." `computeConsistency`'s metric-stability average deliberately still **includes** `NEUTRAL`/`SYMMETRY` metrics - variability/consistency is a different question than "is a bigger value better," and a stable joint angle across sessions is still meaningfully "consistent."
+
+`twinEngine.test.ts` was extended (not modified) with a synthetic 3-session dataset carrying a strong, unambiguous upward trend in a NEUTRAL metric (joint angle) and three EXPERIMENTAL metrics (ground contact/duty factor/flight time), asserting none of the four generator functions ever reference them - proving the exclusion, not just asserting it by inspection. `interpretTrendForDisplay` is tested directly for all three comparison-mode families (`NEUTRAL`, `HIGHER_IS_BETTER`, `LOWER_IS_BETTER` - the last via a synthetic metric, since none exists in the real registry yet).
+
+### 33.12 Ten hidden registry entries and their promotion path
+
+The metric-provenance audit's own inventory step named several live, real backend fields that were displayed only through `PerformanceDetail.tsx`'s bespoke, single-report gate tables (`buildGatingChecks`/`buildQualityChecks`) - never registry-governed, never comparable or trendable anywhere else: pose-detection ("tracking") confidence, four body-part visibility percentages (hips/knees/ankles/feet), and five recording-quality sub-scores (camera angle, camera height, lighting, sharpness, frame rate). All ten are real, live, already-computed fields (`recording_quality.metrics.pose_detection_score`, `recording_quality.body_visibility.{hips,knees,ankles,feet}`, `recording_quality.metrics.{camera_angle_score,camera_height_score,lighting_score,sharpness_score,frame_rate_score}`).
+
+They are added to the registry with full metadata (`HIGHER_IS_BETTER`, `SESSION_LEVEL` aggregation, real `analysisResultPath`s) - satisfying the inventory requirement and proving the registry's own extensibility claim - but every one sets `hidden: true`, `supportsTwin: false`, `supportsCoachComparison: false`. This was a deliberate scope decision: this pass's job was fixing comparison *semantics* for metrics already exposed, not adding ten new rows to the Coach Console comparison table or the Digital Twin's trend sections. Every consumer (`TwinProgress.tsx`'s three category filters, `twinEngine.ts`'s `isTwinNarrativeEligible`, `PartnerCompare.tsx`'s three `MetricSection` filters) checks `!hidden` (and the relevant `supports*` flag) structurally, so this is enforced by the type/filter chain, not left to convention. **Promotion path**: removing `hidden: true` and the two `supports*: false` overrides from an entry is a one-line change per metric - no component needs to change to surface it, which is the concrete proof of Phase 8's "future metrics require configuration, not component rewrites" requirement.
+
+`PerformanceDetail.tsx`'s `buildGatingChecks`/`buildQualityChecks` were deliberately **not** migrated onto the registry and were not touched this pass - they answer a different question ("why did *this* recording pass or fail the live gate," tied 1:1 to `scoring.py`'s exact boolean formula) than the registry's "is a higher value better across sessions." Forcing them through `comparisonMode` would risk the gate table quietly drifting from the actual gating logic it exists to explain.
+
+### 33.13 Explicitly excluded from the registry
+
+- **Clip/session metadata** (frame count, duration, session date, provider, camera-view classification, warnings/recommendations text) - descriptive fields with no better/worse direction, not comparable metrics. (One exception: `video.duration_seconds` is read by a synthetic, test-only `LOWER_IS_BETTER` metric in `PartnerCompare.test.tsx`, used solely to exercise the `LOWER_IS_BETTER` winner-logic branch since no real registry metric uses that mode yet - it is not part of `METRIC_REGISTRY`.)
+- **`personal_best` (`athlete_profiles.personal_best`), `athlete_goals`, `achievements`** - user-authored Supabase profile data, not computed `analysis_result` outputs; no `analysisResultPath` applies to them.
+- **"Stride angle"** - requested in the original inventory brief, but does not exist anywhere in the live pipeline or backend. Its only occurrence anywhere in this repository is marketing copy on the athlete home page (`frontend/src/features/home/components/PerformanceSummary.tsx:4`, "Measure stride angle, ground contact, cadence, acceleration and speed"). Not added - inventing a registry entry for it would fabricate a metric with no live data source, which this whole effort exists to prevent. That marketing copy itself was not touched (out of scope for a metric-registry migration) but is flagged here as over-promising a capability the app doesn't have.
+- **Digital Twin derived aggregates** (confidence score, consistency sub-metrics, development stage) - computed *over* a set of registry metrics (`computeTwinConfidence`, `computeConsistency`, `deriveDevelopmentStage` in `twinEngine.ts`), not single-field metrics themselves; a fundamentally different shape than `MetricDefinition` and not forced into it.
+- **`coachingMode`** - requested by name during review; intentionally **not implemented**. No agreed semantics were ever defined for it (what would it control - a coaching-recommendation string? a different comparison rule for coach vs. athlete views?), and no consumer requires it today. `comparisonMode` governs comparison semantics; nothing today needs a second, coaching-specific axis. Recorded here as a deliberate omission, not an oversight - if a future feature needs it, its semantics need to be defined first, the same standard applied to every other field in this registry.
+
+### 33.14 Future metric walkthrough
+
+Adding a genuinely new metric - say a future "Performance Index" - is one new `defineMetric({...})` call in `metricRegistry.ts` with `supportsPerformanceIndex: true` (and whatever `comparisonMode`/`backendSource` actually apply once such a feature is real). The hypothetical Performance Index feature itself would then read `METRIC_REGISTRY.filter((m) => m.supportsPerformanceIndex)` - no `PartnerCompare.tsx`, `twinEngine.ts`, or Twin component would need to change, because none of them hardcode a metric key or a comparison rule; they all already read `comparisonMode`/`supportsTwin`/`supportsCoachComparison`/`hidden` from whatever the registry says. This is the same mechanism already proven twice in this pass: once by the 10 `hidden` entries (real metadata, promotable with a one-line change, §33.12), and once by the test-only synthetic `LOWER_IS_BETTER` metric in `PartnerCompare.test.tsx` (§33.13), which exercised a comparison-mode branch with zero production-component changes.
+
+### 33.15 Files changed
+
+- `frontend/src/features/performances/lib/metricRegistry.ts` - extended schema, `defineMetric`/`validateMetricRegistry`/derivation helpers, 26 entries (16 pre-existing + 10 new `hidden` entries).
+- `frontend/src/features/performances/lib/metricRegistry.test.ts` (new) - structural registry tests (§33.16).
+- `frontend/src/features/performances/lib/twinEngine.ts` - registry-derived `LOWER_IS_BETTER`, `interpretTrendForDisplay`, `isTwinNarrativeEligible`, fixes to `buildTwinPersonalBests`/`deriveStrengths`/`deriveDevelopmentAreas`/`generateEvolutionStatements`/`computeConsistency`.
+- `frontend/src/features/performances/lib/twinEngine.test.ts` - extended (not modified) with NEUTRAL/EXPERIMENTAL-exclusion and `interpretTrendForDisplay` tests; `buildSession` fixture gained additive, default-preserving override parameters.
+- `frontend/src/features/performances/components/twin/TwinProgress.tsx` - `status` reads + `supportsTwin`/`hidden` filter guards.
+- `frontend/src/features/performances/components/twin/TwinTrendChart.tsx` - direction badge now driven by `interpretTrendForDisplay`.
+- `frontend/src/features/partners/pages/PartnerCompare.tsx` - `winningSide`, exported `MetricSection`, registry-driven section filters.
+- `frontend/src/features/partners/pages/PartnerCompare.test.tsx` (new) - `MetricSection` winner-logic tests (§33.16).
+- `docs/ENGINEERING_HANDOFF.md` - this section.
+
+No backend, API, database, biomechanics-algorithm, or `analyzeTrend`/`classifyDirection` math changes anywhere in this pass.
+
+### 33.16 Tests added
+
+`metricRegistry.test.ts` (new, 22 tests): registry import causes no automatic validation/throw; `validateMetricRegistry(METRIC_REGISTRY)` returns no violations; unique keys; every metric has required metadata; every `comparisonMode` is a valid enum value; `experimental` mirrors `status`; every experimental-status metric uses `comparisonMode: "EXPERIMENTAL"`; every `hidden` metric has both `supports*Twin`/`*CoachComparison` false; every `trendMode` matches its derived default (none override it today); `cadence`/`stride_frequency` remain `HIGHER_IS_BETTER` with disclosed limitation text; all six joint angles remain `NEUTRAL`; `supportsObjectiveComparison`'s three-mode allowlist; `validateMetricRegistry`'s duplicate-key and experimental-invariant detection; `defineMetric`'s four override paths (`trendMode`, `supportsRanking`, `supportsTwin`, `supportsCoachComparison`) and its non-throwing behavior even for a malformed entry.
+
+`twinEngine.test.ts` (extended, +19 tests): a synthetic strongly-increasing 3-session dataset proving `buildTwinPersonalBests`/`deriveStrengths`/`deriveDevelopmentAreas`/`generateEvolutionStatements` never reference a NEUTRAL joint angle or an EXPERIMENTAL metric, with an explicit sanity check that the underlying trend really is directional (not a false negative from a flat series); `interpretTrendForDisplay` tested across `NEUTRAL` (rising→"Increased"/neutral, falling→"Decreased"/neutral), `HIGHER_IS_BETTER` (rising→"Improving"/positive, falling→"Regressing"/negative), and `LOWER_IS_BETTER` (via a synthetic metric, since none exists in the real registry - falling→positive, rising→negative, given `classifyDirection`'s own untouched, parity-tested direction-flip already happened upstream).
+
+`PartnerCompare.test.tsx` (new, 7 tests): the exported `MetricSection`, rendered directly against real fixture data (`analysisResult.fixture.ts`) cloned and overridden per case (no new hook/router/query-client mocking infrastructure introduced, matching the existing `AnalysisReport.test.tsx` convention) - `HIGHER_IS_BETTER` highlights only the larger value, `LOWER_IS_BETTER` (via a synthetic metric reading `video.duration_seconds`) highlights only the smaller value, `SYMMETRY` highlights only the larger symmetry score, `NEUTRAL` and `EXPERIMENTAL` highlight neither side, equal values highlight neither side, and a missing value on one side renders "Not comparable" rather than a false winner.
+
+### 33.17 Verification
+
+`npx tsc -b --force` - clean throughout every step of this pass. `npm run test -- --run` - all pre-existing tests pass unmodified (the 8 tests that temporarily failed during the cadence/stride-frequency `NEUTRAL` experiment, §33.8, pass again once that was reverted to `HIGHER_IS_BETTER`); see the session's final verification report for the exact frontend/lint/backend counts recorded at completion. No backend file was touched, confirmed via `git status` before and after this pass.
+
+### 33.18 Exact next task (current)
+
+Not yet prioritized by the project owner. The registry's extensibility is proven but not yet exercised by a real second consumer - the most natural next steps, none started: promoting one or more of the 10 `hidden` entries if the product wants tracking-confidence/visibility/quality-subscore trends surfaced; the same research items A/B/C from §31.9, still open and still not to be picked up opportunistically; the real coach/academy verification workflow (§18.3/§23.7). Terms/Privacy remains explicitly parked - do not pick it up unprompted.

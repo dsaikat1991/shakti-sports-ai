@@ -6,7 +6,7 @@
 // implements (audit, parity strategy, metric rules, empty states,
 // confidence formula).
 import type { MetricDefinition } from "./metricRegistry";
-import { METRIC_REGISTRY, getEventName } from "./metricRegistry";
+import { METRIC_REGISTRY, getEventName, supportsObjectiveComparison } from "./metricRegistry";
 
 // ---------------------------------------------------------------------
 // Trend analysis - ported from backend/app/services/digital_twin_v2/
@@ -55,14 +55,19 @@ export interface TrendResult {
   direction: TrendDirection;
 }
 
-// No current METRIC_REGISTRY entry is "lower is better" (cadence,
-// stride frequency, knee symmetry, readiness score, detection rate,
-// body visibility, movement quality are all "higher is better") - kept
-// as an explicit, extensible set matching the Python module's own
-// pattern, rather than hardcoding "higher is better" everywhere, so a
-// future lower-is-better metric doesn't require restructuring this
-// function.
-const LOWER_IS_BETTER = new Set<string>([]);
+// Generated from the registry's own comparisonMode field, not hand-
+// authored - no metric's "lower is better" direction is hardcoded here or
+// anywhere else in this module. This Set exists purely as a compatibility
+// layer: classifyDirection/analyzeTrend below are parity-tested against a
+// Python reference (twinEngine.parity.test.ts) and must keep their exact
+// existing signature (metricKey: string, not a full MetricDefinition), so
+// they cannot read `metric.comparisonMode` directly without risking that
+// parity contract. Deriving this Set at module load instead gets the same
+// metadata-driven result with zero signature risk (docs/
+// ENGINEERING_HANDOFF.md §33).
+const LOWER_IS_BETTER = new Set<string>(
+  METRIC_REGISTRY.filter((m) => m.comparisonMode === "LOWER_IS_BETTER").map((m) => m.key),
+);
 
 // Ordinary least squares slope against the equally-spaced session index
 // [0..n-1] - NOT calendar time. Matches the Python reference exactly
@@ -171,6 +176,64 @@ export function analyzeTrend(metricKey: string, values: number[]): TrendResult {
     coefficientOfVariationPercent: cv,
     direction,
   };
+}
+
+export interface TrendDisplay {
+  label: string;
+  tone: "positive" | "negative" | "neutral" | "warning";
+}
+
+// Translates a metric's raw statistical trend direction into UI-safe
+// language, driven entirely by the metric's own comparisonMode - the
+// single place this decision is made. Previously, every consumer
+// (TwinTrendChart's DIRECTION_LABEL map) applied "Improving"/"Regressing"
+// unconditionally, which meant a rising joint-angle trend was labeled
+// "Improving" even though a joint angle has no better/worse direction
+// (docs/ENGINEERING_HANDOFF.md §33). Does NOT change analyzeTrend's
+// underlying math/output - purely an interpretation layer on top of it.
+export function interpretTrendForDisplay(metric: MetricDefinition, trend: TrendResult): TrendDisplay {
+  if (trend.direction === "insufficient_data") {
+    return { label: "Not enough data yet", tone: "neutral" };
+  }
+  if (trend.direction === "high_variability") {
+    return { label: "High variability", tone: "warning" };
+  }
+  if (trend.direction === "stable") {
+    return { label: "Stable", tone: "neutral" };
+  }
+
+  // trend.direction is "improving" or "regressing" here - analyzeTrend
+  // already accounts for LOWER_IS_BETTER when computing this (see
+  // classifyDirection), so "improving" already means "the right
+  // direction for this metric" whenever an objective direction exists.
+  if (supportsObjectiveComparison(metric.comparisonMode)) {
+    return trend.direction === "improving"
+      ? { label: "Improving", tone: "positive" }
+      : { label: "Regressing", tone: "negative" };
+  }
+
+  // NEUTRAL / EXPERIMENTAL / NOT_COMPARABLE / TARGET_RANGE - the raw
+  // value changed, but no direction is objectively "better" - report the
+  // fact, never a value judgment.
+  return trend.direction === "improving"
+    ? { label: "Increased", tone: "neutral" }
+    : { label: "Decreased", tone: "neutral" };
+}
+
+// A metric may only ever generate a strength, a development area, an
+// evolution statement, or a personal best if it's production-status, not
+// hidden, eligible for the Twin, and its comparisonMode supports an
+// objective "better" direction at all (docs/ENGINEERING_HANDOFF.md §33) -
+// a NEUTRAL joint angle must never produce "Improving Left Knee Angle"
+// text (or a "Personal Best" card) just because its trend slope happens
+// to be positive.
+function isTwinNarrativeEligible(metric: MetricDefinition): boolean {
+  return (
+    metric.status === "production" &&
+    !metric.hidden &&
+    metric.supportsTwin &&
+    supportsObjectiveComparison(metric.comparisonMode)
+  );
 }
 
 // ---------------------------------------------------------------------
@@ -472,9 +535,14 @@ export function traceMetricInclusion(
 }
 
 // ---------------------------------------------------------------------
-// Personal bests across the registry - §08: experimental metrics are
-// never eligible (ground contact / duty factor / flight time stay
-// display-only), enforced here, not just by UI convention.
+// Personal bests across the registry - isTwinNarrativeEligible() gates
+// this the same way as strengths/development areas (docs/
+// ENGINEERING_HANDOFF.md §33): experimental metrics (ground contact / duty
+// factor / flight time) stay display-only, AND - fixed this pass - a
+// NEUTRAL metric (joint angles) can no longer produce a "Personal Best"
+// card either, since there's no objective better/worse direction to pick
+// one. Previously this filtered on production-status alone, which meant
+// the Twin could render "Personal Best: Left Knee Angle."
 // ---------------------------------------------------------------------
 
 export function buildTwinPersonalBests(
@@ -482,7 +550,7 @@ export function buildTwinPersonalBests(
 ): (PersonalBestResult & { label: string; unit: string })[] {
   const { dominant } = groupByDominantProvider(completedSessions(performances));
 
-  return METRIC_REGISTRY.filter((metric) => metric.status === "production")
+  return METRIC_REGISTRY.filter(isTwinNarrativeEligible)
     .map((metric) => {
       const points = extractMetricSeries(dominant, metric);
       if (points.length === 0) return null;
@@ -490,7 +558,7 @@ export function buildTwinPersonalBests(
       const best = findPersonalBest(
         metric.key,
         points,
-        false, // no current production metric is lower-is-better, see LOWER_IS_BETTER above
+        metric.comparisonMode === "LOWER_IS_BETTER",
       );
       if (!best) return null;
 
@@ -641,9 +709,12 @@ export function computeTwinConfidence(performances: TwinSessionInput[]): TwinCon
 // ---------------------------------------------------------------------
 // Strengths / Development Areas - Steps 5-6. Rule-based, deterministic,
 // derived only from analyzeTrend()/consistency output - never an LLM.
-// Only "production" metrics are eligible (§08, Line 2) - ground
-// contact/duty factor/flight time can never generate a strength or a
-// development area while the underlying detector remains unvalidated.
+// Only isTwinNarrativeEligible() metrics qualify (docs/ENGINEERING_HANDOFF.md
+// §33): production-status, not hidden, Twin-eligible, AND comparisonMode
+// must support an objective direction. Ground contact/duty factor/flight
+// time are excluded because they're experimental; joint angles are
+// excluded because a bigger/smaller angle isn't "better" - neither can
+// ever generate a strength or a development area.
 // ---------------------------------------------------------------------
 
 export interface TwinObservation {
@@ -659,7 +730,7 @@ export function deriveStrengths(
   const observations: TwinObservation[] = [];
 
   for (const metric of METRIC_REGISTRY) {
-    if (metric.status !== "production") continue;
+    if (!isTwinNarrativeEligible(metric)) continue;
 
     const { trend } = buildTwinMetricTrend(performances, metric);
     if (trend.samples < 2) continue;
@@ -701,7 +772,7 @@ export function deriveDevelopmentAreas(
   const { dominant: completed } = groupByDominantProvider(completedSessions(performances));
 
   for (const metric of METRIC_REGISTRY) {
-    if (metric.status !== "production") continue;
+    if (!isTwinNarrativeEligible(metric)) continue;
 
     const { trend } = buildTwinMetricTrend(performances, metric);
     if (trend.samples < 2) continue;
@@ -756,7 +827,7 @@ export function generateEvolutionStatements(performances: TwinSessionInput[]): s
   const statements: string[] = [];
 
   for (const metric of METRIC_REGISTRY) {
-    if (metric.status !== "production") continue;
+    if (!isTwinNarrativeEligible(metric)) continue;
 
     const { trend } = buildTwinMetricTrend(performances, metric);
     if (trend.samples < 2 || trend.percentChange === null) continue;

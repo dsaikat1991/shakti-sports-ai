@@ -10,13 +10,20 @@ import TwinTrendChart from "./TwinTrendChart";
 // experimental (ground-contact-derived) metrics get their own
 // permanently-labeled section, never mixed into the trusted ones.
 export default function TwinProgress({ performances }: { performances: TwinSessionInput[] }) {
+  // supportsTwin/hidden gate the 10 registry entries added for inventory/
+  // future-extensibility purposes (tracking confidence, per-group
+  // visibility, camera/lighting/sharpness/frame-rate scores -
+  // docs/ENGINEERING_HANDOFF.md §33) out of the Twin - they exist in the
+  // registry but aren't meant to appear here yet.
   const biomechanicsMetrics = METRIC_REGISTRY.filter(
-    (m) => m.status === "production" && m.category === "biomechanics",
+    (m) => m.status === "production" && m.category === "biomechanics" && m.supportsTwin && !m.hidden,
   );
   const recordingQualityMetrics = METRIC_REGISTRY.filter(
-    (m) => m.status === "production" && m.category === "recording_quality",
+    (m) => m.status === "production" && m.category === "recording_quality" && m.supportsTwin && !m.hidden,
   );
-  const experimentalMetrics = METRIC_REGISTRY.filter((m) => m.status === "experimental");
+  const experimentalMetrics = METRIC_REGISTRY.filter(
+    (m) => m.status === "experimental" && m.supportsTwin && !m.hidden,
+  );
 
   return (
     <div className="space-y-10">
