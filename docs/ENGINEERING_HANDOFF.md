@@ -1720,6 +1720,53 @@ No backend, API, database, biomechanics-algorithm, or `analyzeTrend`/`classifyDi
 
 `npx tsc -b --force` - clean throughout every step of this pass. `npm run test -- --run` - all pre-existing tests pass unmodified (the 8 tests that temporarily failed during the cadence/stride-frequency `NEUTRAL` experiment, §33.8, pass again once that was reverted to `HIGHER_IS_BETTER`); see the session's final verification report for the exact frontend/lint/backend counts recorded at completion. No backend file was touched, confirmed via `git status` before and after this pass.
 
-### 33.18 Exact next task (current)
+### 33.18 Exact next task (historical - the product/design workstream below was picked up next; see §34)
 
 Not yet prioritized by the project owner. The registry's extensibility is proven but not yet exercised by a real second consumer - the most natural next steps, none started: promoting one or more of the 10 `hidden` entries if the product wants tracking-confidence/visibility/quality-subscore trends surfaced; the same research items A/B/C from §31.9, still open and still not to be picked up opportunistically; the real coach/academy verification workflow (§18.3/§23.7). Terms/Privacy remains explicitly parked - do not pick it up unprompted.
+
+---
+
+## 34. Session update: full product/UX/design pass, plus a critical live finding on the marketing homepage
+
+Same overall session, immediate follow-up to §33. The project owner shifted from engineering to product/design work: a full UX audit, then four sequential approved planning documents (each explicitly built on the last, none rewritten), then a first real ASCII-wireframe design deliverable for the athlete flow. All of this is **product/UX documentation - no application code was written or changed in this pass**, confirmed via `git status` before and after. See the new `docs/DESIGN_BIBLE.md` for the durable, condensed version of every decision below - this section is a session log, that file is the reference to actually work from.
+
+### 34.1 What was produced
+
+Six Claude Artifacts (private, richly-formatted HTML/CSS documents - not part of this repo's files, hence `docs/DESIGN_BIBLE.md` existing as the durable fallback):
+
+1. **UX & Product Review** - a full-codebase audit against the mission ("discover talent by performance, not geography"), scored 4/10 against that mission specifically (vs. ~7/10 as a generic technical dashboard). Found: no i18n anywhere, no parent role despite parents being a named audience, an account model assuming a literate device-owning adult, and - the single biggest finding - that the product's own three internal test clips all fail the live `biomechanics_ready` gate, meaning "we couldn't read your run" is the *likely first real experience* for most rural users, not an edge case.
+2. **Product Experience Bible** - voice/tone/reading-level rules, the four-beat error formula, and the "same fact, four altitudes" worked example (§2 of the Design Bible doc).
+3. **Product Experience Specification v1.0** - a full behavioral spec (purpose/audience/emotion/hierarchy/never-do list) for 17 screens plus platform-wide rules, deliberately containing zero visual decisions.
+4. **UI/UX Blueprint v1.0** - entry/exit points and state behavior for 16 screens, five user-journey maps, a navigation map (explicitly demoting Athlete Compare out of primary coach navigation, with reasoning), and a permanent Design Decision Log.
+5. **Design System v1.0** - formalized the *existing* brand (kept `#F0600E`, kept Anton/Inter/JetBrains Mono) into real semantic tokens, added two new token families not in the codebase yet (`quality.*`, `confidence.*` - deliberately not reusing generic red/amber/green, so a skipped analysis never looks like a system failure), and scored the *current* live identity honestly (Design Tokens 2/10, Motion 3/10 - the two lowest, and the two recommended as highest-leverage to fix first).
+6. **Athlete Flow design** (two passes: an exploratory ASCII-wireframe pass, then a fuller pass with explicit per-screen traceability back to specific UX Review findings and Bible principles) - complete for Landing → Authentication → Onboarding → Home → Upload Flow → Upload Review → Analysis Waiting → Sprint Report → My Progress. Coach/parent/scout flows deliberately not started yet, per the project owner's own explicit "one flow at a time" instruction.
+
+Artifact URLs are recorded in `docs/DESIGN_BIBLE.md` §8 - they were not re-listed here to avoid two copies drifting.
+
+### 34.2 A critical, unresolved finding from live browser testing (not yet acted on)
+
+While demonstrating the live app this session (signed in as the QA coach, then the QA athlete, then signed out entirely to view the public site), the **public marketing homepage was found to fabricate metrics and capabilities that do not exist anywhere in the real backend** - confirmed by direct navigation to `/` while logged out. The homepage's "live analysis" demo shows `Stride Angle: 168°`, `Form Score: 8.7/10`, `Arm Drive: Balanced`, `Top Speed: 34 km/h` (none of these are computed by anything in this codebase - the real metrics are cadence, stride frequency, knee symmetry, ground contact, duty factor, flight time, and joint angles, per `metricRegistry.ts`), and claims specific per-event metric counts ("Hurdles: 13 metrics measured," "Long Jump: 9," "High Jump: 10") when biomechanics is implemented for **Sprint only** - confirmed repeatedly this session via direct backend audit. Full detail in `docs/DESIGN_BIBLE.md` §9.
+
+This was found, described, and **not fixed** this pass (no application code was touched, per §34's own scope as a documentation session) - it directly violates the "never invent certainty / never exaggerate AI capability" guardrail that the rest of this session's design work was built around, and it's on the single most-seen page in the entire product. Recorded here as the leading candidate for whatever the next milestone turns out to be.
+
+### 34.3 QA data created this session (real Supabase rows, disposable, already used for live verification)
+
+A second QA athlete account, `shakti.qa.athlete2@example.com` (password recorded in `docs/DESIGN_BIBLE.md` §10, not repeated here), was created and connected to the existing QA coach specifically to test the two-athlete Coach Compare flow live - one real, completed, biomechanics-skipped session exists for it. All QA rows are marked `[QA VERIFICATION] ... safe to delete` in their `notes` fields. The long-standing finding that **no available real clip clears the live `biomechanics_ready` gate** was reconfirmed, unchanged, during this work.
+
+### 34.4 Files changed
+
+- `docs/DESIGN_BIBLE.md` (new) - the durable, condensed reference for every product/design decision above.
+- `docs/ENGINEERING_HANDOFF.md` (this section).
+- `docs/NEXT_SESSION_HANDOFF.md` (rewritten for the new session).
+
+No application code changed. Two new real (disposable, marked) rows exist in the live Supabase project per §34.3, created via the same real REST/API sequence documented in §26.1/§33.
+
+### 34.5 Follow-up: per-metric classification of the homepage's false claims, and a scoping decision
+
+Immediate follow-up, same session. The project owner asked whether the homepage's fabricated metrics (§34.2) could instead be *built into real ones* rather than removed. Answer, worked through per metric and now recorded in `docs/DESIGN_BIBLE.md` §9.2: some can (Stride Angle, arm symmetry, torso lean, knee lift/hip extension as real numbers, Top Speed/Acceleration - the last two blocked on camera calibration, a genuinely new capability the system has none of today), and some structurally cannot, no matter the engineering effort (Form Score, and any qualitative tier label like "Elite"/"Balanced"/"Excellent" - these require invented weights or unvalidated benchmark thresholds; the app's own existing "Sprint Score - Coming Soon" copy already reached this same conclusion once, and the homepage currently contradicts it).
+
+**Explicit project-owner scoping decision**: work focuses on the entire platform plus **Sprint only** for now. Hurdles/Long Jump/High Jump are deliberately deferred until Sprint mechanics is "top-notch" - do not build or validate anything for those three events opportunistically alongside Sprint work. This doesn't reduce the urgency of correcting the homepage's *false claim* that those events already have working metrics (13/9/10 "measured") - that's still actively untrue today - only the urgency of *building the real thing* for them.
+
+### 34.6 Exact next task (current)
+
+Not yet prioritized by the project owner beyond §34.2/§34.5's recommendation. Candidates, none started: fixing the marketing homepage - remove/replace the metrics that can never be real (Form Score, qualitative tiers, the false Hurdles/Long Jump/High Jump counts) regardless of what else happens, and separately scope the metrics that are genuinely achievable for Sprint (Stride Angle, arm symmetry, torso lean, refined knee/hip framing) as their own research-and-validation pass, matching this project's audit-first standard; continuing the athlete-flow design work into coach/parent/scout flows (athlete flow now done); beginning actual implementation of the athlete flow's Phase 1 items per the Blueprint's roadmap. Terms/Privacy remains explicitly parked. The three research items A/B/C from §31.9 and the metric-registry follow-ups from §33.18 remain open and untouched.
