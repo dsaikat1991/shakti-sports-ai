@@ -11,9 +11,12 @@ import {
 import { Link, useParams } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
+import { friendlyErrorMessage } from "../../../lib/friendlyError";
 import { usePerformance } from "../hooks/usePerformance";
 import { useRetryAnalysis } from "../hooks/useRetryAnalysis";
 import { useAnalysisPolling } from "../hooks/useAnalysisPolling";
+import { buildReportHeadline } from "../lib/reportHeadline";
+import { buildPerformanceDisplayName } from "../lib/performanceDisplayName";
 import type { AnalysisResult } from "../types/analysis";
 
 // Postgres's jsonb column type does not preserve object key insertion
@@ -831,6 +834,12 @@ export default function PerformanceDetail() {
     status === "processing" ||
     status === "analyzing";
 
+  // Lead with a real finding instead of the user-typed session name,
+  // wherever biomechanics is actually ready - the session title moves to
+  // supporting text underneath. Falls back to the title when there is
+  // nothing honest to lead with yet (still processing, or skipped).
+  const headline = buildReportHeadline(performance.analysis_result);
+
   return (
     <div className="mx-auto max-w-6xl">
       <Link
@@ -859,9 +868,15 @@ export default function PerformanceDetail() {
               </span>
             </div>
 
-            <h1 className="mt-4 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
-              {performance.title}
+            <h1 className="mt-4 text-3xl font-bold leading-tight text-gray-950 md:text-4xl">
+              {headline ?? buildPerformanceDisplayName(performance)}
             </h1>
+
+            {headline && (
+              <p className="mt-1 text-sm font-bold text-gray-500">
+                {buildPerformanceDisplayName(performance)}
+              </p>
+            )}
 
             <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
               <CalendarDays className="h-4 w-4" />
@@ -929,7 +944,7 @@ export default function PerformanceDetail() {
             </p>
 
             <p className="mt-1 text-sm text-gray-500">
-              Shakti Motion Intelligence™ analysis
+              AI performance analysis
             </p>
           </div>
         </div>
@@ -947,7 +962,7 @@ export default function PerformanceDetail() {
         {status === "completed" && performance.analysis_result ? (
           <div className="mt-6">
             <p className="mb-4 font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-[#F0600E]">
-              Shakti Motion Intelligence™ Report
+              Your Performance Report
             </p>
 
             <AnalysisReport
@@ -964,13 +979,18 @@ export default function PerformanceDetail() {
             </div>
 
             <p className="mt-2 text-sm leading-6 text-red-700">
-              {(performance.analysis_error as string | null) ||
-                "Analysis could not be completed for this recording."}
+              {friendlyErrorMessage(
+                new Error(
+                  (performance.analysis_error as string | null) ||
+                    "Analysis could not be completed for this recording.",
+                ),
+                "analysis",
+              )}
             </p>
 
             {retryAnalysis.error && (
               <p className="mt-2 text-sm leading-6 text-red-600">
-                Retry failed: {retryAnalysis.error.message}
+                {friendlyErrorMessage(retryAnalysis.error, "analysis")}
               </p>
             )}
 
@@ -989,7 +1009,7 @@ export default function PerformanceDetail() {
         ) : (
           <div className="mt-6 rounded-3xl border border-orange-200 bg-[#FFF8F3] p-6">
             <p className="text-sm font-bold text-gray-950">
-              Shakti Motion Intelligence™
+              Your report is on its way
             </p>
 
             <p className="mt-2 text-sm leading-6 text-gray-600">

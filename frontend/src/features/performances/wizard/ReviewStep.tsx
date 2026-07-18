@@ -2,12 +2,14 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
+import { friendlyErrorMessage } from "../../../lib/friendlyError";
 import { useAuth } from "../../auth/context/AuthContext";
 
 import WizardLayout from "../components/WizardLayout";
 import { EVENTS } from "../data/events";
 import { PERFORMANCE_TYPES } from "../data/performanceTypes";
 import { useCreatePerformance } from "../hooks/useCreatePerformance";
+import { buildPerformanceDisplayName } from "../lib/performanceDisplayName";
 
 import type { WizardStepProps } from "../store/performanceWizard.store";
 
@@ -99,10 +101,12 @@ export default function ReviewStep({
 
       <div className="mt-4 rounded-3xl border border-gray-200 bg-white p-5">
         <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-gray-400">
-          Session Name
+          Your Session Will Be Called
         </p>
 
-        <p className="mt-2 text-xl font-bold text-gray-950">{title}</p>
+        <p className="mt-2 text-xl font-bold text-gray-950">
+          {buildPerformanceDisplayName({ performance_type: performanceType ?? null, title })}
+        </p>
 
         {notes && (
           <>
@@ -126,9 +130,29 @@ export default function ReviewStep({
         </p>
       </div>
 
+      {createPerformance.isPending && (
+        <div className="mt-5">
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500">
+            <span>
+              {createPerformance.uploadProgress < 100
+                ? "Uploading your recording..."
+                : "Saving your performance..."}
+            </span>
+            <span>{createPerformance.uploadProgress}%</span>
+          </div>
+
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-[#F0600E] transition-all duration-200"
+              style={{ width: `${createPerformance.uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {createPerformance.error && (
-        <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {createPerformance.error.message}
+        <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+          {friendlyErrorMessage(createPerformance.error, "upload")}
         </p>
       )}
 

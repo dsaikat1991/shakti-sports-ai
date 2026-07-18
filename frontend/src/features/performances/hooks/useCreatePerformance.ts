@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   createPerformanceRecord,
   uploadPerformanceRecording,
@@ -15,14 +16,22 @@ type CreatePerformanceInput = {
 };
 
 export function useCreatePerformance() {
-  return useMutation({
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const mutation = useMutation({
     mutationFn: async ({ athleteId, draft }: CreatePerformanceInput) => {
       if (!draft.recording) {
         throw new Error("Please upload a recording first.");
       }
 
+      setUploadProgress(0);
+
       const { data: uploadData, error: uploadError } =
-        await uploadPerformanceRecording(athleteId, draft.recording);
+        await uploadPerformanceRecording(
+          athleteId,
+          draft.recording,
+          setUploadProgress,
+        );
 
       if (uploadError || !uploadData) {
         throw new Error(uploadError?.message || "Recording upload failed.");
@@ -67,4 +76,6 @@ export function useCreatePerformance() {
       return data;
     },
   });
+
+  return { ...mutation, uploadProgress };
 }

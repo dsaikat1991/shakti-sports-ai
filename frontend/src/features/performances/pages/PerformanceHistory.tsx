@@ -15,6 +15,7 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../hooks/usePerformances";
 import { formatSessionDate } from "../lib/analysisSummary";
+import { buildPerformanceDisplayName } from "../lib/performanceDisplayName";
 
 const EVENT_OPTIONS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
 const STATUS_OPTIONS = ["uploaded", "analyzing", "processing", "completed", "failed"];
@@ -106,7 +107,7 @@ export default function PerformanceHistory() {
         return false;
       }
       if (query) {
-        const haystack = `${performance.title ?? ""} ${performance.notes ?? ""}`.toLowerCase();
+        const haystack = `${buildPerformanceDisplayName(performance)} ${performance.notes ?? ""}`.toLowerCase();
         if (!haystack.includes(query)) return false;
       }
       return true;
@@ -290,7 +291,7 @@ export default function PerformanceHistory() {
                     </div>
 
                     <h2 className="mt-3 text-2xl font-bold text-gray-950">
-                      {performance.title}
+                      {buildPerformanceDisplayName(performance)}
                     </h2>
 
                     <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">

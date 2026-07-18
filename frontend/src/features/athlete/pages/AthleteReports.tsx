@@ -15,6 +15,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { usePerformances } from "../../performances/hooks/usePerformances";
 import { RatingBadge } from "../../performances/pages/PerformanceDetail";
 import { extractAnalysisSummary, formatSessionDate } from "../../performances/lib/analysisSummary";
+import { buildPerformanceDisplayName } from "../../performances/lib/performanceDisplayName";
 
 const EVENT_OPTIONS = ["Sprint", "Hurdles", "Long Jump", "High Jump"];
 
@@ -52,7 +53,7 @@ export default function AthleteReports() {
         return false;
       }
       if (query) {
-        const haystack = `${performance.title ?? ""} ${performance.notes ?? ""}`.toLowerCase();
+        const haystack = `${buildPerformanceDisplayName(performance)} ${performance.notes ?? ""}`.toLowerCase();
         if (!haystack.includes(query)) return false;
       }
       return true;
@@ -217,7 +218,7 @@ export default function AthleteReports() {
                   </div>
 
                   <h2 className="mt-3 text-2xl font-bold text-gray-950">
-                    {performance.title}
+                    {buildPerformanceDisplayName(performance)}
                   </h2>
 
                   <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">

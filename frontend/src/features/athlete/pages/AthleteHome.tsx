@@ -15,6 +15,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { ROUTES } from "../../../constants/routes";
+import { friendlyErrorMessage } from "../../../lib/friendlyError";
 import { useAuth } from "../../auth/context/AuthContext";
 import { useAthleteDashboard } from "../hooks/useAthleteDashboard";
 import { useAthleteProfile } from "../hooks/useAthleteProfile";
@@ -22,6 +23,7 @@ import { useAthleteGoals } from "../hooks/useAthleteGoals";
 import { useAthleteNotifications } from "../hooks/useAthleteNotifications";
 import type { NotificationType } from "../lib/deriveNotifications";
 import { formatSessionDate } from "../../performances/lib/analysisSummary";
+import { buildPerformanceDisplayName } from "../../performances/lib/performanceDisplayName";
 
 function formatTargetDate(date?: string | null) {
   if (!date) return null;
@@ -181,8 +183,8 @@ export default function AthleteHome() {
       </div>
 
       {error && (
-        <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
-          {error.message}
+        <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          {friendlyErrorMessage(error, "dashboard")}
         </div>
       )}
 
@@ -314,7 +316,7 @@ export default function AthleteHome() {
               </p>
 
               <h3 className="mt-2 text-2xl font-bold text-gray-950">
-                {latestPerformance.title}
+                {buildPerformanceDisplayName(latestPerformance)}
               </h3>
 
               <p className="mt-2 flex items-center gap-2 text-sm text-gray-500">
@@ -403,7 +405,7 @@ export default function AthleteHome() {
                   </div>
 
                   <h3 className="mt-2 text-lg font-bold text-gray-950">
-                    {performance.title}
+                    {buildPerformanceDisplayName(performance)}
                   </h3>
 
                   <p className="mt-1 text-sm text-gray-500">

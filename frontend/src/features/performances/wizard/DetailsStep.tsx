@@ -35,7 +35,7 @@ export default function DetailsStep({
       step={3}
       totalSteps={5}
       title="Tell us about this performance."
-      description="Add a date and a simple name so you can track it later in your performance timeline."
+      description="Add a date, and a personal note if you want one - we'll take care of naming the session."
     >
       <div>
         <p className="text-sm font-bold text-gray-950">
@@ -79,13 +79,14 @@ export default function DetailsStep({
       <div className="mt-7 grid gap-4">
         <div>
           <label className="text-sm font-bold text-gray-950">
-            Session name
+            Personal note
+            <span className="font-medium text-gray-400"> optional</span>
           </label>
 
           <input
             value={title}
             onChange={(event) => updateDraft("title", event.target.value)}
-            placeholder="Morning sprint session"
+            placeholder="Felt amazing today"
             className="mt-2 w-full rounded-2xl border border-gray-200 px-5 py-4 text-sm outline-none transition focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
           />
         </div>
@@ -118,7 +119,7 @@ export default function DetailsStep({
         <button
           type="button"
           onClick={nextStep}
-          disabled={!performedOn || !title.trim()}
+          disabled={!performedOn}
           className="cursor-pointer rounded-xl bg-[#F0600E] px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue →

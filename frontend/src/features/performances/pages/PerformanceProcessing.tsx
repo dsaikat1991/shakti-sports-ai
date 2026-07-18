@@ -1,18 +1,13 @@
 import { AlertTriangle, CheckCircle2, Clock3, Loader2, RefreshCw } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ROUTES } from "../../../constants/routes";
+import { friendlyErrorMessage } from "../../../lib/friendlyError";
+import { buildPerformanceDisplayName } from "../lib/performanceDisplayName";
 import { usePerformance } from "../hooks/usePerformance";
 import { useAnalysisPolling } from "../hooks/useAnalysisPolling";
 import { useRetryAnalysis } from "../hooks/useRetryAnalysis";
-
-const processingSteps = [
-  "Detecting athlete...",
-  "Tracking body landmarks...",
-  "Analyzing biomechanics...",
-  "Preparing performance report...",
-];
 
 const analysisQuotes = [
   "Every great performance starts with a single movement.",
@@ -84,17 +79,13 @@ export default function PerformanceProcessing() {
   const job = useAnalysisPolling(performanceId, jobId);
   const retryAnalysis = useRetryAnalysis();
 
-  const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setStepIndex((current) =>
-        current >= processingSteps.length - 1 ? current : current + 1,
-      );
-    }, 2500);
-
-    return () => window.clearInterval(interval);
-  }, []);
+  // A single quote for the wait, not a fake step-by-step progress display -
+  // the backend only reports queued/processing/completed/failed, nothing
+  // finer-grained, so pretending to know "which step" it's on would be
+  // exactly the kind of invented certainty this platform avoids.
+  const [quote] = useState(
+    () => analysisQuotes[Math.floor(Math.random() * analysisQuotes.length)],
+  );
 
   if (isLoading) {
     return (
@@ -133,8 +124,6 @@ export default function PerformanceProcessing() {
     "Analysis could not be completed.";
 
   const analysisNeverStarted = !data.analysis_job_id;
-
-  const quote = analysisQuotes[stepIndex % analysisQuotes.length];
 
   function handleRetry() {
     if (!data || !data.video_url) return;
@@ -176,8 +165,8 @@ export default function PerformanceProcessing() {
               : "Upload Complete"}
       </p>
 
-      <h1 className="mt-4 font-['Anton'] text-4xl md:text-5xl uppercase leading-none text-gray-950">
-        {data.title}
+      <h1 className="mt-4 text-3xl font-bold leading-tight text-gray-950 md:text-4xl">
+        {buildPerformanceDisplayName(data)}
       </h1>
 
       <div className="mx-auto mt-5 max-w-md rounded-3xl border border-gray-200 bg-gray-50 p-4">
@@ -194,19 +183,14 @@ export default function PerformanceProcessing() {
       {state === "failed" && (
         <>
           <p className="mx-auto mt-8 max-w-xl rounded-2xl bg-red-50 px-5 py-4 text-sm leading-6 text-red-700">
-            {failureReason}
+            {analysisNeverStarted
+              ? "We couldn't start analyzing this recording. Your video is still saved, so nothing is lost - try again in a moment."
+              : friendlyErrorMessage(new Error(failureReason), "analysis")}
           </p>
-
-          {analysisNeverStarted && (
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500">
-              This usually means the analysis backend wasn't reachable when
-              this recording was uploaded. Your video is still saved.
-            </p>
-          )}
 
           {retryAnalysis.error && (
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-red-600">
-              Retry failed: {retryAnalysis.error.message}
+              {friendlyErrorMessage(retryAnalysis.error, "analysis")}
             </p>
           )}
         </>
@@ -221,17 +205,15 @@ export default function PerformanceProcessing() {
 
       {state === "completed" && (
         <p className="mx-auto mt-8 max-w-xl text-base leading-7 text-gray-600">
-          Shakti Motion Intelligence™ has finished analyzing your
-          performance. Your biomechanical report is ready.
+          We've finished reading your performance. Your report is ready below.
         </p>
       )}
 
       {!isTerminal && state !== "timed_out" && (
         <>
           <p className="mx-auto mt-8 max-w-xl text-base leading-7 text-gray-600">
-            Shakti Motion Intelligence™ is analyzing your performance to
-            generate personalized biomechanical insights and coaching
-            recommendations.
+            We're reading your performance now. This usually takes a couple
+            of minutes.
           </p>
 
           <div className="mx-auto mt-5 max-w-xl rounded-3xl p-6">
@@ -240,7 +222,7 @@ export default function PerformanceProcessing() {
 
               {state === "queued" || state === "not_started"
                 ? "Waiting in queue..."
-                : processingSteps[stepIndex]}
+                : "Analyzing your performance..."}
             </div>
 
             <p className="mx-auto mt-5 max-w-sm text-sm italic leading-6 text-gray-600">

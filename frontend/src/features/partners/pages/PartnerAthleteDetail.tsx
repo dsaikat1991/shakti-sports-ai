@@ -16,6 +16,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { AnalysisReport } from "../../performances/pages/PerformanceDetail";
 import type { AnalysisResult } from "../../performances/types/analysis";
 import { formatSessionDate } from "../../performances/lib/analysisSummary";
+import { buildPerformanceDisplayName } from "../../performances/lib/performanceDisplayName";
 import {
   addNote,
   deleteNote,
@@ -83,7 +84,7 @@ function PerformanceCard({ performance }: { performance: any }) {
               {performance.upload_status ?? "uploaded"}
             </span>
           </div>
-          <h3 className="mt-2 text-lg font-bold text-gray-950">{performance.title}</h3>
+          <h3 className="mt-2 text-lg font-bold text-gray-950">{buildPerformanceDisplayName(performance)}</h3>
           <p className="mt-1 flex items-center gap-2 text-sm text-gray-500">
             <CalendarDays className="h-4 w-4" />
             {formatSessionDate(performance.performance_date)}

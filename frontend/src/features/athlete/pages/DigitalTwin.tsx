@@ -7,6 +7,7 @@ import { usePerformances } from "../../performances/hooks/usePerformances";
 import { useAthleteProfile } from "../hooks/useAthleteProfile";
 import { useAthleteGoals } from "../hooks/useAthleteGoals";
 import { extractAnalysisSummary } from "../../performances/lib/analysisSummary";
+import { buildPerformanceDisplayName } from "../../performances/lib/performanceDisplayName";
 import {
   type TwinSessionInput,
   buildTwinPersonalBests,
@@ -99,7 +100,7 @@ export default function DigitalTwin() {
         )
         .map((p: any) => ({
           performanceNumber: p.performance_number ?? 0,
-          title: p.title,
+          title: buildPerformanceDisplayName(p),
           date: p.performance_date ?? p.created_at,
           eventName: getEventName(p.events),
           status: p.upload_status,
