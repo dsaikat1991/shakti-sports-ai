@@ -604,20 +604,26 @@ function QualityGateBreakdown({ quality }: { quality: any }) {
   );
 }
 
+// Colors follow the project's official color spec: green = achievement/
+// success (both real passes, lighter for Good), amber = needs attention
+// but not failure (explicitly includes "recording quality could improve"),
+// red reserved for genuine technical failures only (upload failed,
+// corrupted, crashed) - never for a quality rating, and blue reserved for
+// informational/educational content, never a status judgment.
 const RATING_STYLES: Record<string, string> = {
-  Excellent: "bg-green-100 text-green-700",
-  Good: "bg-blue-100 text-blue-700",
-  Fair: "bg-amber-100 text-amber-700",
-  Poor: "bg-red-100 text-red-700",
+  Excellent: "bg-success-progress-soft text-success-progress",
+  Good: "bg-success-progress-tint text-success-progress",
+  Fair: "bg-warning-attention-tint text-warning-attention",
+  Poor: "bg-warning-attention-soft text-warning-attention",
 };
 
 export function RatingBadge({ rating }: { rating?: string }) {
-  if (!rating) return <span className="text-lg font-bold text-gray-950">N/A</span>;
+  if (!rating) return <span className="text-lg font-bold text-text-primary">N/A</span>;
 
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${
-        RATING_STYLES[rating] ?? "bg-gray-100 text-gray-700"
+        RATING_STYLES[rating] ?? "bg-surface-sunken text-text-secondary"
       }`}
     >
       {rating}

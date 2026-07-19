@@ -132,7 +132,7 @@ export default function DigitalTwin() {
     return (
       <div className="mx-auto max-w-5xl rounded-4xl border border-gray-200 bg-white p-10 text-center shadow-sm">
         <Loader2 className="mx-auto h-9 w-9 animate-spin text-[#F0600E]" />
-        <p className="mt-4 text-sm font-bold text-gray-600">Loading your Digital Twin...</p>
+        <p className="mt-4 text-sm font-bold text-gray-600">Loading your progress...</p>
       </div>
     );
   }
@@ -174,42 +174,42 @@ export default function DigitalTwin() {
       </section>
 
       <section id="timeline" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Timeline</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Timeline</h2>
         <TwinTimeline sessions={timelineSessions} />
       </section>
 
       <section id="progress" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Progress Engine</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Progress Engine</h2>
         <TwinProgress performances={twinSessions} />
       </section>
 
       <section id="strengths" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Strengths</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Strengths</h2>
         <TwinStrengths strengths={strengths} />
       </section>
 
       <section id="development" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Development Areas</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Development Areas</h2>
         <TwinDevelopmentAreas areas={developmentAreas} />
       </section>
 
       <section id="consistency" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Consistency</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Consistency</h2>
         <TwinConsistency consistency={consistency} />
       </section>
 
       <section id="personal-bests" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Personal Bests</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Personal Bests</h2>
         <TwinPersonalBests items={personalBestItems} />
       </section>
 
       <section id="evolution" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Evolution</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Evolution</h2>
         <TwinEvolution statements={evolutionStatements} />
       </section>
 
       <section id="achievements" className="scroll-mt-32">
-        <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Achievements</h2>
+        <h2 className="mb-4 text-xl font-bold text-gray-950">Achievements</h2>
         <TwinAchievements
           achievementsText={profileData?.sporting?.achievements ?? null}
           completedGoals={completedGoals}

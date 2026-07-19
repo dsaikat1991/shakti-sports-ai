@@ -2,6 +2,109 @@
 
 @import "tailwindcss";
 
+/* ==========================================================================
+   SEMANTIC DESIGN TOKENS - single source of truth for every color in the
+   app (project owner's official color philosophy spec).
+
+   Rule: no component may hardcode a hex value or reach for a raw Tailwind
+   color utility (orange-600, green-500, blue-700, etc.) directly. Every
+   color reference goes through one of the semantic classes generated
+   below (bg-brand-action, text-success-progress, border-border-default,
+   etc.) - Tailwind v4 auto-generates bg-, text-, and border-prefixed
+   utilities for every --color-* entry in an @theme block, named after
+   the CSS variable.
+
+   Why this satisfies "effortless dark mode/high-contrast without
+   component redesigns": Tailwind v4's generated utilities reference the
+   CSS variable itself (e.g. `.bg-brand-action { background-color:
+   var(--color-brand-action); }`), not a baked-in literal. A future theme
+   only needs to override these variables under a selector like
+   [data-theme="dark"] { --color-surface-canvas: ...; } - every component
+   already using bg-surface-canvas repaints automatically, with zero
+   component-level changes. This is why the token layer lives here, once,
+   rather than as scattered hex/Tailwind-default usage per file.
+
+   Meaning, not decoration: orange = action/courage/effort, green =
+   progress/achievement (must feel earned - never primary nav/CTA), blue =
+   knowledge/trust/precision (informational only - never a status judgment),
+   amber = needs attention, not failure, red = something genuinely failed
+   (never because an athlete performed poorly, or a recording was low
+   quality - that's amber's job). Never mix these meanings.
+   ========================================================================== */
+@theme {
+  /* brand.action - orange. Primary buttons, record/upload, active nav,
+     primary links, selected states, focus rings. Never overused. */
+  --color-brand-action: #F0600E;
+  --color-brand-action-hover: #D94F08;
+  --color-brand-action-soft: #FFF4ED;
+  --color-brand-action-tint: #FFF8F3;
+  --color-brand-action-ink: #7A3006; /* dark text-on-tint, not part of the
+                                         official spec's own value list -
+                                         kept for contrast on soft/tint bg */
+
+  /* success.progress - green. Personal best, goal completed, achievement,
+     positive trends. Never primary navigation or primary CTAs. */
+  --color-success-progress: #16A34A;
+  --color-success-progress-hover: #15803D;
+  --color-success-progress-soft: #DCFCE7;
+  --color-success-progress-tint: #F0FDF4;
+
+  /* info.insight - blue. AI explanations, educational content, coach
+     insights, neutral notifications, help/documentation. Informational
+     only - never a status judgment (a quality rating is not "insight"). */
+  --color-info-insight: #2563EB;
+  --color-info-insight-hover: #1D4ED8;
+  --color-info-insight-soft: #DBEAFE;
+  --color-info-insight-tint: #EFF6FF;
+
+  /* warning.attention - amber. Needs attention, not failure: recording
+     quality could improve, experimental metric, waiting, processing. */
+  --color-warning-attention: #D97706;
+  --color-warning-attention-soft: #FEF3C7;
+  --color-warning-attention-tint: #FFFBEB; /* not in the official spec's own
+                                               value list - extends the same
+                                               soft/tint two-step pattern
+                                               orange/green/blue each have */
+
+  /* error.failure - red. Something genuinely failed: upload failed, video
+     corrupted, analysis crashed, permission denied. Never because an
+     athlete (or a recording) performed/measured poorly - that's amber's
+     job, not red's. */
+  --color-error-failure: #DC2626;
+  --color-error-failure-hover: #B91C1C; /* not in the official spec's own
+                                            value list - inferred one step
+                                            darker, matching the hover
+                                            pattern every other role has */
+  --color-error-failure-soft: #FEE2E2;
+
+  /* surface.* - three deliberately distinct neutrals, not drift: canvas is
+     the outermost page background, sunken is a recessed/tinted section
+     within the page, card is a pure-white elevated element. (Corrects an
+     earlier pass in this project's history that treated the three near-
+     duplicate off-whites #FFF8F3/#FAFAF7/#FAF9F6 as accidental drift to be
+     collapsed to plain white - they're intentional roles.) */
+  --color-surface-canvas: #FAFAF7;
+  --color-surface-sunken: #FFF8F3;
+  --color-surface-card: #FFFFFF;
+
+  /* border.* */
+  --color-border-default: #E5E7EB;
+  --color-border-divider: #F1F5F9;
+
+  /* text.* */
+  --color-text-primary: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #6B7280;
+  --color-text-disabled: #9CA3AF;
+
+  /* category.recording-quality - a separate, deliberate category-marker
+     hue, not part of the five-role system above: TwinProgress.tsx gives
+     "Recording Quality Trends" its own color, distinct from brand-action
+     orange used for "Athletic Performance Trends" - the file's own comment
+     states these must never read as the same kind of observation. */
+  --color-category-recording-quality: #2f5a6b;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -9,8 +112,8 @@ html {
 body {
   margin: 0;
   font-family: "Inter", sans-serif;
-  background: #ffffff;
-  color: #111827;
+  background: var(--color-surface-card);
+  color: var(--color-text-primary);
 }
 
 * {

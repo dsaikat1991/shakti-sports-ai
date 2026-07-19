@@ -127,7 +127,7 @@ export default function AthleteGoals() {
       <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-[#F0600E]">
         Goals
       </p>
-      <h1 className="mt-3 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+      <h1 className="mt-3 text-2xl font-bold leading-tight text-gray-950 md:text-3xl">
         Your Goals
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600">

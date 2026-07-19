@@ -69,7 +69,7 @@ export default function PerformanceTypeStep({
                   : "border-gray-200 bg-white hover:border-orange-300"
               }`}
             >
-              <p className="font-['Anton'] text-3xl uppercase text-gray-950">
+              <p className="text-lg font-bold text-gray-950">
                 {type.title}
               </p>
 

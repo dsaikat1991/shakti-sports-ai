@@ -164,7 +164,7 @@ export default function AthleteSettings() {
       <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-[#F0600E]">
         Settings
       </p>
-      <h1 className="mt-3 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+      <h1 className="mt-3 text-2xl font-bold leading-tight text-gray-950 md:text-3xl">
         Account Settings
       </h1>
 

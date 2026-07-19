@@ -40,7 +40,7 @@ export default function WizardLayout({
         Step {step} of {totalSteps}
       </p>
 
-      <h1 className="mt-8 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+      <h1 className="mt-8 text-2xl font-bold leading-tight text-gray-950 md:text-3xl">
         {title}
       </h1>
 

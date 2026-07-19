@@ -1,4 +1,4 @@
-import { Activity, Fingerprint, FileText, Flag, Home, Menu, Settings, Target, User, Users, X } from "lucide-react";
+import { Activity, TrendingUp, FileText, Flag, Home, Menu, Settings, Target, User, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import Logo from "../../../components/shared/Logo";
@@ -9,7 +9,7 @@ const navItems = [
   { label: "Home", href: ROUTES.ATHLETE.HOME, icon: Home },
   { label: "Performances", href: ROUTES.ATHLETE.HISTORY, icon: Activity },
   { label: "Coaches", href: ROUTES.ATHLETE.COACHES, icon: Users },
-  { label: "Digital Twin", href: ROUTES.ATHLETE.TWIN, icon: Fingerprint },
+  { label: "My Progress", href: ROUTES.ATHLETE.TWIN, icon: TrendingUp },
   { label: "Goals", href: ROUTES.ATHLETE.GOALS, icon: Flag },
   { label: "Reports", href: ROUTES.ATHLETE.REPORTS, icon: FileText },
   { label: "Discover", href: ROUTES.ATHLETE.DISCOVER, icon: Target },
@@ -19,7 +19,7 @@ const navItems = [
 
 function AthleteNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav className="mt-10 space-y-2">
+    <nav className="mt-8 space-y-0.5">
       {navItems.map((item) => {
         const Icon = item.icon;
 
@@ -30,14 +30,14 @@ function AthleteNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             end={item.href === ROUTES.ATHLETE.HOME}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+              `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
-                  ? "bg-orange-50 text-[#F0600E]"
-                  : "text-gray-600 hover:bg-orange-50 hover:text-[#F0600E]"
+                  ? "bg-brand-action-soft text-brand-action-ink"
+                  : "text-text-secondary hover:bg-surface-sunken hover:text-text-primary"
               }`
             }
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4.5 w-4.5" />
             {item.label}
           </NavLink>
         );
@@ -51,9 +51,9 @@ export default function AthleteLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF7]">
-      <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-gray-200 bg-white px-5 py-6 lg:block">
-        <Link to={ROUTES.ATHLETE.HOME}>
+    <div className="min-h-screen bg-surface-canvas">
+      <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-border-default bg-surface-card px-4 py-6 lg:block">
+        <Link to={ROUTES.ATHLETE.HOME} className="px-1">
           <Logo />
         </Link>
 
@@ -61,7 +61,7 @@ export default function AthleteLayout() {
 
         <button
           onClick={signOut}
-          className="absolute bottom-6 left-5 right-5 cursor-pointer rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 transition hover:border-[#F0600E] hover:text-[#F0600E]"
+          className="absolute bottom-6 left-4 right-4 cursor-pointer rounded-xl border border-border-default px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:border-text-disabled hover:text-text-primary"
         >
           Sign out
         </button>
@@ -76,8 +76,8 @@ export default function AthleteLayout() {
             className="absolute inset-0 cursor-default bg-gray-950/40 backdrop-blur-sm"
           />
 
-          <aside className="relative flex h-full w-72 max-w-[80vw] flex-col overflow-y-auto border-r border-gray-200 bg-white px-5 py-6 shadow-2xl">
-            <div className="flex items-center justify-between">
+          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col overflow-y-auto border-r border-border-default bg-surface-card px-4 py-6 shadow-2xl">
+            <div className="flex items-center justify-between px-1">
               <Link to={ROUTES.ATHLETE.HOME} onClick={() => setMobileNavOpen(false)}>
                 <Logo />
               </Link>
@@ -86,7 +86,7 @@ export default function AthleteLayout() {
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setMobileNavOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-[#F0600E] hover:text-[#F0600E]"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-default text-text-muted hover:border-text-disabled hover:text-text-primary"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -96,7 +96,7 @@ export default function AthleteLayout() {
 
             <button
               onClick={signOut}
-              className="mt-6 cursor-pointer rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 transition hover:border-[#F0600E] hover:text-[#F0600E]"
+              className="mt-6 cursor-pointer rounded-xl border border-border-default px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:border-text-disabled hover:text-text-primary"
             >
               Sign out
             </button>
@@ -104,24 +104,24 @@ export default function AthleteLayout() {
         </div>
       )}
 
-      <main className="lg:pl-72">
-        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/85 px-6 py-4 backdrop-blur-xl lg:px-10">
+      <main className="lg:pl-64">
+        <header className="sticky top-0 z-40 border-b border-border-default bg-surface-card/85 px-6 py-4 backdrop-blur-xl lg:px-10">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 aria-label="Open menu"
                 onClick={() => setMobileNavOpen(true)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-[#F0600E] hover:text-[#F0600E] lg:hidden"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary lg:hidden"
               >
                 <Menu className="h-5 w-5" />
               </button>
 
               <div>
-                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-gray-400">
+                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.08em] text-text-muted">
                   Performance Centre
                 </p>
-                <p className="mt-1 truncate text-sm font-semibold text-gray-700">
+                <p className="mt-1 truncate text-sm font-semibold text-text-secondary">
                   {user?.email}
                 </p>
               </div>

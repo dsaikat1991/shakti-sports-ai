@@ -30,7 +30,7 @@ export default function TwinProgress({ performances }: { performances: TwinSessi
       <section>
         <div className="mb-4 flex items-center gap-2">
           <Zap className="h-5 w-5 text-[#F0600E]" />
-          <h2 className="font-['Anton'] text-2xl uppercase text-gray-950">Athletic Performance Trends</h2>
+          <h2 className="text-xl font-bold text-gray-950">Athletic Performance Trends</h2>
         </div>
         <p className="mb-4 text-sm text-gray-500">
           What the athlete's body is doing, session over session.
@@ -44,8 +44,8 @@ export default function TwinProgress({ performances }: { performances: TwinSessi
 
       <section>
         <div className="mb-4 flex items-center gap-2">
-          <Camera className="h-5 w-5 text-[#2f5a6b]" />
-          <h2 className="font-['Anton'] text-2xl uppercase text-gray-950">Recording Quality Trends</h2>
+          <Camera className="h-5 w-5 text-recording-accent" />
+          <h2 className="text-xl font-bold text-gray-950">Recording Quality Trends</h2>
         </div>
         <p className="mb-4 text-sm text-gray-500">
           How well sessions were captured on camera - not an athletic performance signal. A rising
@@ -61,7 +61,7 @@ export default function TwinProgress({ performances }: { performances: TwinSessi
       <section>
         <div className="mb-4 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
-          <h2 className="font-['Anton'] text-2xl uppercase text-gray-950">Experimental Metrics</h2>
+          <h2 className="text-xl font-bold text-gray-950">Experimental Metrics</h2>
         </div>
         <p className="mb-4 text-sm leading-6 text-gray-500">
           Ground-contact detection is confirmed unreliable for some camera angles. These are shown for

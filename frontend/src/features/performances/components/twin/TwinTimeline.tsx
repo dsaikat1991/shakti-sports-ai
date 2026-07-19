@@ -7,7 +7,7 @@ export default function TwinTimeline({ sessions }: { sessions: TwinSessionCardPr
     return (
       <EmptyState
         icon={CalendarClock}
-        title="Your Digital Twin starts with your first upload"
+        title="Your progress starts with your first upload"
         description="Upload a performance to begin building your evolving athlete profile."
       />
     );

@@ -29,9 +29,9 @@ export default function TwinSummary({
   return (
     <div className="rounded-4xl border border-gray-200 bg-white p-7 shadow-xl shadow-gray-200/60 md:p-9">
       <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-[#F0600E]">
-        Digital Athlete Twin
+        My Progress
       </p>
-      <h1 className="mt-3 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+      <h1 className="mt-3 text-2xl font-bold leading-tight text-gray-950 md:text-3xl">
         {athleteName}
       </h1>
       <p className="mt-3 text-sm text-gray-500">
