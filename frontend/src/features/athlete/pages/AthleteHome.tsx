@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
+import Badge, { type BadgeVariant } from "../../../components/ui/Badge";
+import RailCard from "../../../components/ui/RailCard";
+import StatTile from "../../../components/ui/StatTile";
 import { ROUTES } from "../../../constants/routes";
 import { friendlyErrorMessage } from "../../../lib/friendlyError";
 import { useAuth } from "../../auth/context/AuthContext";
@@ -99,19 +102,19 @@ function getStatusLabel(status: string | null) {
 // Colors follow the project's official semantic token system: green =
 // achievement (a completed job is a real pass), blue = informational (a
 // job that's still in progress is neutral information, not a judgment),
-// red = a genuine failure, brand-orange-soft = the default "just
-// uploaded, nothing to report yet" neutral state.
-function getStatusClasses(status: string | null) {
+// red = a genuine failure, brand = the default "just uploaded, nothing to
+// report yet" neutral state.
+function getStatusVariant(status: string | null): BadgeVariant {
   switch (status) {
     case "completed":
-      return "bg-success-progress-soft text-success-progress";
+      return "success";
     case "processing":
     case "analyzing":
-      return "bg-info-insight-soft text-info-insight";
+      return "info";
     case "failed":
-      return "bg-error-failure-soft text-error-failure";
+      return "error";
     default:
-      return "bg-brand-action-soft text-brand-action";
+      return "brand";
   }
 }
 
@@ -261,14 +264,14 @@ export function HeroCard({ state }: { state: HomeHeroState }) {
         <div className="flex flex-wrap items-center gap-4">
           <Link
             to={ROUTES.ATHLETE.NEW_PERFORMANCE}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-action px-5 py-3 text-sm font-medium text-white transition hover:bg-brand-action-hover"
           >
             Try another recording
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to={ROUTES.ATHLETE.PERFORMANCE_REPORT(performance.id)}
-            className="text-sm font-semibold text-brand-action hover:text-brand-action-hover"
+            className="text-sm font-medium text-brand-action hover:text-brand-action-hover"
           >
             See the full breakdown
           </Link>
@@ -408,7 +411,7 @@ export default function AthleteHome() {
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <p className="text-base font-semibold text-text-secondary">
-          {getGreeting()}, {displayName}
+          {getGreeting()}, {displayName} 👋
         </p>
 
         <Link
@@ -445,7 +448,7 @@ export default function AthleteHome() {
               {performances.length > 0 && (
                 <Link
                   to={ROUTES.ATHLETE.HISTORY}
-                  className="inline-flex items-center gap-1 text-sm font-semibold text-brand-action hover:text-brand-action-hover"
+                  className="inline-flex items-center gap-1 text-sm font-light text-brand-action hover:text-brand-action-hover"
                 >
                   View full history
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -487,13 +490,9 @@ export default function AthleteHome() {
                       {isCompleted ? (
                         <RatingBadge rating={summary?.rating} />
                       ) : (
-                        <span
-                          className={`w-fit rounded-md px-2.5 py-1 font-['JetBrains_Mono'] text-[10.5px] font-medium uppercase tracking-[0.04em] ${getStatusClasses(
-                            performance.upload_status,
-                          )}`}
-                        >
+                        <Badge variant={getStatusVariant(performance.upload_status)} size="chip">
                           {getStatusLabel(performance.upload_status)}
-                        </span>
+                        </Badge>
                       )}
                     </Link>
                   );
@@ -513,7 +512,7 @@ export default function AthleteHome() {
           </section>
 
           {!isLoading && summaryStats.total > 0 && (
-            <section className="rounded-2xl border border-border-default bg-surface-card p-5">
+            <RailCard>
               <div className="flex items-center justify-between">
                 <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.15em] text-text-muted">
                   Performance summary
@@ -524,91 +523,111 @@ export default function AthleteHome() {
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex items-center gap-3 rounded-xl border border-border-divider p-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-action-soft text-brand-action">
-                    <Activity className="h-4.5 w-4.5" />
-                  </span>
-                  <div>
-                    <p className="font-['JetBrains_Mono'] text-xl font-semibold text-text-primary">
-                      {summaryStats.total}
-                    </p>
-                    <p className="text-xs text-text-muted">Total sessions</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl border border-border-divider p-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-info-insight-soft text-info-insight">
-                    <Gauge className="h-4.5 w-4.5" />
-                  </span>
-                  <div>
-                    <p className="font-['JetBrains_Mono'] text-xl font-semibold text-text-primary">
-                      {summaryStats.avgCadence !== null ? Math.round(summaryStats.avgCadence) : "—"}
-                    </p>
-                    <p className="text-xs text-text-muted">Avg. cadence (steps/min)</p>
-                  </div>
-                </div>
+                <StatTile icon={Activity} value={summaryStats.total} label="Total sessions" tone="brand" />
+                <StatTile
+                  icon={Gauge}
+                  value={summaryStats.avgCadence !== null ? Math.round(summaryStats.avgCadence) : "—"}
+                  label="Avg. cadence (steps/min)"
+                  tone="info"
+                />
               </div>
-            </section>
+            </RailCard>
           )}
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl border border-border-default bg-surface-sunken p-5">
-            <p className="text-sm font-medium text-text-secondary">
-              Personal best
-            </p>
-
-            {sporting?.personal_best ? (
-              <p className="mt-3 text-lg font-bold text-text-primary">
-                {sporting.personal_best}
+          {!sporting?.personal_best && !activeGoal ? (
+            // Both empty - one compact module instead of two "not set
+            // yet" cards back to back. A first-time athlete's screen
+            // stays closer to "one headline, one action" (DESIGN_BIBLE.md
+            // §5); once either is set, the two full cards below return.
+            <RailCard tone="sunken">
+              <p className="text-sm font-medium text-text-secondary">
+                Your targets
               </p>
-            ) : (
+
               <p className="mt-3 text-sm leading-6 text-text-muted">
-                Not set yet.
+                Add a personal best and set a goal to start tracking your
+                progress.
               </p>
-            )}
 
-            <Link
-              to={ROUTES.ATHLETE.PROFILE}
-              className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-action hover:text-brand-action-hover"
-            >
-              {sporting?.personal_best ? "Update" : "Add your personal best"}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          <div className="rounded-2xl border border-border-default bg-surface-sunken p-5">
-            <p className="text-sm font-medium text-text-secondary">
-              Current goal
-            </p>
-
-            {activeGoal ? (
-              <>
-                <p className="mt-3 text-lg font-bold text-text-primary">
-                  {activeGoal.description}
+              <div className="mt-3 flex flex-col gap-2">
+                <Link
+                  to={ROUTES.ATHLETE.PROFILE}
+                  className="inline-flex items-center gap-1 text-sm font-normal text-brand-action hover:text-brand-action-hover"
+                >
+                  Add your personal best
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  to={ROUTES.ATHLETE.GOALS}
+                  className="inline-flex items-center gap-1 text-sm font-normal text-brand-action hover:text-brand-action-hover"
+                >
+                  Set a goal
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </RailCard>
+          ) : (
+            <>
+              <RailCard tone="sunken">
+                <p className="text-sm font-medium text-text-secondary">
+                  Personal best
                 </p>
-                {formatTargetDate(activeGoal.target_date) && (
-                  <p className="mt-1 text-sm text-text-muted">
-                    Target: {formatTargetDate(activeGoal.target_date)}
+
+                {sporting?.personal_best ? (
+                  <p className="mt-3 text-lg font-bold text-text-primary">
+                    {sporting.personal_best}
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-text-muted">
+                    Not set yet.
                   </p>
                 )}
-              </>
-            ) : (
-              <p className="mt-3 text-sm leading-6 text-text-muted">
-                No active goal yet.
-              </p>
-            )}
 
-            <Link
-              to={ROUTES.ATHLETE.GOALS}
-              className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-action hover:text-brand-action-hover"
-            >
-              {activeGoal ? "View goals" : "Set a goal"}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+                <Link
+                  to={ROUTES.ATHLETE.PROFILE}
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-normal text-brand-action hover:text-brand-action-hover"
+                >
+                  {sporting?.personal_best ? "Update" : "Add your personal best"}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </RailCard>
 
-          <div className="rounded-2xl border border-border-default bg-surface-card p-5">
+              <RailCard tone="sunken">
+                <p className="text-sm font-medium text-text-secondary">
+                  Current goal
+                </p>
+
+                {activeGoal ? (
+                  <>
+                    <p className="mt-3 text-lg font-bold text-text-primary">
+                      {activeGoal.description}
+                    </p>
+                    {formatTargetDate(activeGoal.target_date) && (
+                      <p className="mt-1 text-sm text-text-muted">
+                        Target: {formatTargetDate(activeGoal.target_date)}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-text-muted">
+                    No active goal yet.
+                  </p>
+                )}
+
+                <Link
+                  to={ROUTES.ATHLETE.GOALS}
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-normal text-brand-action hover:text-brand-action-hover"
+                >
+                  {activeGoal ? "View goals" : "Set a goal"}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </RailCard>
+            </>
+          )}
+
+          <RailCard>
             <p className="text-sm font-semibold text-text-primary">
               My Progress
             </p>
@@ -646,14 +665,14 @@ export default function AthleteHome() {
 
             <Link
               to={ROUTES.ATHLETE.TWIN}
-              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-action hover:text-brand-action-hover"
+              className="mt-3 inline-flex items-center gap-1 text-sm font-normal text-brand-action hover:text-brand-action-hover"
             >
               View My Progress
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-          </div>
+          </RailCard>
 
-          <div className="rounded-2xl border border-border-default bg-surface-card p-5">
+          <RailCard>
             <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.15em] text-text-muted">
               Notifications
             </p>
@@ -687,7 +706,7 @@ export default function AthleteHome() {
                 })}
               </div>
             )}
-          </div>
+          </RailCard>
         </div>
       </div>
     </div>

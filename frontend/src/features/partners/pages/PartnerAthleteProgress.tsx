@@ -120,19 +120,19 @@ export default function PartnerAthleteProgress() {
 
   if (connectionsLoading) {
     return (
-      <div className="mx-auto max-w-5xl rounded-4xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-        <Loader2 className="mx-auto h-9 w-9 animate-spin text-[#F0600E]" />
+      <div className="mx-auto max-w-5xl rounded-4xl border border-border-default bg-surface-card p-10 text-center shadow-sm">
+        <Loader2 className="mx-auto h-9 w-9 animate-spin text-brand-action" />
       </div>
     );
   }
 
   if (!isConnected) {
     return (
-      <div className="mx-auto max-w-5xl rounded-4xl border border-red-200 bg-red-50 p-10 text-center">
-        <h1 className="text-2xl font-bold text-red-700">You don't have access to this athlete.</h1>
+      <div className="mx-auto max-w-5xl rounded-4xl border border-error-failure bg-error-failure-soft p-10 text-center">
+        <h1 className="text-2xl font-bold text-error-failure">You don't have access to this athlete.</h1>
         <Link
           to={routeSet.ATHLETES}
-          className="mt-6 inline-flex rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white"
+          className="mt-6 inline-flex rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white"
         >
           Back to {isAcademy ? "Squad" : "My Athletes"}
         </Link>
@@ -144,15 +144,15 @@ export default function PartnerAthleteProgress() {
     <div className="mx-auto max-w-6xl">
       <Link
         to={routeSet.ATHLETE_DETAIL(athleteId!)}
-        className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 transition hover:text-[#F0600E]"
+        className="inline-flex items-center gap-2 text-sm font-bold text-text-secondary transition hover:text-brand-action"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Athlete
       </Link>
 
       {performancesLoading && (
-        <div className="mt-10 flex items-center gap-3 rounded-3xl border border-gray-200 bg-white p-6 text-sm font-semibold text-gray-600 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin text-[#F0600E]" />
+        <div className="mt-10 flex items-center gap-3 rounded-3xl border border-border-default bg-surface-card p-6 text-sm font-semibold text-text-secondary shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-brand-action" />
           Loading sessions...
         </div>
       )}
@@ -172,32 +172,32 @@ export default function PartnerAthleteProgress() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Progress Engine</h2>
+            <h2 className="mb-4 text-xl font-bold text-text-primary">Progress Engine</h2>
             <TwinProgress performances={twinSessions} />
           </section>
 
           <section>
-            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Strengths</h2>
+            <h2 className="mb-4 text-xl font-bold text-text-primary">Strengths</h2>
             <TwinStrengths strengths={strengths} />
           </section>
 
           <section>
-            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Development Areas</h2>
+            <h2 className="mb-4 text-xl font-bold text-text-primary">Development Areas</h2>
             <TwinDevelopmentAreas areas={developmentAreas} />
           </section>
 
           <section>
-            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Consistency</h2>
+            <h2 className="mb-4 text-xl font-bold text-text-primary">Consistency</h2>
             <TwinConsistency consistency={consistency} />
           </section>
 
           <section>
-            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Personal Bests</h2>
+            <h2 className="mb-4 text-xl font-bold text-text-primary">Personal Bests</h2>
             <TwinPersonalBests items={personalBestItems} />
           </section>
 
           <section>
-            <h2 className="mb-4 font-['Anton'] text-3xl uppercase text-gray-950">Evolution</h2>
+            <h2 className="mb-4 text-xl font-bold text-text-primary">Evolution</h2>
             <TwinEvolution statements={evolutionStatements} />
           </section>
         </div>

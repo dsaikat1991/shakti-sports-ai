@@ -32,14 +32,14 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 function getStatusClasses(status: string | null) {
   switch (status) {
     case "completed":
-      return "bg-green-100 text-green-700";
+      return "bg-success-progress-soft text-success-progress";
     case "processing":
     case "analyzing":
-      return "bg-blue-100 text-blue-700";
+      return "bg-info-insight-soft text-info-insight";
     case "failed":
-      return "bg-red-100 text-red-700";
+      return "bg-error-failure-soft text-error-failure";
     default:
-      return "bg-orange-100 text-[#F0600E]";
+      return "bg-brand-action-soft text-brand-action";
   }
 }
 
@@ -67,7 +67,7 @@ function PerformanceCard({ performance }: { performance: any }) {
   });
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white shadow-sm">
+    <div className="rounded-3xl border border-border-default bg-surface-card shadow-sm">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -75,7 +75,7 @@ function PerformanceCard({ performance }: { performance: any }) {
       >
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-[#F0600E]">
+            <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-brand-action">
               #{String(performance.performance_number ?? 0).padStart(2, "0")}
             </p>
             <span
@@ -84,8 +84,8 @@ function PerformanceCard({ performance }: { performance: any }) {
               {performance.upload_status ?? "uploaded"}
             </span>
           </div>
-          <h3 className="mt-2 text-lg font-bold text-gray-950">{buildPerformanceDisplayName(performance)}</h3>
-          <p className="mt-1 flex items-center gap-2 text-sm text-gray-500">
+          <h3 className="mt-2 text-lg font-bold text-text-primary">{buildPerformanceDisplayName(performance)}</h3>
+          <p className="mt-1 flex items-center gap-2 text-sm text-text-muted">
             <CalendarDays className="h-4 w-4" />
             {formatSessionDate(performance.performance_date)}
             <span aria-hidden="true">·</span>
@@ -94,17 +94,17 @@ function PerformanceCard({ performance }: { performance: any }) {
         </div>
 
         {expanded ? (
-          <ChevronUp className="h-5 w-5 shrink-0 text-gray-400" />
+          <ChevronUp className="h-5 w-5 shrink-0 text-text-disabled" />
         ) : (
-          <ChevronDown className="h-5 w-5 shrink-0 text-gray-400" />
+          <ChevronDown className="h-5 w-5 shrink-0 text-text-disabled" />
         )}
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-100 p-5">
+        <div className="border-t border-border-divider p-5">
           {isLoading && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Loader2 className="h-4 w-4 animate-spin text-[#F0600E]" />
+            <div className="flex items-center gap-2 text-sm text-text-muted">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-action" />
               Loading report...
             </div>
           )}
@@ -113,7 +113,7 @@ function PerformanceCard({ performance }: { performance: any }) {
             <AnalysisReport result={full.analysis_result as AnalysisResult} />
           ) : (
             !isLoading && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-text-muted">
                 {full?.upload_status === "failed"
                   ? (full.analysis_error as string | null) ?? "Analysis failed for this recording."
                   : "No report available for this performance yet."}
@@ -194,24 +194,24 @@ export default function PartnerAthleteDetail() {
 
   if (connectionsLoading) {
     return (
-      <div className="mx-auto max-w-5xl rounded-4xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-        <Loader2 className="mx-auto h-9 w-9 animate-spin text-[#F0600E]" />
+      <div className="mx-auto max-w-5xl rounded-4xl border border-border-default bg-surface-card p-10 text-center shadow-sm">
+        <Loader2 className="mx-auto h-9 w-9 animate-spin text-brand-action" />
       </div>
     );
   }
 
   if (!isConnected) {
     return (
-      <div className="mx-auto max-w-5xl rounded-4xl border border-red-200 bg-red-50 p-10 text-center">
-        <h1 className="text-2xl font-bold text-red-700">
+      <div className="mx-auto max-w-5xl rounded-4xl border border-error-failure bg-error-failure-soft p-10 text-center">
+        <h1 className="text-2xl font-bold text-error-failure">
           You don't have access to this athlete.
         </h1>
-        <p className="mt-2 text-sm text-red-600">
+        <p className="mt-2 text-sm text-error-failure">
           A connection must be accepted before their profile becomes visible.
         </p>
         <Link
           to={routeSet.ATHLETES}
-          className="mt-6 inline-flex rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white"
+          className="mt-6 inline-flex rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white"
         >
           Back to {isAcademy ? "Squad" : "My Athletes"}
         </Link>
@@ -223,48 +223,48 @@ export default function PartnerAthleteDetail() {
     <div className="mx-auto max-w-5xl">
       <Link
         to={routeSet.ATHLETES}
-        className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 transition hover:text-[#F0600E]"
+        className="inline-flex items-center gap-2 text-sm font-bold text-text-secondary transition hover:text-brand-action"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to {isAcademy ? "Squad" : "My Athletes"}
       </Link>
 
-      <div className="mt-6 rounded-4xl border border-gray-200 bg-white p-7 shadow-xl shadow-gray-200/60 md:p-9">
-        <h1 className="font-['Anton'] text-4xl uppercase leading-none text-gray-950 md:text-5xl">
+      <div className="mt-6 rounded-4xl border border-border-default bg-surface-card p-7 shadow-xl shadow-border-default/60 md:p-9">
+        <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
           {connection?.athleteProfile?.full_name ?? "Athlete"}
         </h1>
-        <p className="mt-2 text-sm text-gray-500">{connection?.athleteProfile?.email}</p>
+        <p className="mt-2 text-sm text-text-muted">{connection?.athleteProfile?.email}</p>
 
         {profileLoading && (
-          <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin text-[#F0600E]" />
+          <div className="mt-6 flex items-center gap-2 text-sm text-text-muted">
+            <Loader2 className="h-4 w-4 animate-spin text-brand-action" />
             Loading profile...
           </div>
         )}
 
         {!profileLoading && profile && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+            <div className="rounded-3xl border border-border-default bg-surface-sunken p-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-text-disabled">
                 Preferred Event
               </p>
-              <p className="mt-2 text-lg font-bold text-gray-950">
+              <p className="mt-2 text-lg font-bold text-text-primary">
                 {profile.preferred_event ?? "N/A"}
               </p>
             </div>
-            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+            <div className="rounded-3xl border border-border-default bg-surface-sunken p-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-text-disabled">
                 Personal Best
               </p>
-              <p className="mt-2 text-lg font-bold text-gray-950">
+              <p className="mt-2 text-lg font-bold text-text-primary">
                 {profile.personal_best ?? "N/A"}
               </p>
             </div>
-            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+            <div className="rounded-3xl border border-border-default bg-surface-sunken p-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-text-disabled">
                 Academy
               </p>
-              <p className="mt-2 text-lg font-bold text-gray-950">
+              <p className="mt-2 text-lg font-bold text-text-primary">
                 {profile.academy ?? "N/A"}
               </p>
             </div>
@@ -274,26 +274,26 @@ export default function PartnerAthleteDetail() {
 
       <div className="mt-8">
         <div className="mb-4 flex items-center justify-between">
-          <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+          <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-text-disabled">
             Performance History
           </p>
           <Link
             to={routeSet.ATHLETE_PROGRESS(athleteId!)}
-            className="text-sm font-bold text-[#F0600E] hover:text-orange-700"
+            className="text-sm font-bold text-brand-action hover:text-brand-action-hover"
           >
             View Progress Over Time →
           </Link>
         </div>
 
         {performancesLoading && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin text-[#F0600E]" />
+          <div className="flex items-center gap-2 text-sm text-text-muted">
+            <Loader2 className="h-4 w-4 animate-spin text-brand-action" />
             Loading performances...
           </div>
         )}
 
         {!performancesLoading && performances.length === 0 && (
-          <p className="rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-500">
+          <p className="rounded-3xl border border-dashed border-border-default bg-surface-sunken p-6 text-sm text-text-muted">
             This athlete hasn't uploaded any performances yet.
           </p>
         )}
@@ -307,14 +307,14 @@ export default function PartnerAthleteDetail() {
         )}
       </div>
 
-      <div className="mt-8 rounded-4xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mt-8 rounded-4xl border border-border-default bg-surface-card p-6 shadow-sm">
         <div className="flex items-center gap-2">
-          <StickyNote className="h-5 w-5 text-[#F0600E]" />
-          <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+          <StickyNote className="h-5 w-5 text-brand-action" />
+          <p className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.2em] text-text-disabled">
             Private Notes
           </p>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-text-muted">
           Only visible to you - never shared with this athlete.
         </p>
 
@@ -324,13 +324,13 @@ export default function PartnerAthleteDetail() {
             onChange={(e) => setNoteDraft(e.target.value)}
             placeholder="Add a private note about this athlete..."
             rows={2}
-            className="w-full flex-1 rounded-xl border border-gray-300 p-3 text-sm focus:border-[#F0600E] focus:outline-none"
+            className="w-full flex-1 rounded-xl border border-border-default p-3 text-sm focus:border-brand-action focus:outline-none"
           />
           <button
             type="button"
             disabled={addNoteMutation.isPending || !noteDraft.trim()}
             onClick={() => addNoteMutation.mutate()}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {addNoteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Add Note
@@ -338,7 +338,7 @@ export default function PartnerAthleteDetail() {
         </div>
 
         {notesLoading && (
-          <p className="mt-4 text-sm text-gray-500">Loading notes...</p>
+          <p className="mt-4 text-sm text-text-muted">Loading notes...</p>
         )}
 
         {!notesLoading && notes.length > 0 && (
@@ -346,16 +346,16 @@ export default function PartnerAthleteDetail() {
             {notes.map((note) => (
               <div
                 key={note.id}
-                className="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4"
+                className="flex items-start justify-between gap-3 rounded-2xl border border-border-default bg-surface-sunken p-4"
               >
                 <div>
-                  <p className="text-sm leading-6 text-gray-700">{note.note}</p>
-                  <p className="mt-1 text-xs text-gray-400">{formatSessionDate(note.created_at)}</p>
+                  <p className="text-sm leading-6 text-text-secondary">{note.note}</p>
+                  <p className="mt-1 text-xs text-text-disabled">{formatSessionDate(note.created_at)}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => deleteNoteMutation.mutate(note.id)}
-                  className="shrink-0 text-gray-400 transition hover:text-red-600"
+                  className="shrink-0 text-text-disabled transition hover:text-error-failure"
                   aria-label="Delete note"
                 >
                   <Trash2 className="h-4 w-4" />

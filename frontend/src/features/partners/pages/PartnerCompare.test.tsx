@@ -21,7 +21,7 @@ function withOverrides(base: AnalysisResult, apply: (clone: any) => void): Analy
 }
 
 function greenClassOf(text: string): boolean {
-  return screen.getByText(text).className.includes("text-green-700");
+  return screen.getByText(text).className.includes("text-success-progress");
 }
 
 const detectionRateMetric = METRIC_REGISTRY.find((m) => m.key === "detection_rate")!;
@@ -173,7 +173,7 @@ describe("MetricSection winner logic (docs/ENGINEERING_HANDOFF.md §33)", () => 
     const matches = screen.getAllByText("100%");
     expect(matches).toHaveLength(2);
     for (const el of matches) {
-      expect(el.className.includes("text-green-700")).toBe(false);
+      expect(el.className.includes("text-success-progress")).toBe(false);
     }
   });
 

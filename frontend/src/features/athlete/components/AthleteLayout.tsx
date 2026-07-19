@@ -1,6 +1,7 @@
 import { Activity, Bell, TrendingUp, FileText, Flag, Home, Menu, Settings, Target, Upload, User, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import IconButton from "../../../components/ui/IconButton";
 import Logo from "../../../components/shared/Logo";
 import { useAuth } from "../../auth/context/AuthContext";
 import { ROUTES } from "../../../constants/routes";
@@ -80,18 +81,13 @@ function NotificationsMenu({
 
   return (
     <div className="relative" ref={containerRef}>
-      <button
-        type="button"
-        aria-label="Notifications"
-        aria-expanded={open}
+      <IconButton
+        icon={Bell}
+        label="Notifications"
+        ariaExpanded={open}
+        hasIndicator={hasNotifications}
         onClick={() => setOpen((current) => !current)}
-        className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary"
-      >
-        <Bell className="h-4.5 w-4.5" />
-        {hasNotifications && (
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full border border-surface-card bg-error-failure" />
-        )}
-      </button>
+      />
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-border-default bg-surface-card p-2 shadow-xl">
@@ -206,14 +202,12 @@ export default function AthleteLayout() {
         <header className="sticky top-0 z-40 border-b border-border-default bg-surface-card/85 px-6 py-4 backdrop-blur-xl lg:px-10">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                aria-label="Open menu"
+              <IconButton
+                icon={Menu}
+                label="Open menu"
                 onClick={() => setMobileNavOpen(true)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary lg:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
+                className="lg:hidden"
+              />
 
               <div>
                 <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.08em] text-text-muted">
@@ -226,13 +220,7 @@ export default function AthleteLayout() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link
-                to={ROUTES.ATHLETE.NEW_PERFORMANCE}
-                aria-label="Upload a performance"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary"
-              >
-                <Upload className="h-4.5 w-4.5" />
-              </Link>
+              <IconButton icon={Upload} label="Upload a performance" to={ROUTES.ATHLETE.NEW_PERFORMANCE} />
 
               <NotificationsMenu notifications={notifications} />
 

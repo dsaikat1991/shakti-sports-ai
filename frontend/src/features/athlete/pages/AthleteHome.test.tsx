@@ -162,8 +162,12 @@ describe("AthleteHome full-page empty states (no fabricated data)", () => {
     );
 
     expect(screen.getByText("Ready for your first session?")).toBeInTheDocument();
-    expect(screen.getByText("Not set yet.")).toBeInTheDocument();
-    expect(screen.getByText("No active goal yet.")).toBeInTheDocument();
+    // Personal best and current goal collapse into one compact module
+    // when both are empty, instead of two separate "not set yet" cards.
+    expect(screen.getByText("Your targets")).toBeInTheDocument();
+    expect(
+      screen.getByText("Add a personal best and set a goal to start tracking your progress."),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/complete your first fully analyzed session/i),
     ).toBeInTheDocument();

@@ -11,16 +11,16 @@ type Props = {
 
 const accentStyles = {
   orange: {
-    icon: "bg-orange-50 text-[#F0600E]",
-    border: "hover:border-[#F0600E] hover:shadow-orange-100",
+    icon: "bg-brand-action-soft text-brand-action",
+    border: "hover:border-brand-action hover:shadow-brand-action-soft",
   },
   green: {
-    icon: "bg-green-50 text-green-700",
-    border: "hover:border-green-600 hover:shadow-green-100",
+    icon: "bg-success-progress-tint text-success-progress-hover",
+    border: "hover:border-success-progress hover:shadow-success-progress-soft",
   },
   blue: {
-    icon: "bg-blue-50 text-blue-700",
-    border: "hover:border-blue-600 hover:shadow-blue-100",
+    icon: "bg-info-insight-tint text-info-insight-hover",
+    border: "hover:border-info-insight hover:shadow-info-insight-soft",
   },
 };
 
@@ -38,29 +38,29 @@ export default function RoleCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group w-full cursor-pointer rounded-4xl border border-gray-200 bg-white p-7 text-left shadow-xl shadow-gray-200/50 transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${styles.border}`}
+      className={`group w-full cursor-pointer rounded-4xl border border-border-default bg-surface-card p-7 text-left shadow-xl shadow-border-default/50 transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${styles.border}`}
     >
       <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${styles.icon}`}>
         <Icon className="h-7 w-7" />
       </div>
 
-      <h3 className="mt-6 font-['Anton'] text-3xl uppercase text-gray-950">
+      <h3 className="mt-6 font-['Anton'] text-3xl uppercase text-text-primary">
         {title}
       </h3>
 
-      <p className="mt-2 text-sm leading-6 text-gray-600">
+      <p className="mt-2 text-sm leading-6 text-text-secondary">
         {description}
       </p>
 
       <div className="mt-6 space-y-3">
         {points.map((point) => (
-          <p key={point} className="text-sm font-semibold text-gray-800">
+          <p key={point} className="text-sm font-semibold text-text-primary">
             — {point}
           </p>
         ))}
       </div>
 
-      <p className="mt-7 text-sm font-bold text-gray-950 group-hover:text-[#F0600E]">
+      <p className="mt-7 text-sm font-bold text-text-primary group-hover:text-brand-action">
         Continue →
       </p>
     </button>

@@ -21,7 +21,7 @@ export default function GoogleButton() {
       type="button"
       onClick={handleGoogle}
       disabled={loading}
-      className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-800 transition hover:border-[#F0600E] hover:text-[#F0600E] disabled:opacity-60"
+      className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border-default bg-surface-card px-5 py-3 text-sm font-semibold text-text-primary transition hover:border-brand-action hover:text-brand-action disabled:opacity-60"
     >
       <svg
         width="18"

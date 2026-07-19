@@ -8,15 +8,15 @@ export default function ChooseRole() {
   return (
     <div className="w-full">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
           Choose your journey
         </p>
 
-        <h1 className="mt-4 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+        <h1 className="mt-4 font-['Anton'] text-5xl uppercase leading-none text-text-primary md:text-6xl">
           Who are you?
         </h1>
 
-        <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-gray-600">
+        <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-text-secondary">
           This helps Shakti create the right experience for your performance
           journey.
         </p>

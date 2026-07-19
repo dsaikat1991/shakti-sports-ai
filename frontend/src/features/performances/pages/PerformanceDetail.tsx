@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
+import Badge, { type BadgeVariant } from "../../../components/ui/Badge";
 import { ROUTES } from "../../../constants/routes";
 import { friendlyErrorMessage } from "../../../lib/friendlyError";
 import { usePerformance } from "../hooks/usePerformance";
@@ -612,24 +613,32 @@ function QualityGateBreakdown({ quality }: { quality: any }) {
 // that blue/red are never a status judgment on a rating - see
 // DESIGN_BIBLE.md §4 for the full disclosure; do not generalize it to
 // other status/quality surfaces without the same explicit sign-off.
-const RATING_STYLES: Record<string, string> = {
-  Excellent: "bg-success-progress-soft text-success-progress",
-  Good: "bg-info-insight-soft text-info-insight",
-  Fair: "bg-rating-fair-soft text-rating-fair",
-  Poor: "bg-error-failure-soft text-error-failure",
+const RATING_VARIANTS: Record<string, BadgeVariant> = {
+  Excellent: "success",
+  Good: "info",
+  Fair: "fair",
+  Poor: "error",
+};
+
+// Display-only relabeling (project owner's request) - the backend still
+// sends recording_quality.rating as "Excellent"/"Good"/"Fair"/"Poor"
+// (see analysisResult.fixture.ts), unchanged. These are recording-quality
+// tiers, not an athletic performance grade, so the new wording says what
+// they actually mean instead of reading like a score on the run itself.
+const RATING_LABELS: Record<string, string> = {
+  Excellent: "Excellent Recording",
+  Good: "Good Recording",
+  Fair: "Needs Better Angle",
+  Poor: "Couldn't Analyze",
 };
 
 export function RatingBadge({ rating }: { rating?: string }) {
   if (!rating) return <span className="text-lg font-bold text-text-primary">N/A</span>;
 
   return (
-    <span
-      className={`inline-flex w-fit rounded-md px-2.5 py-1 font-['JetBrains_Mono'] text-[10.5px] font-medium uppercase tracking-[0.04em] ${
-        RATING_STYLES[rating] ?? "bg-surface-sunken text-text-secondary"
-      }`}
-    >
-      {rating}
-    </span>
+    <Badge variant={RATING_VARIANTS[rating] ?? "neutral"} size="chip">
+      {RATING_LABELS[rating] ?? rating}
+    </Badge>
   );
 }
 

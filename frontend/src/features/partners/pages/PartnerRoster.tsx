@@ -20,23 +20,23 @@ export default function PartnerRoster() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-[#F0600E]">
+      <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-brand-action">
         {isAcademy ? "Squad" : "My Athletes"}
       </p>
 
-      <h1 className="mt-3 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+      <h1 className="mt-3 text-2xl font-bold text-text-primary md:text-3xl">
         Connected Athletes
       </h1>
 
       {isLoading && (
-        <div className="mt-10 flex items-center gap-3 rounded-3xl border border-gray-200 bg-white p-6 text-sm font-semibold text-gray-600 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin text-[#F0600E]" />
+        <div className="mt-10 flex items-center gap-3 rounded-3xl border border-border-default bg-surface-card p-6 text-sm font-semibold text-text-secondary shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-brand-action" />
           Loading your athletes...
         </div>
       )}
 
       {error && (
-        <div className="mt-10 rounded-3xl border border-red-200 bg-red-50 p-6 text-sm font-semibold text-red-700">
+        <div className="mt-10 rounded-3xl border border-error-failure bg-error-failure-soft p-6 text-sm font-semibold text-error-failure">
           {error.message}
         </div>
       )}
@@ -49,7 +49,7 @@ export default function PartnerRoster() {
           action={
             <Link
               to={routeSet.REQUESTS}
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover"
             >
               Invite an Athlete
             </Link>
@@ -63,18 +63,18 @@ export default function PartnerRoster() {
             <Link
               key={connection.id}
               to={routeSet.ATHLETE_DETAIL(connection.athlete_id)}
-              className="group flex items-center justify-between rounded-4xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-gray-200/70"
+              className="group flex items-center justify-between rounded-4xl border border-border-default bg-surface-card p-6 shadow-sm transition hover:-translate-y-1 hover:border-brand-action-soft hover:shadow-xl hover:shadow-border-default/70"
             >
               <div>
-                <h2 className="text-2xl font-bold text-gray-950">
+                <h2 className="text-2xl font-bold text-text-primary">
                   {connection.athleteProfile?.full_name ?? "Athlete"}
                 </h2>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-text-muted">
                   {connection.athleteProfile?.email ?? ""}
                 </p>
               </div>
 
-              <ArrowRight className="h-5 w-5 shrink-0 text-gray-400 transition group-hover:translate-x-1 group-hover:text-[#F0600E]" />
+              <ArrowRight className="h-5 w-5 shrink-0 text-text-disabled transition group-hover:translate-x-1 group-hover:text-brand-action" />
             </Link>
           ))}
         </div>

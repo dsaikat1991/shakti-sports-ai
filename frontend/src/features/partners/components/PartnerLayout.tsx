@@ -54,8 +54,8 @@ export default function PartnerLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   isActive
-                    ? "bg-orange-50 text-[#F0600E]"
-                    : "text-gray-600 hover:bg-orange-50 hover:text-[#F0600E]"
+                    ? "bg-brand-action-soft text-brand-action"
+                    : "text-text-secondary hover:bg-brand-action-soft hover:text-brand-action"
                 }`
               }
             >
@@ -69,8 +69,8 @@ export default function PartnerLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF7]">
-      <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-gray-200 bg-white px-5 py-6 lg:block">
+    <div className="min-h-screen bg-surface-canvas">
+      <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-border-default bg-surface-card px-5 py-6 lg:block">
         <Link to={routeSet.HOME}>
           <Logo />
         </Link>
@@ -79,7 +79,7 @@ export default function PartnerLayout() {
 
         <button
           onClick={signOut}
-          className="absolute bottom-6 left-5 right-5 cursor-pointer rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 transition hover:border-[#F0600E] hover:text-[#F0600E]"
+          className="absolute bottom-6 left-5 right-5 cursor-pointer rounded-2xl border border-border-default px-4 py-3 text-sm font-bold text-text-secondary transition hover:border-brand-action hover:text-brand-action"
         >
           Sign out
         </button>
@@ -94,7 +94,7 @@ export default function PartnerLayout() {
             className="absolute inset-0 cursor-default bg-gray-950/40 backdrop-blur-sm"
           />
 
-          <aside className="relative flex h-full w-72 max-w-[80vw] flex-col overflow-y-auto border-r border-gray-200 bg-white px-5 py-6 shadow-2xl">
+          <aside className="relative flex h-full w-72 max-w-[80vw] flex-col overflow-y-auto border-r border-border-default bg-surface-card px-5 py-6 shadow-2xl">
             <div className="flex items-center justify-between">
               <Link to={routeSet.HOME} onClick={() => setMobileNavOpen(false)}>
                 <Logo />
@@ -104,7 +104,7 @@ export default function PartnerLayout() {
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setMobileNavOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-[#F0600E] hover:text-[#F0600E]"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-default text-text-muted hover:border-brand-action hover:text-brand-action"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -114,7 +114,7 @@ export default function PartnerLayout() {
 
             <button
               onClick={signOut}
-              className="mt-6 cursor-pointer rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 transition hover:border-[#F0600E] hover:text-[#F0600E]"
+              className="mt-6 cursor-pointer rounded-2xl border border-border-default px-4 py-3 text-sm font-bold text-text-secondary transition hover:border-brand-action hover:text-brand-action"
             >
               Sign out
             </button>
@@ -123,23 +123,23 @@ export default function PartnerLayout() {
       )}
 
       <main className="lg:pl-72">
-        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/85 px-6 py-4 backdrop-blur-xl lg:px-10">
+        <header className="sticky top-0 z-40 border-b border-border-default bg-surface-card/85 px-6 py-4 backdrop-blur-xl lg:px-10">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 aria-label="Open menu"
                 onClick={() => setMobileNavOpen(true)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-[#F0600E] hover:text-[#F0600E] lg:hidden"
+                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-default text-text-secondary transition hover:border-brand-action hover:text-brand-action lg:hidden"
               >
                 <Menu className="h-5 w-5" />
               </button>
 
               <div>
-                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-gray-400">
+                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-text-disabled">
                   {isAcademy ? "Academy Console" : "Coach Console"}
                 </p>
-                <p className="mt-1 truncate text-sm font-semibold text-gray-700">
+                <p className="mt-1 truncate text-sm font-semibold text-text-secondary">
                   {user?.email}
                 </p>
               </div>

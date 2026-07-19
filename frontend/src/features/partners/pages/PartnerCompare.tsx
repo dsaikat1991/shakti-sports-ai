@@ -61,11 +61,11 @@ function AthletePicker({
 }) {
   return (
     <div className="flex-1">
-      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
+      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-text-disabled">{label}</p>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#F0600E]"
+        className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-brand-action"
       >
         <option value="">Choose an athlete...</option>
         {athletes
@@ -123,19 +123,19 @@ export default function PartnerCompare() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-[#F0600E]">
+      <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-brand-action">
         Compare
       </p>
-      <h1 className="mt-3 font-['Anton'] text-5xl uppercase leading-none text-gray-950 md:text-6xl">
+      <h1 className="mt-3 text-2xl font-bold text-text-primary md:text-3xl">
         Athlete Comparison
       </h1>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600">
+      <p className="mt-4 max-w-2xl text-base leading-7 text-text-secondary">
         Side-by-side comparison of two connected athletes' most recent
         completed reports. Only real, completed analyses are used - nothing
         here is estimated or invented.
       </p>
 
-      <div className="mt-8 flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row">
+      <div className="mt-8 flex flex-col gap-4 rounded-3xl border border-border-default bg-surface-card p-5 shadow-sm sm:flex-row">
         <AthletePicker
           label="Athlete A"
           athletes={connectedAthletes}
@@ -153,10 +153,10 @@ export default function PartnerCompare() {
       </div>
 
       {connectedAthletes.length < 2 && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <GitCompare className="mx-auto h-11 w-11 text-gray-400" />
-          <h2 className="mt-5 text-2xl font-bold text-gray-950">Need two connected athletes</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+        <div className="mt-10 rounded-4xl border border-dashed border-border-default bg-surface-sunken p-10 text-center">
+          <GitCompare className="mx-auto h-11 w-11 text-text-disabled" />
+          <h2 className="mt-5 text-2xl font-bold text-text-primary">Need two connected athletes</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
             Comparison only works between athletes you're currently connected
             to - connect with at least one more athlete to use this.
           </p>
@@ -164,16 +164,16 @@ export default function PartnerCompare() {
       )}
 
       {bothSelected && loading && (
-        <div className="mt-10 flex items-center gap-3 rounded-3xl border border-gray-200 bg-white p-6 text-sm font-semibold text-gray-600 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin text-[#F0600E]" />
+        <div className="mt-10 flex items-center gap-3 rounded-3xl border border-border-default bg-surface-card p-6 text-sm font-semibold text-text-secondary shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-brand-action" />
           Loading reports...
         </div>
       )}
 
       {bothSelected && !loading && (!performanceA || !performanceB) && (
-        <div className="mt-10 rounded-4xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <AlertTriangle className="mx-auto h-9 w-9 text-gray-400" />
-          <h2 className="mt-4 text-xl font-bold text-gray-950">
+        <div className="mt-10 rounded-4xl border border-dashed border-border-default bg-surface-sunken p-10 text-center">
+          <AlertTriangle className="mx-auto h-9 w-9 text-text-disabled" />
+          <h2 className="mt-4 text-xl font-bold text-text-primary">
             {!performanceA && !performanceB
               ? "Neither athlete has a completed report yet"
               : !performanceA
@@ -186,12 +186,12 @@ export default function PartnerCompare() {
       {bothSelected && !loading && performanceA && performanceB && pairComparability && (
         <div className="mt-8">
           {!pairComparability.comparable ? (
-            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+            <div className="rounded-3xl border border-warning-attention bg-warning-attention-soft p-6">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-700" />
-                <p className="text-sm font-bold text-amber-900">Not Comparable</p>
+                <AlertTriangle className="h-5 w-5 text-warning-attention" />
+                <p className="text-sm font-bold text-warning-attention">Not Comparable</p>
               </div>
-              <p className="mt-2 text-sm leading-6 text-amber-800">{pairComparability.reason}</p>
+              <p className="mt-2 text-sm leading-6 text-warning-attention">{pairComparability.reason}</p>
             </div>
           ) : (
             <ComparisonTable
@@ -227,14 +227,14 @@ function ComparisonTable({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-          <h2 className="text-lg font-bold text-gray-950">{nameA}</h2>
+        <div className="rounded-3xl border border-border-default bg-surface-card p-5 text-center shadow-sm">
+          <h2 className="text-lg font-bold text-text-primary">{nameA}</h2>
           <div className="mt-2">
             <RatingBadge rating={qualityA?.rating} />
           </div>
         </div>
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-          <h2 className="text-lg font-bold text-gray-950">{nameB}</h2>
+        <div className="rounded-3xl border border-border-default bg-surface-card p-5 text-center shadow-sm">
+          <h2 className="text-lg font-bold text-text-primary">{nameB}</h2>
           <div className="mt-2">
             <RatingBadge rating={qualityB?.rating} />
           </div>
@@ -262,10 +262,10 @@ function ComparisonTable({
       />
 
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-700">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-warning-attention">
           Experimental Metrics
         </h3>
-        <p className="mb-3 text-sm leading-6 text-gray-500">
+        <p className="mb-3 text-sm leading-6 text-text-muted">
           Ground-contact detection is confirmed unreliable for some camera
           angles (see the Limitations section of each full report) - these
           are shown for reference only and never used to suggest a winner.
@@ -337,8 +337,8 @@ export function MetricSection({
   if (metrics.length === 0) return null;
 
   return (
-    <div className={`rounded-3xl border p-5 ${experimental ? "border-amber-200 bg-amber-50/40" : "border-gray-200 bg-white shadow-sm"}`}>
-      {title && <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-gray-400">{title}</h3>}
+    <div className={`rounded-3xl border p-5 ${experimental ? "border-warning-attention bg-warning-attention-tint" : "border-border-default bg-surface-card shadow-sm"}`}>
+      {title && <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-text-disabled">{title}</h3>}
 
       <div className="space-y-3">
         {metrics.map((metric) => {
@@ -350,20 +350,20 @@ export function MetricSection({
             comparability.comparable && a && b ? winningSide(metric.comparisonMode, a.value, b.value) : null;
 
           return (
-            <div key={metric.key} className="grid grid-cols-3 items-center gap-3 border-t border-gray-100 pt-3 first:border-t-0 first:pt-0">
-              <p className="text-sm font-semibold text-gray-700">{metric.label}</p>
+            <div key={metric.key} className="grid grid-cols-3 items-center gap-3 border-t border-border-divider pt-3 first:border-t-0 first:pt-0">
+              <p className="text-sm font-semibold text-text-secondary">{metric.label}</p>
 
               {comparability.comparable ? (
                 <>
-                  <p className={`text-sm font-bold ${winner === "a" ? "text-green-700" : "text-gray-950"}`}>
+                  <p className={`text-sm font-bold ${winner === "a" ? "text-success-progress" : "text-text-primary"}`}>
                     {a ? metric.format(a) : "N/A"}
                   </p>
-                  <p className={`text-sm font-bold ${winner === "b" ? "text-green-700" : "text-gray-950"}`}>
+                  <p className={`text-sm font-bold ${winner === "b" ? "text-success-progress" : "text-text-primary"}`}>
                     {b ? metric.format(b) : "N/A"}
                   </p>
                 </>
               ) : (
-                <p className="col-span-2 text-xs font-semibold text-gray-400">
+                <p className="col-span-2 text-xs font-semibold text-text-disabled">
                   Not comparable - {comparability.reason}
                 </p>
               )}
@@ -373,7 +373,7 @@ export function MetricSection({
       </div>
 
       {metrics[0]?.limitationText && (
-        <p className="mt-4 text-xs leading-5 text-amber-700">{metrics[0].limitationText}</p>
+        <p className="mt-4 text-xs leading-5 text-warning-attention">{metrics[0].limitationText}</p>
       )}
     </div>
   );

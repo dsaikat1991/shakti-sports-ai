@@ -65,7 +65,7 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm font-semibold text-gray-800">
+          <label className="text-sm font-semibold text-text-primary">
             Email
           </label>
 
@@ -75,12 +75,12 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
-            className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+            className="mt-2 w-full rounded-xl border border-border-default px-4 py-3 text-sm outline-none transition focus:border-brand-action focus:ring-4 focus:ring-brand-action-soft"
           />
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-gray-800">
+          <label className="text-sm font-semibold text-text-primary">
             Password
           </label>
 
@@ -91,12 +91,12 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Minimum 6 characters"
-            className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+            className="mt-2 w-full rounded-xl border border-border-default px-4 py-3 text-sm outline-none transition focus:border-brand-action focus:ring-4 focus:ring-brand-action-soft"
           />
         </div>
 
         {errorMessage && (
-          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="rounded-xl bg-error-failure-soft px-4 py-3 text-sm font-medium text-error-failure">
             {errorMessage}
           </div>
         )}
@@ -104,7 +104,7 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full cursor-pointer rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full cursor-pointer rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading
             ? "Please wait..."
@@ -114,11 +114,11 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-text-secondary">
         {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
         <Link
           to={isSignIn ? ROUTES.AUTH.SIGN_UP : ROUTES.AUTH.SIGN_IN}
-          className="font-bold text-[#F0600E] hover:underline"
+          className="font-bold text-brand-action hover:underline"
         >
           {isSignIn ? "Create one" : "Sign in"}
         </Link>
