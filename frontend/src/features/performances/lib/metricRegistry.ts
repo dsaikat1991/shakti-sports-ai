@@ -307,6 +307,7 @@ export function defineMetric(input: MetricInput): MetricDefinition {
 }
 
 function firstCompletedSegment(result: AnalysisResult): any | null {
+  if (!result) return null;
   const biomechanics = result.biomechanics as any;
   if (biomechanics?.status === "skipped") return null;
   const segments = Array.isArray(biomechanics?.segments) ? biomechanics.segments : [];

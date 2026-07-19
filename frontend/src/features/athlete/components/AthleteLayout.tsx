@@ -1,10 +1,12 @@
-import { Activity, TrendingUp, FileText, Flag, Home, Menu, Settings, Target, User, Users, X } from "lucide-react";
-import { useState } from "react";
+import { Activity, Bell, TrendingUp, FileText, Flag, Home, Menu, Settings, Target, Upload, User, Users, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import Logo from "../../../components/shared/Logo";
 import { useAuth } from "../../auth/context/AuthContext";
 import { ROUTES } from "../../../constants/routes";
 import UserMenu from "../../../components/layout/UserMenu";
+import { useAthleteNotifications } from "../hooks/useAthleteNotifications";
+import { notificationIcon } from "../lib/deriveNotifications";
 const navItems = [
   { label: "Home", href: ROUTES.ATHLETE.HOME, icon: Home },
   { label: "Performances", href: ROUTES.ATHLETE.HISTORY, icon: Activity },
@@ -46,12 +48,108 @@ function AthleteNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+function NotificationsMenu({
+  notifications,
+}: {
+  notifications: ReturnType<typeof useAthleteNotifications>["notifications"];
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasNotifications = notifications.length > 0;
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        aria-label="Notifications"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary"
+      >
+        <Bell className="h-4.5 w-4.5" />
+        {hasNotifications && (
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full border border-surface-card bg-error-failure" />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-border-default bg-surface-card p-2 shadow-xl">
+          <p className="px-3 py-2 font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.15em] text-text-muted">
+            Notifications
+          </p>
+
+          {notifications.length === 0 ? (
+            <p className="px-3 py-4 text-sm leading-6 text-text-muted">
+              You're all caught up - nothing new to review.
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {notifications.slice(0, 5).map((notification) => {
+                const Icon = notificationIcon(notification.type);
+
+                return (
+                  <Link
+                    key={notification.id}
+                    to={notification.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-start gap-2 rounded-xl px-3 py-2.5 transition hover:bg-surface-sunken"
+                  >
+                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-action" />
+                    <div>
+                      <p className="text-sm font-normal text-text-primary">
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        {notification.description}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          <Link
+            to={ROUTES.ATHLETE.HOME}
+            onClick={() => setOpen(false)}
+            className="mt-1 block rounded-xl px-3 py-2.5 text-center text-sm font-light text-brand-action hover:bg-surface-sunken hover:text-brand-action-hover"
+          >
+            View all notifications
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AthleteLayout() {
   const { user, signOut } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { notifications } = useAthleteNotifications();
 
   return (
-    <div className="min-h-screen bg-surface-canvas">
+    <div className="min-h-screen bg-surface-card">
       <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-border-default bg-surface-card px-4 py-6 lg:block">
         <Link to={ROUTES.ATHLETE.HOME} className="px-1">
           <Logo />
@@ -127,7 +225,19 @@ export default function AthleteLayout() {
               </div>
             </div>
 
-            <UserMenu />
+            <div className="flex items-center gap-2">
+              <Link
+                to={ROUTES.ATHLETE.NEW_PERFORMANCE}
+                aria-label="Upload a performance"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary"
+              >
+                <Upload className="h-4.5 w-4.5" />
+              </Link>
+
+              <NotificationsMenu notifications={notifications} />
+
+              <UserMenu />
+            </div>
           </div>
         </header>
 

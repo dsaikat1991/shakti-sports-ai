@@ -1,3 +1,4 @@
+import { Bell, ShieldAlert, Target, Users } from "lucide-react";
 import type { EnrichedAthleteConnection } from "../../partners/hooks/useAthleteConnections";
 import { getConnectionViewState } from "../../partners/lib/getConnectionViewState";
 
@@ -11,6 +12,21 @@ export type NotificationType =
   | "coach_connection_request"
   | "goal_target_date"
   | "guardian_approval_required";
+
+// Shared between the Home notifications card and the navbar dropdown -
+// one mapping from notification type to icon, not two copies drifting.
+export function notificationIcon(type: NotificationType) {
+  switch (type) {
+    case "recording_quality_insufficient":
+      return ShieldAlert;
+    case "coach_connection_request":
+      return Users;
+    case "goal_target_date":
+      return Target;
+    default:
+      return Bell;
+  }
+}
 
 export interface AthleteNotification {
   id: string;

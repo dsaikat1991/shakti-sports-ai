@@ -1,14 +1,12 @@
 import { useMemo } from "react";
 import {
+  Activity,
   ArrowRight,
-  Bell,
   CalendarDays,
+  Gauge,
   Loader2,
   Plus,
   RefreshCw,
-  ShieldAlert,
-  Target,
-  Users,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -19,7 +17,7 @@ import { useAthleteDashboard } from "../hooks/useAthleteDashboard";
 import { useAthleteProfile } from "../hooks/useAthleteProfile";
 import { useAthleteGoals } from "../hooks/useAthleteGoals";
 import { useAthleteNotifications } from "../hooks/useAthleteNotifications";
-import type { NotificationType } from "../lib/deriveNotifications";
+import { notificationIcon } from "../lib/deriveNotifications";
 import {
   extractAnalysisSummary,
   formatSessionDate,
@@ -81,19 +79,6 @@ function formatTargetDate(date?: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(date));
-}
-
-function notificationIcon(type: NotificationType) {
-  switch (type) {
-    case "recording_quality_insufficient":
-      return ShieldAlert;
-    case "coach_connection_request":
-      return Users;
-    case "goal_target_date":
-      return Target;
-    default:
-      return Bell;
-  }
 }
 
 function getStatusLabel(status: string | null) {
@@ -372,7 +357,7 @@ export default function AthleteHome() {
   const activeGoal = goals.find((goal) => goal.status === "active");
 
   const latestPerformance = performances[0];
-  const recentPerformances = performances.slice(0, 5);
+  const recentPerformances = performances.slice(0, 3);
 
   const heroState = useMemo(
     () => deriveHomeHeroState(latestPerformance),
@@ -383,6 +368,41 @@ export default function AthleteHome() {
     () => computeTwinConfidence(performances.map(toTwinSessionInput)),
     [performances],
   );
+
+  // Real aggregates only, computed from the same `performances` data every
+  // other card on this page already reads - no separate query, nothing
+  // fabricated. Windowed to the last 30 days per the project owner's
+  // request. Only two stats ship here (Total Sessions, Avg. Cadence) -
+  // "Avg. Time" and "Stride length" were also requested but neither has a
+  // real backing metric today (METRIC_REGISTRY has no time/duration field
+  // at all, and the only stride metric is stride_frequency in Hz, not a
+  // distance) - see chat for the question back to the project owner rather
+  // than fabricating either one.
+  const summaryStats = useMemo(() => {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const recentWindow = performances.filter((performance) => {
+      if (!performance.performance_date) return false;
+      const performedOn = new Date(performance.performance_date);
+      return performedOn >= windowStart && performedOn <= now;
+    });
+
+    const cadenceValues = recentWindow
+      .filter((performance) => performance.analysis_result)
+      .map((performance) => CADENCE_METRIC.accessor(performance.analysis_result)?.value)
+      .filter((value): value is number => typeof value === "number");
+
+    const avgCadence =
+      cadenceValues.length > 0
+        ? cadenceValues.reduce((sum, value) => sum + value, 0) / cadenceValues.length
+        : null;
+
+    return {
+      total: recentWindow.length,
+      avgCadence,
+    };
+  }, [performances]);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -454,7 +474,7 @@ export default function AthleteHome() {
                         <p className="font-['JetBrains_Mono'] text-xs font-semibold tracking-[0.03em] text-brand-action-ink">
                           Performance #{String(performance.performance_number ?? 0).padStart(2, "0")}
                         </p>
-                        <p className="mt-1 font-bold text-text-primary">
+                        <p className="mt-1 font-normal text-text-primary">
                           {buildPerformanceDisplayName(performance)}
                         </p>
                         <p className="mt-1 flex items-center gap-2 text-sm text-text-muted">
@@ -468,7 +488,7 @@ export default function AthleteHome() {
                         <RatingBadge rating={summary?.rating} />
                       ) : (
                         <span
-                          className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(
+                          className={`w-fit rounded-md px-2.5 py-1 font-['JetBrains_Mono'] text-[10.5px] font-medium uppercase tracking-[0.04em] ${getStatusClasses(
                             performance.upload_status,
                           )}`}
                         >
@@ -491,6 +511,45 @@ export default function AthleteHome() {
               </div>
             )}
           </section>
+
+          {!isLoading && summaryStats.total > 0 && (
+            <section className="rounded-2xl border border-border-default bg-surface-card p-5">
+              <div className="flex items-center justify-between">
+                <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.15em] text-text-muted">
+                  Performance summary
+                </p>
+                <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.1em] text-text-disabled">
+                  Last 30 days
+                </p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-3 rounded-xl border border-border-divider p-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-action-soft text-brand-action">
+                    <Activity className="h-4.5 w-4.5" />
+                  </span>
+                  <div>
+                    <p className="font-['JetBrains_Mono'] text-xl font-semibold text-text-primary">
+                      {summaryStats.total}
+                    </p>
+                    <p className="text-xs text-text-muted">Total sessions</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl border border-border-divider p-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-info-insight-soft text-info-insight">
+                    <Gauge className="h-4.5 w-4.5" />
+                  </span>
+                  <div>
+                    <p className="font-['JetBrains_Mono'] text-xl font-semibold text-text-primary">
+                      {summaryStats.avgCadence !== null ? Math.round(summaryStats.avgCadence) : "—"}
+                    </p>
+                    <p className="text-xs text-text-muted">Avg. cadence (steps/min)</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
@@ -605,7 +664,7 @@ export default function AthleteHome() {
               </p>
             ) : (
               <div className="mt-3 flex flex-col gap-3">
-                {notifications.slice(0, 4).map((notification) => {
+                {notifications.slice(0, 5).map((notification) => {
                   const Icon = notificationIcon(notification.type);
 
                   return (
@@ -616,7 +675,7 @@ export default function AthleteHome() {
                     >
                       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-action" />
                       <div>
-                        <p className="text-sm font-bold text-text-primary">
+                        <p className="text-sm font-normal text-text-primary">
                           {notification.title}
                         </p>
                         <p className="text-xs text-text-muted">

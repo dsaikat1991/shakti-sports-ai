@@ -604,17 +604,19 @@ function QualityGateBreakdown({ quality }: { quality: any }) {
   );
 }
 
-// Colors follow the project's official color spec: green = achievement/
-// success (both real passes, lighter for Good), amber = needs attention
-// but not failure (explicitly includes "recording quality could improve"),
-// red reserved for genuine technical failures only (upload failed,
-// corrupted, crashed) - never for a quality rating, and blue reserved for
-// informational/educational content, never a status judgment.
+// Project owner's explicit instruction (session after eed5a0b): give the
+// four rating tiers four distinct colors instead of two shades each of
+// green/amber - Excellent stays success-progress green, Good/Fair/Poor
+// each get their own hue (blue/yellow/red) matching the reference mockup.
+// This is a deliberate, disclosed exception to this project's general rule
+// that blue/red are never a status judgment on a rating - see
+// DESIGN_BIBLE.md §4 for the full disclosure; do not generalize it to
+// other status/quality surfaces without the same explicit sign-off.
 const RATING_STYLES: Record<string, string> = {
   Excellent: "bg-success-progress-soft text-success-progress",
-  Good: "bg-success-progress-tint text-success-progress",
-  Fair: "bg-warning-attention-tint text-warning-attention",
-  Poor: "bg-warning-attention-soft text-warning-attention",
+  Good: "bg-info-insight-soft text-info-insight",
+  Fair: "bg-rating-fair-soft text-rating-fair",
+  Poor: "bg-error-failure-soft text-error-failure",
 };
 
 export function RatingBadge({ rating }: { rating?: string }) {
@@ -622,7 +624,7 @@ export function RatingBadge({ rating }: { rating?: string }) {
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${
+      className={`inline-flex w-fit rounded-md px-2.5 py-1 font-['JetBrains_Mono'] text-[10.5px] font-medium uppercase tracking-[0.04em] ${
         RATING_STYLES[rating] ?? "bg-surface-sunken text-text-secondary"
       }`}
     >

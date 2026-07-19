@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @import "tailwindcss";
 
@@ -103,6 +103,32 @@
      orange used for "Athletic Performance Trends" - the file's own comment
      states these must never read as the same kind of observation. */
   --color-category-recording-quality: #2f5a6b;
+
+  /* rating.fair - yellow, used only by the four-tier performance-rating
+     badge (Excellent/Good/Fair/Poor). Project owner's explicit instruction
+     (session after eed5a0b): give the four rating tiers four distinct
+     colors - Excellent stays success-progress green, Good reuses
+     info-insight blue, Poor reuses error-failure red, Fair is the one
+     genuinely new hue needed. This is a deliberate, disclosed exception to
+     this file's own general rule that info-insight/error-failure are
+     never a status judgment on a rating - narrowly scoped to this one
+     badge, not a general license to reuse these hues elsewhere. See
+     DESIGN_BIBLE.md §4 for the full disclosure. */
+  --color-rating-fair: #EAB308;
+  --color-rating-fair-soft: #FEF9C3;
+
+  /* font.sans - the single source of truth for the in-product body/UI
+     typeface. Change the value here only - every component reads it via
+     the body rule below or the auto-generated `font-sans` utility, never
+     a literal font-family string of its own. Switched from Inter to
+     Lexend (project owner approved after mockup review) - the one major
+     Google Font engineered against reading-research data to improve
+     reading speed/reduce visual stress for developing readers, matching
+     this product's own grade 4-6 reading-level bar. (Anton and JetBrains
+     Mono are not tokenized yet - still applied via arbitrary
+     `font-['Name']` classes at each call site; out of scope for this
+     change.) */
+  --font-sans: "Lexend", sans-serif;
 }
 
 html {
@@ -111,7 +137,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   background: var(--color-surface-card);
   color: var(--color-text-primary);
 }
