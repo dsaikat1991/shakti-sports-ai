@@ -39,17 +39,35 @@ The product is **not an AI analytics dashboard. It is an AI-powered athletics co
 
 Nothing is ever hidden as a secret — always revealed progressively (a beginner can tap "show me more"; a scout can collapse to simple).
 
-## 4. Design tokens (the actual system — keep the existing brand, formalize it)
+## 4. Design tokens — **implemented** as of the session that shipped commit `eed5a0b` (superseding the original proposal below `§4.0`)
+
+**Status: this is no longer a proposal — it is live in `frontend/src/index.css` via a Tailwind v4 `@theme` block, and is the durable reference for every color decision from here on.** Full engineering detail (mechanism, bugs found/fixed, migration scope so far): `ENGINEERING_HANDOFF.md` §35.3. This section states the settled rule; that section explains how it was built.
+
+**The rule, no exceptions**: no component may hardcode a hex value. No component may reach for a raw Tailwind color utility (`orange-600`, `green-500`, `blue-700`, `gray-200`, etc.) directly. Every color reference is one of the semantic classes below. If a screen needs a color and none of these fit, that's a sign a real new semantic role is missing — propose a new token, don't reach for a raw utility as a shortcut.
+
+| Token family | Utility names (bg-/text-/border- + suffix) | Meaning — use for | Never use for |
+|---|---|---|---|
+| `brand-action` | (base), `-hover`, `-soft`, `-tint`, `-ink` | Primary buttons, record/upload, active nav, primary links, selected states, focus rings. Orange = action/courage/effort. | Anything routine or decorative — spend it deliberately. |
+| `success-progress` | (base), `-hover`, `-soft`, `-tint` | Personal best, goal completed, achievement, positive trend, a "Good"/"Excellent" performance rating. Green = progress/achievement, must feel earned. | Primary navigation or primary CTAs — green never leads, it celebrates. |
+| `info-insight` | (base), `-hover`, `-soft`, `-tint` | AI explanations, educational content, coach insights, neutral notifications, help/documentation. Blue = knowledge/trust/precision. | A status judgment of any kind — a quality rating or performance grade is never "insight" blue. |
+| `warning-attention` | (base), `-soft`, `-tint` | Needs attention, not failure: recording quality could improve, an experimental metric, waiting/processing, a "Fair"/"Poor" performance rating. | Framing something as broken — that's red's job, not amber's. |
+| `error-failure` | (base), `-hover`, `-soft` | Something genuinely, technically failed: upload failed, video corrupted, analysis crashed, permission denied. | A low score, a skipped analysis, or "poor" performance/recording quality — none of those are failures. |
+| `surface-canvas` / `surface-sunken` / `surface-card` | (base only) | Three deliberately distinct neutrals: `canvas` = outermost page background, `sunken` = a recessed/tinted section within the page, `card` = a pure-white elevated element. | Collapsing all three to one "just make it white" — they're intentional roles, not accidental drift (an earlier pass in this project's history proposed collapsing them; superseded). |
+| `border-default` / `border-divider` | (base only) | Structural borders and internal dividers respectively. | — |
+| `text-primary` / `text-secondary` / `text-muted` / `text-disabled` | (base only) | Decreasing emphasis, in that order. | — |
+| `category-recording-quality` | (base only) | A narrow, deliberate category marker distinct from the five roles above — e.g. "Recording Quality Trends" must never read as the same kind of observation as "Athletic Performance Trends." | Any other purpose — this is a one-off, not a general-purpose sixth color. |
+
+**Not yet implemented, still open** (unchanged from the original proposal): dedicated `quality.*` (excellent/good/needs-work/unsuitable) and `confidence.*` (low/building/established, monochrome-to-brand progression, never a red/amber/green stoplight) token families for recording-quality ratings and the Digital Twin/My Progress confidence signal specifically — today those surfaces reuse `success-progress`/`warning-attention` rather than having their own dedicated names. Revisit if/when those two surfaces need to evolve independently of the five general-purpose roles above.
+
+**Typography — implemented for the Athlete Console, not yet elsewhere**: Anton confined to Landing's hero only; Inter carries every in-product headline. Migrated so far: Athlete Console (all screens). **Not yet migrated**: Auth/onboarding, the entire Coach/Academy Console, marketing pages other than the Landing hero itself. See `ENGINEERING_HANDOFF.md` §35.8 for the exact remaining scope — this is the project owner's stated next priority, ahead of any other work.
+
+**Dark mode**: ship later, not now, not never. Justification: the bigger unaddressed need is legibility in *bright outdoor sunlight* (the real filming environment), which dark mode doesn't help. The token architecture above already satisfies "a future token-file edit, not a rewrite" — Tailwind v4's generated utilities reference the CSS variable itself, not a baked-in literal, so a future `[data-theme="dark"] { --color-surface-canvas: ...; }` override repaints every consuming component automatically. Confirmed working, not just architected — see `ENGINEERING_HANDOFF.md` §35.3.
+
+### 4.0 Original proposal (superseded by the table above, kept for history)
 
 **Keep unchanged**: brand accent `#F0600E` (the one and only brand color — do not add a second "brand" hue), and the Anton/Inter/JetBrains Mono trio.
 
 **Fix**: Anton is currently misused on real instructional headings (hurts readability) — it should be confined to Landing's hero only, never inside the authenticated product. Inter carries every in-product headline, including Sprint Report/My Progress "big statement" text.
-
-**New token families, not in the codebase yet** (deliberately distinct from generic status colors, so "this recording wasn't great" never looks or feels like "something broke"):
-- `quality.*` (excellent/good/needs-work/unsuitable) for recording-quality ratings.
-- `confidence.*` (low/building/established) for the Digital Twin/My Progress confidence signal — a monochrome-to-brand progression, **never** a red/amber/green stoplight, since "low confidence" almost always just means "one session so far," a normal beginning, not a warning.
-
-**Dark mode**: ship later, not now, not never. Justification: the bigger unaddressed need is legibility in *bright outdoor sunlight* (the real filming environment), which dark mode doesn't help. Enforce token-only color references now (never a raw hex in a component) so dark mode is a future token-file edit, not a rewrite.
 
 ## 5. Fifteen immutable design principles
 
@@ -63,7 +81,7 @@ Never invent certainty. Never exaggerate what the AI can currently do. Never sha
 
 | Decision | Reason | Status |
 |---|---|---|
-| Rename "Digital Twin" → "My Progress" | Jargon → the athlete's own question, in their own words | **Approved, not yet built** — the live app still says "Digital Twin" everywhere (confirmed by direct observation this session) |
+| Rename "Digital Twin" → "My Progress" | Jargon → the athlete's own question, in their own words | **Approved & built** — nav label/icon and Athlete Console copy updated (commit `eed5a0b`); route path and internal identifiers unchanged |
 | Coach Dashboard becomes roster/triage-first | A coach's real daily question is "who needs me," not pairwise comparison | Approved, not built |
 | Athlete Compare demoted to secondary nav | Narrower job than daily triage; primary placement overstates its role | Approved, not built |
 | No AI mascot/named character | A cartoon invites gimmick logic that competes with quickly telling the truth | Approved |

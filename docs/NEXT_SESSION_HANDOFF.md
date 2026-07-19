@@ -1,34 +1,33 @@
 # Next-Session Handoff
 
-**Purpose**: let a brand-new Claude session (zero chat history) resume this project safely. Read this document fully, then read `docs/ENGINEERING_HANDOFF.md` (§25 onward covers everything referenced here, §34 is the most recent) and `docs/DESIGN_BIBLE.md` (the durable product/UX reference). This file is a snapshot as of the moment it was written - re-verify anything load-bearing (git log, test counts) before acting on it, per this project's own "never trust silence, verify current state" convention.
+**Purpose**: let a brand-new Claude session (zero chat history) resume this project safely. Read this document fully, then read `docs/ENGINEERING_HANDOFF.md` (§35 is the most recent section) and `docs/DESIGN_BIBLE.md` (the durable product/UX/design reference — §4 was rewritten this session to reflect what's actually implemented). This file is a snapshot as of the moment it was written - re-verify anything load-bearing (git log, test counts) before acting on it, per this project's own "never trust silence, verify current state" convention.
 
 ---
 
 ## Repository state
 
 - **Branch**: `main`
-- **Latest commit**: `84cbed4` (`feat(metrics): introduce canonical metric registry and comparison semantics`)
-- **Pushed status**: `origin/main` is at `84cbed4` too - fully pushed, nothing local-only.
-- **Working tree**: clean except this file itself and `docs/DESIGN_BIBLE.md` (new), both from this session's documentation pass.
+- **Latest commit**: `eed5a0b` (`feat(design-system): implement approved Home mockup and sitewide semantic color tokens`)
+- **Pushed status**: **NOT pushed** - `origin/main` is still at `9bfbace`. `eed5a0b` and `9bfbace` are both local-only ahead of the remote as of this writing (confirm with `git log origin/main..HEAD`). Do not push without explicit instruction.
+- **Working tree**: clean as of the end of this session.
 - **Starting the stack locally** (three separate processes, all needed together for the frontend's live analysis flow to work end-to-end):
   1. `cd backend && ./.venv-rtmpose/Scripts/python.exe -m uvicorn rtmpose_worker.app:app --port 8011` - GPU worker. Wait for `GET /health` to show `"initialized": true` (first `/initialize` call is slow, cold).
   2. `cd backend && ./.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000` - main API.
-  3. `cd frontend && npm run dev` - Vite dev server, port 5173 by default. **If port 5173 is already held by a stray `node.exe` running `vite.js` for this same project** (a leftover from a prior session's preview server that didn't shut down cleanly), it's safe to kill that process and retry - confirmed this exact scenario once already this session.
+  3. `cd frontend && npm run dev` - Vite dev server, port 5173 by default. **If port 5173 is already held by a stray `node.exe` running `vite.js` for this same project** (a recurring leftover from a prior session's preview server not shutting down cleanly - confirmed multiple times across sessions), it's safe to kill that process and retry.
   - Tests: `cd backend && ./.venv/Scripts/python.exe -m pytest` (no args needed) · `cd frontend && npm run test -- --run` and `npx tsc -b --force` and `npm run lint`.
 
 ---
 
-## What happened this session (two very different phases)
+## What happened last session
 
-### Phase A - Canonical Metric Registry (engineering, shipped)
+Two commits shipped, neither pushed:
 
-Fixed two real bugs: `PartnerCompare.tsx` was highlighting a false "winner" for every metric including joint angles (no better/worse direction exists for a joint angle), and the Digital Twin was generating "Improving Left Knee Angle" strengths/personal-bests from the same non-directional metrics. Built one canonical `metricRegistry.ts` with a `comparisonMode` per metric that every consumer now reads instead of assuming "higher is better." Full detail: `docs/ENGINEERING_HANDOFF.md` §33. Shipped in commit `84cbed4`, currently the tip of `main`, already pushed.
+1. `9bfbace` - athlete-flow Phase 1 (optional upload title, real upload progress, four-beat error formula, plain-language report headline, honest Analysis Waiting status) plus the hybrid session-naming scheme (`performance_type` DB column + personal note, `buildPerformanceDisplayName()`).
+2. `eed5a0b` - the Athlete Home screen rebuilt to match an approved Artifact mockup exactly (real data only, honest states), the shared `AthleteLayout.tsx` sidebar/topbar restyled, "Digital Twin" renamed to "My Progress" sitewide, 12 more Athlete Console screens migrated off Anton onto Inter, and - the largest piece - the project owner's official Color Philosophy spec implemented as a centralized semantic design-token system in `frontend/src/index.css` (Tailwind v4 `@theme`), with `AthleteLayout.tsx`, `AthleteHome.tsx`, and `PerformanceDetail.tsx`'s `RatingBadge` migrated onto it.
 
-### Phase B - Full product/UX/design pass (documentation only, not shipped)
+Full detail: `docs/ENGINEERING_HANDOFF.md` §35. The token table itself, with intended meaning per token: `docs/DESIGN_BIBLE.md` §4 (rewritten this session - the old §4 is now §4.0, kept for history).
 
-The project owner shifted to product/design work: a full UX audit, four sequential approved planning documents, and a first real wireframe design deliverable for the athlete flow (Landing → Authentication → Onboarding → Home → Upload Flow → Upload Review → Analysis Waiting → Sprint Report → My Progress). **No application code was changed in this phase.** Full detail and the durable, condensed version of every decision: `docs/DESIGN_BIBLE.md`. Session log: `docs/ENGINEERING_HANDOFF.md` §34.
-
-**The single most important thing this phase found**: the public marketing homepage (`/`, viewed while signed out) fabricates metrics and capabilities that don't exist anywhere in the real backend - invented numbers like "Stride Angle: 168°," "Form Score: 8.7/10," and false claims that Hurdles/Long Jump/High Jump have working biomechanics (they don't - Sprint only). This was found, not fixed. See `docs/DESIGN_BIBLE.md` §9 for exact detail and where to look in the frontend.
+**The project owner's explicit stated priority for this next session**: finish/"close" the design constitution and style guide for the entire web app **before** picking up anything else (the marketing-homepage fabricated-metrics fix, the three deferred research items, and the open `performance_type` display question below all stay parked until this is done).
 
 ---
 
@@ -36,49 +35,49 @@ The project owner shifted to product/design work: a full UX audit, four sequenti
 
 | Suite | Count | Notes |
 |---|---|---|
-| Backend (`pytest`) | **342 passed** | Unchanged this session - Phase A touched zero backend files, Phase B touched none either. |
-| Frontend (`vitest`) | **163 passed** | Up from 123 - Phase A added `metricRegistry.test.ts` (22 tests), extended `twinEngine.test.ts` (+19), added `PartnerCompare.test.tsx` (7). Phase B added no tests (documentation only). |
+| Backend (`pytest`) | **342 passed** | Untouched this session - zero backend files changed (confirmed via `git status backend/`). |
+| Frontend (`vitest`) | **179 passed, 11 files** | Up from 163 - added `AthleteHome.test.tsx` (16 tests) and `performanceDisplayName.test.ts` (6 tests, shipped in `9bfbace`). |
 | TypeScript (`tsc -b --force`) | **Clean** | Zero errors. |
-| Lint (`oxlint`) | **8 warnings, all pre-existing** | Same exact list as every prior session - see `docs/ENGINEERING_HANDOFF.md` §33 verification for the file:line list. Zero new warnings. |
+| Lint (`oxlint`) | **9 warnings, all the same pre-existing pattern** | One new instance (`AthleteHome.tsx:145`, `only-export-components` - from deliberately exporting `deriveHomeHeroState`/`HeroCard` for testability, the same pattern `PerformanceProcessing.tsx`/`PerformanceDetail.tsx`/`AuthContext.tsx` already use). Zero new warning *categories*. |
 
 ---
 
-## Live QA test data (real Supabase rows, disposable, marked)
+## Live QA test data (real Supabase rows, disposable, marked) - unchanged this session
 
-- `shakti.qa.coach@example.com` - existing QA coach, now connected to **two** athletes (was one before this session).
-- `shakti.qa.athlete@example.com` - existing QA athlete, 2 completed sessions (both biomechanics-skipped - no available clip clears the live gate, unchanged finding).
-- `shakti.qa.athlete2@example.com` / password `ShaktiQA2Test!2026` - **created this session** to test the two-athlete Coach Compare flow live. One real completed session (biomechanics-skipped).
-- All QA-created rows are marked `[QA VERIFICATION] ... safe to delete` in their `notes` fields. Do not delete without checking whether a future session still needs them for live verification.
-- **Still true, reconfirmed again this session**: no clip in `backend/examples/` clears the live `biomechanics_ready` gate. Do not fabricate a "completed" biomechanics result to work around this - explicitly rejected precedent, recorded in `docs/DESIGN_BIBLE.md` §10.
+- `shakti.qa.coach@example.com` - QA coach, connected to two athletes.
+- `shakti.qa.athlete@example.com` / `shakti.qa.athlete2@example.com` (password `ShaktiQA2Test!2026`) - QA athletes, all sessions biomechanics-skipped.
+- All QA rows marked `[QA VERIFICATION] ... safe to delete` in their `notes` fields.
+- **Still true**: no clip in `backend/examples/` clears the live `biomechanics_ready` gate. Do not fabricate a "completed" biomechanics result to work around this.
 
 ---
 
-## Deferred work (unchanged from before this session, still open, still not to be picked up opportunistically)
+## Open item, not resolved - do not assume either way
+
+The project owner reported seeing rows on their own personal account (`Performance #11`-`#14`) rendering as `Session — "fff"` instead of a real type label. Traced the full write path and found no bug in current code - the likely explanation is these are legacy rows predating the `performance_type` migration (which correctly fall back to `"Session"` by design). **The project owner was asked to create one fresh test performance to confirm and never confirmed back.** Check directly against the live Supabase project (`select performance_type, title, created_at from performances where athlete_id = ... order by created_at desc limit 5`) or ask again before touching `performanceDisplayName.ts` or the insert path. Full detail: `docs/ENGINEERING_HANDOFF.md` §35.7.
+
+---
+
+## Deferred work (unchanged, still open, still not to be picked up opportunistically ahead of the design-system priority below)
 
 - **A.** Recalibrate `geometry_stability_score` (needs a larger real-clip dataset).
 - **B.** Investigate `stride_velocity_bridge.py`'s left/right progression asymmetry.
 - **C.** Independently repair sprint-phase detection's false long-deceleration behavior.
-- Promoting one or more of the metric registry's 10 `hidden` entries (tracking confidence, visibility breakdown, camera/lighting/sharpness/frame-rate scores) if the product wants them surfaced.
+- The marketing homepage's fabricated metrics (`docs/DESIGN_BIBLE.md` §9) - found and classified two sessions ago, still not fixed. Deliberately deferred behind the design-system close-out below, per the project owner's own explicit sequencing.
+- Promoting one or more of the metric registry's 10 `hidden` entries, if the product wants them surfaced.
 - The real coach/academy verification workflow (still fully manual).
 - Terms/Privacy - explicitly parked, do not pick up unprompted.
 
 ---
 
-## Explicit scoping decision (this session)
+## Recommended next milestone: close the design constitution and style guide, sitewide
 
-Work focuses on the **entire platform plus Sprint only** for now. Hurdles/Long Jump/High Jump are deliberately deferred until Sprint mechanics is "top-notch" - do not build or validate anything for those three events opportunistically. This does not reduce the urgency of correcting the homepage's *claim* that those events already have working metrics (see below) - only the urgency of building the real thing for them.
+This is the project owner's own explicit instruction, not a suggestion among options. Three concrete pieces, per `docs/ENGINEERING_HANDOFF.md` §35.8:
 
-## Recommended next milestone
+1. **Anton migration, batches 2-4**: Auth/onboarding screens, the entire Coach/Academy Console (`PartnerLayout.tsx` + every `Partner*.tsx` page), and marketing/public pages. `Hero.tsx` (Landing) is the **only** place Anton should remain anywhere in the app.
+2. **Semantic-token migration, sitewide**: every screen outside `AthleteLayout.tsx`/`AthleteHome.tsx`/`PerformanceDetail.tsx`'s `RatingBadge`/`index.css` still has raw Tailwind color utilities and/or hardcoded hex. Audit file-by-file, migrate each onto the token names already defined in `docs/DESIGN_BIBLE.md` §4 / `frontend/src/index.css`. Only add a new token if a screen needs a genuinely distinct semantic role the existing nine families don't cover - not as a shortcut for a one-off color.
+3. **Formalize the result as one durable reference** - either substantially expand `docs/DESIGN_BIBLE.md` §4 further, or split a dedicated `docs/STYLE_GUIDE.md` out of it, covering: the full token table with intended meaning (already drafted this session, may need extending as new screens are migrated), the Anton/Inter/JetBrains Mono confinement rule, the Canvas/Surface/Card three-tier neutral system, the rating-badge color rule, and the existing fifteen immutable design principles (`docs/DESIGN_BIBLE.md` §5) - one place to check before writing any new UI.
 
-**Fix the marketing homepage** (`docs/DESIGN_BIBLE.md` §9, §9.1, §9.2 - read all three) - the leading candidate, since it's a live, user-facing violation of the project's own "never invent certainty" guardrail, on the single most-seen page in the product. Per this session's per-metric classification, this splits into two genuinely different pieces of work:
-1. **Remove/replace what can never be real, immediately, regardless of anything else**: "Form Score: 8.7/10," the qualitative tiers ("Elite"/"Balanced"/"Excellent"), the "AI Score: 8.9" mockup, and the false "Hurdles: 13 / Long Jump: 9 / High Jump: 10 metrics measured" counts (zero are real). None of these require new science to fix - they require removing a false claim.
-2. **Separately scope, as its own audit-and-approve pass**, the Sprint metrics that are genuinely achievable (Stride Angle, arm symmetry, torso lean, real knee-lift/hip-extension framing - all moderate effort, building on the existing pose/angle infrastructure; Top Speed/Acceleration - significant effort, blocked on camera calibration the system doesn't have today).
-
-The next-most-natural alternative, per the project owner's own stated sequencing: continue the design work into the **coach, parent, and scout flows** (the athlete flow is now done - the project owner was explicit about doing "one flow at a time").
-
-A third option, if the project owner wants to move from design into implementation: start building the athlete flow's Phase 1 items from the UI/UX Blueprint's own roadmap (remove the required upload title field, add real upload progress, apply the four-beat error formula platform-wide, lead Sprint Report with a plain-language headline, tie Analysis Waiting to real backend status) - the design trail for exactly this work is unusually complete (`docs/DESIGN_BIBLE.md` + six linked Artifacts).
-
-**None of these were started this session beyond the audit/design/classification work itself.** Follow this repo's own standing workflow for whichever is chosen: audit → proposed plan → project-owner approval → implementation.
+Standing workflow for this project applies throughout: audit each area file-by-file before changing it, flag anything that ripples beyond a single screen (shared components like `PartnerLayout.tsx` affect every partner-role page at once - confirm before changing), verify via `tsc`/full test suite/lint/live browser check before reporting any batch done, disclose every judgment call rather than silently deciding, and do not commit or push without explicit instruction.
 
 ---
 
@@ -87,23 +86,30 @@ A third option, if the project owner wants to move from design into implementati
 ```
 Before doing anything else:
 
-1. Read docs/ENGINEERING_HANDOFF.md in full, paying particular attention to
-   §4.11's subsystem classification table and §33-§34 for the most recent
-   work.
-2. Read docs/DESIGN_BIBLE.md in full - this is the durable, approved
-   product/UX/design reference (voice, tone, design tokens, principles,
-   guardrails) produced in the previous session. Treat it as product law
-   unless the project owner says otherwise.
+1. Read docs/ENGINEERING_HANDOFF.md §35 (most recent - Home mockup port,
+   sidebar restyle, Digital Twin rename, Anton migration batch 1, and the
+   semantic color-token system), and skim §33-34 for the metric-registry
+   and design-audit history behind it.
+2. Read docs/DESIGN_BIBLE.md in full, especially §4 (the token table - the
+   settled rule for every color in the app) and §5 (fifteen immutable
+   design principles). Treat this file as product/design law unless the
+   project owner says otherwise.
 3. Read docs/NEXT_SESSION_HANDOFF.md in full (this file).
-4. Run `git log --oneline -10` and `git status` and confirm they match what
-   this file claims - if they don't match, trust the live repo state and
-   tell the project owner what's different before proceeding.
+4. Run `git log --oneline -5` and `git status` and confirm they match what
+   this file claims (latest commit eed5a0b, NOT pushed, clean tree) - if
+   they don't match, trust the live repo state and tell the project owner
+   what's different before proceeding.
 5. Run the full backend test suite (`cd backend &&
    ./.venv/Scripts/python.exe -m pytest`) and the full frontend suite
    (`cd frontend && npm run test -- --run`, `npx tsc -b --force`,
    `npm run lint`) and confirm the counts match this file (342 backend,
-   163 frontend, tsc clean, 8 pre-existing lint warnings only).
-6. Ask the project owner which of the three options in this file's
-   "Recommended next milestone" section they want - do not assume, and do
-   not start implementation work until a plan is proposed and approved.
+   179 frontend/11 files, tsc clean, 9 lint warnings all pre-existing
+   pattern).
+6. The project owner's explicit priority: close the design constitution
+   and style guide for the entire web app before anything else. Propose a
+   concrete plan for the three pieces in this file's "Recommended next
+   milestone" section (Anton migration batches 2-4, sitewide semantic-
+   token migration, formalizing the result as one durable reference
+   document) and get it approved before starting implementation - do not
+   assume scope or sequencing.
 ```
