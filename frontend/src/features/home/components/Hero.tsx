@@ -6,21 +6,21 @@ import PoseAnalysisCard from "./PoseAnalysisCard";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-white py-20 lg:py-24">
+    <section className="relative overflow-hidden bg-surface-card py-20 lg:py-24">
       <Container>
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
             <Badge>Built for the road to LA 2028</Badge>
 
-            <h1 className="mt-7 max-w-4xl font-['Anton'] text-5xl uppercase leading-[0.98] tracking-tight text-gray-950 md:text-7xl">
+            <h1 className="mt-7 max-w-4xl text-4xl font-bold leading-tight text-text-primary md:text-6xl">
               Every district
               <br />
               has a champion.
               <br />
-              <span className="text-orange-500">Help us find them.</span>
+              <span className="text-brand-action">Help us find them.</span>
             </h1>
 
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600">
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-text-secondary">
               Record a sprint, hurdles, long jump, or high jump clip on your
               phone. Shakti Sports AI reads posture, stride, speed, timing, and
               movement quality frame by frame — helping athletes improve and

@@ -22,27 +22,27 @@ export default function ComingSoon({
   };
 
   return (
-    <div className="mx-auto max-w-2xl rounded-4xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-[#F0600E]">
+    <div className="mx-auto max-w-2xl rounded-4xl border border-border-default bg-surface-card p-10 text-center shadow-sm">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-action-soft text-brand-action">
         <Construction className="h-6 w-6" />
       </div>
 
-      <p className="mt-4 font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+      <p className="mt-4 font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
         Coming Soon
       </p>
 
-      <h1 className="mt-4 font-['Anton'] text-4xl uppercase leading-none text-gray-950">
+      <h1 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
         {title}
       </h1>
 
-      <p className="mx-auto mt-4 max-w-md text-base leading-7 text-gray-600">
+      <p className="mx-auto mt-4 max-w-md text-base leading-7 text-text-secondary">
         {description}
       </p>
 
       {resolvedAction.type === "link" ? (
         <Link
           to={resolvedAction.to}
-          className="mt-8 inline-flex rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
+          className="mt-8 inline-flex rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover"
         >
           {resolvedAction.label}
         </Link>
@@ -50,7 +50,7 @@ export default function ComingSoon({
         <button
           type="button"
           onClick={resolvedAction.onClick}
-          className="mt-8 cursor-pointer rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
+          className="mt-8 cursor-pointer rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover"
         >
           {resolvedAction.label}
         </button>

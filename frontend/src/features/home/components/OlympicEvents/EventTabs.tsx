@@ -20,8 +20,8 @@ export default function EventTabs({ events, activeId, onChange }: Props) {
             onClick={() => onChange(event.id)}
             className={`cursor-pointer rounded-2xl border px-5 py-3 text-left transition duration-300 ${
               isActive
-                ? "border-[#F0600E] bg-[#FFF8F3] text-[#F0600E] shadow-lg shadow-orange-100"
-                : "border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-[#F0600E]"
+                ? "border-brand-action bg-surface-sunken text-brand-action shadow-lg shadow-brand-action-soft"
+                : "border-border-default bg-surface-card text-text-secondary hover:border-brand-action-soft hover:text-brand-action"
             }`}
           >
             <div className="text-sm font-bold">{event.name}</div>

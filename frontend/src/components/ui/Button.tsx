@@ -1,15 +1,15 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
 
-// primary/secondary/outline are the original marketing variants - kept on
-// their pre-token-system raw colors untouched (Hero.tsx, FinalCTA.tsx
-// still consume them unchanged). Marketing's own migration onto tokens is
-// a separate, already-queued batch - not a side effect of this change.
-// brand/brand-outline/link are the new token-backed variants for Athlete
-// Console consumers.
-type Variant = "primary" | "secondary" | "outline" | "brand" | "brand-outline" | "link";
+// primary/outline are Hero.tsx/FinalCTA.tsx's marketing CTAs - now on the
+// token system (Marketing's migration batch). "secondary" (green) has no
+// real consumer anywhere in the app today - tokenized for consistency
+// with the "no raw hex" rule anyway; its hover shade is the same as its
+// base (no darker green token exists) since there's nothing to verify it
+// against. "link" is the text-only variant used by Athlete Console.
+type Variant = "primary" | "secondary" | "outline" | "link";
 
-const BOX_VARIANTS: Variant[] = ["primary", "secondary", "outline", "brand", "brand-outline"];
+const BOX_VARIANTS: Variant[] = ["primary", "secondary", "outline"];
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -31,20 +31,14 @@ export default function Button({
         "inline-flex cursor-pointer items-center justify-center transition-all duration-200",
         isBox && "rounded-lg px-6 py-3 text-sm font-semibold",
         {
-          "bg-orange-500 text-white hover:bg-orange-600":
+          "bg-brand-action text-white hover:bg-brand-action-hover":
             variant === "primary",
 
-          "bg-green-700 text-white hover:bg-green-800":
+          "bg-success-progress-hover text-white hover:bg-success-progress-hover":
             variant === "secondary",
 
-          "border border-gray-300 bg-white text-gray-900 hover:border-orange-500 hover:text-orange-600":
+          "border border-border-default bg-surface-card text-text-primary hover:border-brand-action hover:text-brand-action":
             variant === "outline",
-
-          "bg-brand-action text-white hover:bg-brand-action-hover":
-            variant === "brand",
-
-          "border border-border-default text-text-secondary hover:border-text-disabled hover:text-text-primary":
-            variant === "brand-outline",
 
           "text-sm font-medium text-brand-action hover:text-brand-action-hover":
             variant === "link",

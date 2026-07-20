@@ -6,32 +6,32 @@ export default function AIPerformanceAnalysis() {
   const active = analysisEvents[activeIndex];
 
   return (
-    <section className="bg-[#FAFAF7] py-20">
+    <section className="bg-surface-canvas py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="max-w-3xl">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-brand-action">
             AI Performance Analysis
           </p>
 
-          <h2 className="mt-4 font-['Anton'] text-4xl uppercase leading-none tracking-tight text-gray-950 md:text-5xl">
+          <h2 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
             We don't just watch videos.
-            <span className="block text-[#F0600E]">We understand movement.</span>
+            <span className="block text-brand-action">We understand movement.</span>
           </h2>
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-gray-200/60">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+          <div className="rounded-3xl border border-border-default bg-surface-card p-6 shadow-xl shadow-border-default/60">
+            <div className="flex items-center justify-between border-b border-border-default pb-4">
               <div>
-                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-gray-500">
+                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-text-muted">
                   Active Event
                 </p>
-                <h3 className="mt-1 font-['Anton'] text-3xl uppercase text-gray-950">
+                <h3 className="mt-1 text-2xl font-bold text-text-primary">
                   {active.name}
                 </h3>
               </div>
 
-              <div className="rounded-full bg-green-100 px-4 py-2 font-['JetBrains_Mono'] text-xs font-semibold text-green-700">
+              <div className="rounded-full bg-success-progress-soft px-4 py-2 font-['JetBrains_Mono'] text-xs font-semibold text-success-progress-hover">
                 {active.score}
               </div>
             </div>
@@ -40,12 +40,12 @@ export default function AIPerformanceAnalysis() {
               {active.metrics.map(([label, value]) => (
                 <div
                   key={label}
-                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3"
+                  className="rounded-2xl border border-border-divider bg-surface-sunken px-4 py-3"
                 >
-                  <span className="block text-xs font-medium text-gray-500">
+                  <span className="block text-xs font-medium text-text-muted">
                     {label}
                   </span>
-                  <span className="mt-1 block font-['JetBrains_Mono'] text-sm font-semibold text-gray-950">
+                  <span className="mt-1 block font-['JetBrains_Mono'] text-sm font-semibold text-text-primary">
                     {value}
                   </span>
                 </div>
@@ -53,7 +53,7 @@ export default function AIPerformanceAnalysis() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-gray-200 bg-gray-950 p-6 text-white shadow-2xl shadow-gray-300">
+          <div className="rounded-3xl border border-border-default bg-gray-950 p-6 text-white shadow-2xl shadow-border-default">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-orange-400">
@@ -74,7 +74,7 @@ export default function AIPerformanceAnalysis() {
                 <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-white/40">
                   Movement Score
                 </p>
-                <p className="mt-3 font-['Anton'] text-5xl text-[#F0600E]">
+                <p className="mt-3 text-5xl font-bold text-brand-action">
                   {active.score}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-white/60">
@@ -100,7 +100,7 @@ export default function AIPerformanceAnalysis() {
                         </div>
                         <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                           <div
-                            className="h-full rounded-full bg-[#F0600E]"
+                            className="h-full rounded-full bg-brand-action"
                             style={{ width: `${92 - index * 4}%` }}
                           />
                         </div>
@@ -137,17 +137,17 @@ export default function AIPerformanceAnalysis() {
               onClick={() => setActiveIndex(index)}
               className={`cursor-pointer rounded-2xl border p-5 text-left transition duration-300 ${
                 active.id === event.id
-                  ? "border-[#F0600E] bg-white shadow-xl shadow-orange-100"
-                  : "border-gray-200 bg-white/70 hover:border-orange-300 hover:bg-white"
+                  ? "border-brand-action bg-surface-card shadow-xl shadow-brand-action-soft"
+                  : "border-border-default bg-surface-card/70 hover:border-brand-action-soft hover:bg-surface-card"
               }`}
             >
-              <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-widest text-gray-500">
+              <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-widest text-text-muted">
                 {event.label}
               </p>
-              <h4 className="mt-3 text-xl font-bold text-gray-950">
+              <h4 className="mt-3 text-xl font-bold text-text-primary">
                 {event.name}
               </h4>
-              <p className="mt-2 text-sm text-gray-500">{event.summary}</p>
+              <p className="mt-2 text-sm text-text-muted">{event.summary}</p>
             </button>
           ))}
         </div>

@@ -23,14 +23,14 @@ const performanceCards = [
 
 export default function PerformanceSummary() {
   return (
-    <section id="platform" className="bg-white py-20">
+    <section id="platform" className="bg-surface-card py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mb-10 max-w-2xl">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-brand-action">
             Performance Summary
           </p>
 
-          <h2 className="mt-4 font-['Anton'] text-4xl uppercase leading-none tracking-tight text-gray-950 md:text-5xl">
+          <h2 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
             Focused on events AI can measure well.
           </h2>
         </div>
@@ -39,17 +39,17 @@ export default function PerformanceSummary() {
           {performanceCards.map((card) => (
             <div
               key={card.title}
-              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-200/70"
+              className="rounded-3xl border border-border-default bg-surface-card p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-border-default/70"
             >
-              <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-wider text-green-700">
+              <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-wider text-success-progress-hover">
                 {card.value}
               </p>
 
-              <h3 className="mt-5 text-xl font-bold text-gray-950">
+              <h3 className="mt-5 text-xl font-bold text-text-primary">
                 {card.title}
               </h3>
 
-              <p className="mt-4 text-sm leading-6 text-gray-600">
+              <p className="mt-4 text-sm leading-6 text-text-secondary">
                 {card.description}
               </p>
             </div>

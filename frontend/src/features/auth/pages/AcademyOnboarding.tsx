@@ -104,7 +104,7 @@ export default function AcademyOnboarding() {
 
       {step === 1 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Tell us about your academy.
           </h1>
 
@@ -128,7 +128,7 @@ export default function AcademyOnboarding() {
 
       {step === 2 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Who should we contact?
           </h1>
 
@@ -163,7 +163,7 @@ export default function AcademyOnboarding() {
 
       {step === 3 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Where are you located?
           </h1>
 
@@ -192,7 +192,7 @@ export default function AcademyOnboarding() {
             ✓
           </p>
 
-          <h1 className="mt-6 font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="mt-6 text-2xl font-bold text-text-primary md:text-3xl">
             Welcome to Shakti.
           </h1>
 

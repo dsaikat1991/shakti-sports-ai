@@ -50,24 +50,24 @@ export default function Contact() {
   }
 
   return (
-    <div className="bg-[#FAFAF7] py-20">
+    <div className="bg-surface-canvas py-20">
       <Container className="max-w-2xl">
-        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
           Contact
         </p>
 
-        <h1 className="mt-4 font-['Anton'] text-4xl uppercase leading-none text-gray-950 md:text-5xl">
+        <h1 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
           Get in touch.
         </h1>
 
-        <p className="mt-4 text-base leading-7 text-gray-600">
+        <p className="mt-4 text-base leading-7 text-text-secondary">
           Questions, feedback, or partnership ideas — we'd love to hear from
           you.
         </p>
 
         <a
           href={`mailto:${CONTACT_EMAIL}`}
-          className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#F0600E] hover:underline"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-brand-action hover:underline"
         >
           <Mail className="h-4 w-4" />
           {CONTACT_EMAIL}
@@ -75,7 +75,7 @@ export default function Contact() {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-10 space-y-4 rounded-4xl border border-gray-200 bg-white p-8 shadow-2xl shadow-gray-200/70"
+          className="mt-10 space-y-4 rounded-4xl border border-border-default bg-surface-card p-8 shadow-2xl shadow-border-default/70"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <input
@@ -83,7 +83,7 @@ export default function Contact() {
               value={form.name}
               onChange={(e) => updateField("name", e.target.value)}
               placeholder="Your name"
-              className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+              className="rounded-xl border border-border-default px-4 py-3 text-sm outline-none focus:border-brand-action focus:ring-4 focus:ring-brand-action-soft"
             />
 
             <input
@@ -92,7 +92,7 @@ export default function Contact() {
               value={form.email}
               onChange={(e) => updateField("email", e.target.value)}
               placeholder="Your email"
-              className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+              className="rounded-xl border border-border-default px-4 py-3 text-sm outline-none focus:border-brand-action focus:ring-4 focus:ring-brand-action-soft"
             />
           </div>
 
@@ -100,7 +100,7 @@ export default function Contact() {
             value={form.subject}
             onChange={(e) => updateField("subject", e.target.value)}
             placeholder="Subject"
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+            className="w-full rounded-xl border border-border-default px-4 py-3 text-sm outline-none focus:border-brand-action focus:ring-4 focus:ring-brand-action-soft"
           />
 
           <textarea
@@ -109,18 +109,18 @@ export default function Contact() {
             onChange={(e) => updateField("message", e.target.value)}
             placeholder="How can we help?"
             rows={6}
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#F0600E] focus:ring-4 focus:ring-orange-100"
+            className="w-full rounded-xl border border-border-default px-4 py-3 text-sm outline-none focus:border-brand-action focus:ring-4 focus:ring-brand-action-soft"
           />
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full cursor-pointer rounded-xl bg-[#F0600E] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full cursor-pointer rounded-xl bg-brand-action px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-action-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "Sending..." : "Send Message"}
           </button>
 
-          <p className="text-center text-xs text-gray-400">
+          <p className="text-center text-xs text-text-disabled">
             This opens your email app with your message ready to send to{" "}
             {CONTACT_EMAIL}.
           </p>

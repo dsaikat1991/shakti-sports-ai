@@ -48,17 +48,17 @@ const audiences = [
 
 export default function About() {
   return (
-    <div className="bg-[#FAFAF7] py-20">
+    <div className="bg-surface-canvas py-20">
       <Container className="max-w-4xl">
-        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
           About Shakti Sports AI
         </p>
 
-        <h1 className="mt-4 font-['Anton'] text-4xl uppercase leading-none text-gray-950 md:text-6xl">
+        <h1 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
           Discovering India's Next Generation of Champions
         </h1>
 
-        <div className="mt-8 space-y-5 text-base leading-7 text-gray-600">
+        <div className="mt-8 space-y-5 text-base leading-7 text-text-secondary">
           <p>
             India is home to millions of talented young athletes. Yet every
             year, countless promising players go unnoticed — not because
@@ -67,7 +67,7 @@ export default function About() {
             be seen.
           </p>
 
-          <p className="font-bold text-gray-950">
+          <p className="font-bold text-text-primary">
             Shakti Sports AI was created to change that.
           </p>
 
@@ -109,7 +109,7 @@ export default function About() {
         </div>
 
         <div className="mt-16">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
             What We Believe
           </p>
 
@@ -117,12 +117,12 @@ export default function About() {
             {beliefs.map((belief) => (
               <div
                 key={belief.title}
-                className="rounded-3xl border border-gray-200 bg-white p-6"
+                className="rounded-3xl border border-border-default bg-surface-card p-6"
               >
-                <h3 className="text-lg font-bold text-gray-950">
+                <h3 className="text-lg font-bold text-text-primary">
                   {belief.title}
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-gray-600">
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
                   {belief.description}
                 </p>
               </div>
@@ -131,7 +131,7 @@ export default function About() {
         </div>
 
         <div className="mt-16">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
             Built for the Entire Sporting Ecosystem
           </p>
 
@@ -139,12 +139,12 @@ export default function About() {
             {audiences.map((audience) => (
               <div
                 key={audience.title}
-                className="rounded-3xl border border-gray-200 bg-white p-6"
+                className="rounded-3xl border border-border-default bg-surface-card p-6"
               >
-                <h3 className="text-lg font-bold text-gray-950">
+                <h3 className="text-lg font-bold text-text-primary">
                   {audience.title}
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-gray-600">
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
                   {audience.description}
                 </p>
               </div>

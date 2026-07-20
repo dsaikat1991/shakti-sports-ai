@@ -12,7 +12,7 @@ export default function ChooseRole() {
           Choose your journey
         </p>
 
-        <h1 className="mt-4 font-['Anton'] text-5xl uppercase leading-none text-text-primary md:text-6xl">
+        <h1 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
           Who are you?
         </h1>
 

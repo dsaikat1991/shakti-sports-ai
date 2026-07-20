@@ -19,7 +19,7 @@ export default function AuthCard({
         {eyebrow}
       </p>
 
-      <h1 className="mt-3 font-['Anton'] text-4xl uppercase leading-none text-text-primary">
+      <h1 className="mt-3 text-2xl font-bold text-text-primary">
         {title}
       </h1>
 

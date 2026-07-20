@@ -44,7 +44,7 @@ export default function RoleCard({
         <Icon className="h-7 w-7" />
       </div>
 
-      <h3 className="mt-6 font-['Anton'] text-3xl uppercase text-text-primary">
+      <h3 className="mt-6 text-2xl font-bold text-text-primary">
         {title}
       </h3>
 

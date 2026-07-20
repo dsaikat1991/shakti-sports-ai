@@ -8,7 +8,7 @@ export default function MetricPills({ metrics }: Props) {
       {metrics.map((metric) => (
         <span
           key={metric}
-          className="rounded-full border border-orange-100 bg-[#FFF8F3] px-3 py-1.5 text-xs font-semibold text-[#F0600E]"
+          className="rounded-full border border-brand-action-soft bg-surface-sunken px-3 py-1.5 text-xs font-semibold text-brand-action"
         >
           {metric}
         </span>

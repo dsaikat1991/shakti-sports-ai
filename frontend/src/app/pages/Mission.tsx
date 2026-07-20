@@ -11,17 +11,17 @@ const visionItems = [
 
 export default function Mission() {
   return (
-    <div className="bg-[#FAFAF7] py-20">
+    <div className="bg-surface-canvas py-20">
       <Container className="max-w-4xl">
-        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
           Our Mission
         </p>
 
-        <h1 className="mt-4 font-['Anton'] text-4xl uppercase leading-none text-gray-950 md:text-6xl">
+        <h1 className="mt-4 text-2xl font-bold text-text-primary md:text-3xl">
           Empower Every Athlete. Discover Every Champion.
         </h1>
 
-        <div className="mt-8 space-y-5 text-base leading-7 text-gray-600">
+        <div className="mt-8 space-y-5 text-base leading-7 text-text-secondary">
           <p>
             Our mission is to build India's most trusted AI-powered athlete
             intelligence platform — one that gives every athlete an equal
@@ -49,11 +49,11 @@ export default function Mission() {
         </div>
 
         <div className="mt-16">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
             Our Long-Term Vision
           </p>
 
-          <p className="mt-4 text-base leading-7 text-gray-600">
+          <p className="mt-4 text-base leading-7 text-text-secondary">
             We believe the future of sports is driven by intelligence as
             much as effort. Our long-term vision is to build a national
             athlete intelligence network that:
@@ -63,21 +63,21 @@ export default function Mission() {
             {visionItems.map((item) => (
               <li
                 key={item}
-                className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700"
+                className="flex items-start gap-3 rounded-2xl border border-border-default bg-surface-card p-4 text-sm leading-6 text-text-secondary"
               >
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#F0600E]" />
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-action" />
                 {item}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="mt-16 rounded-3xl border border-orange-200 bg-[#FFF8F3] p-8">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+        <div className="mt-16 rounded-3xl border border-brand-action-soft bg-surface-sunken p-8">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
             Our Promise
           </p>
 
-          <div className="mt-4 space-y-4 text-base leading-7 text-gray-700">
+          <div className="mt-4 space-y-4 text-base leading-7 text-text-secondary">
             <p>
               Every recommendation we generate is grounded in measurable
               data.
@@ -95,11 +95,11 @@ export default function Mission() {
         </div>
 
         <div className="mt-16 text-center">
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-text-disabled">
             Our Tagline
           </p>
 
-          <p className="mt-4 font-['Anton'] text-2xl uppercase leading-tight text-gray-950 md:text-3xl">
+          <p className="mt-4 text-2xl font-bold leading-tight text-text-primary md:text-3xl">
             Discovering Talent. Empowering Performance. Building India's
             Champions.
           </p>

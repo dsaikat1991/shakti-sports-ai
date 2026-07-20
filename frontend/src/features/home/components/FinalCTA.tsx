@@ -2,18 +2,18 @@ import Button from "../../../components/ui/Button";
 
 export default function FinalCTA() {
   return (
-    <section className="bg-white py-28 text-center">
+    <section className="bg-surface-card py-28 text-center">
       <div className="mx-auto max-w-5xl px-6">
-        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-[#F0600E]">
+        <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.22em] text-brand-action">
           Your first report is free
         </p>
 
-        <h2 className="mx-auto mt-4 max-w-4xl font-['Anton'] text-4xl uppercase leading-[0.95] tracking-tight text-gray-950 md:text-6xl">
+        <h2 className="mx-auto mt-4 max-w-4xl text-3xl font-bold leading-tight text-text-primary md:text-4xl">
           The next name on the podium might be training in a field with no
           floodlights right now.
         </h2>
 
-        <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-gray-600">
+        <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-text-secondary">
           Upload a clip today. Find out where you actually stand — and let the
           right coach find out too.
         </p>

@@ -1,5 +1,5 @@
 export const typography = {
-  display: "Anton, sans-serif",
-  body: "Inter, sans-serif",
+  display: "Lexend, sans-serif",
+  body: "Lexend, sans-serif",
   mono: "JetBrains Mono, monospace",
 } as const;

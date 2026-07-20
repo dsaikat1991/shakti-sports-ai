@@ -116,7 +116,7 @@ export default function CoachOnboarding() {
 
       {step === 1 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Where do you coach?
           </h1>
 
@@ -144,7 +144,7 @@ export default function CoachOnboarding() {
 
       {step === 2 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Tell us about you.
           </h1>
 
@@ -175,7 +175,7 @@ export default function CoachOnboarding() {
 
       {step === 3 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Your coaching background.
           </h1>
 
@@ -223,7 +223,7 @@ export default function CoachOnboarding() {
             ✓
           </p>
 
-          <h1 className="mt-6 font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="mt-6 text-2xl font-bold text-text-primary md:text-3xl">
             Welcome to Shakti.
           </h1>
 

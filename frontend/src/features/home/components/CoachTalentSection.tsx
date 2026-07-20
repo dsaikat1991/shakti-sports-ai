@@ -35,9 +35,9 @@ export default function CoachTalentSection() {
             For Coaches, Academies & Talent Scouts
           </p>
 
-          <h2 className="mt-4 font-['Anton'] text-4xl uppercase leading-none tracking-tight md:text-6xl">
+          <h2 className="mt-4 text-2xl font-bold md:text-3xl">
             Great Talent
-            <span className="block text-[#F0600E]">Deserves Great Visibility</span>
+            <span className="block text-brand-action">Deserves Great Visibility</span>
           </h2>
 
           <p className="mt-6 max-w-xl text-lg leading-8 text-white/65">
@@ -64,17 +64,17 @@ export default function CoachTalentSection() {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/4 p-5 shadow-2xl shadow-black/40">
-          <div className="rounded-2xl bg-white p-5 text-gray-950">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+          <div className="rounded-2xl bg-surface-card p-5 text-text-primary">
+            <div className="flex items-center justify-between border-b border-border-default pb-4">
               <div>
-                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-gray-500">
+                <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-text-muted">
                   Coach Dashboard
                 </p>
                 <h3 className="mt-1 text-xl font-bold">Athlete Search</h3>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-                <Search className="h-5 w-5 text-[#F0600E]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-action-soft">
+                <Search className="h-5 w-5 text-brand-action" />
               </div>
             </div>
 
@@ -82,10 +82,10 @@ export default function CoachTalentSection() {
               {filters.map((filter) => (
                 <div
                   key={filter}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600"
+                  className="flex items-center justify-between rounded-xl border border-border-default bg-surface-sunken px-3 py-2 text-xs font-semibold text-text-secondary"
                 >
                   {filter}
-                  <Filter className="h-3.5 w-3.5 text-gray-400" />
+                  <Filter className="h-3.5 w-3.5 text-text-disabled" />
                 </div>
               ))}
             </div>
@@ -94,24 +94,24 @@ export default function CoachTalentSection() {
               {athletes.map((athlete) => (
                 <div
                   key={athlete.name}
-                  className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                  className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="font-bold text-gray-950">
+                      <h4 className="font-bold text-text-primary">
                         {athlete.name}
                       </h4>
-                      <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-bold text-green-700">
+                      <span className="rounded-full bg-success-progress-soft px-2.5 py-1 text-[11px] font-bold text-success-progress-hover">
                         {athlete.score}
                       </span>
                     </div>
 
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-text-muted">
                       Age {athlete.age} · {athlete.event} · {athlete.state}
                     </p>
                   </div>
 
-                  <button className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-950 text-white transition hover:bg-[#F0600E]">
+                  <button className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-950 text-white transition hover:bg-brand-action">
                     <Play className="h-4 w-4 fill-current" />
                   </button>
                 </div>
@@ -120,7 +120,7 @@ export default function CoachTalentSection() {
 
             <div className="mt-5 rounded-2xl bg-gray-950 p-4 text-white">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0600E]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-action">
                   <Star className="h-5 w-5 fill-current" />
                 </div>
 

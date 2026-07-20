@@ -106,7 +106,7 @@ export default function AthleteOnboarding() {
 
       {step === 1 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Which event do you compete in?
           </h1>
 
@@ -138,7 +138,7 @@ export default function AthleteOnboarding() {
 
       {step === 2 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Nice. Let’s build your profile.
           </h1>
 
@@ -173,7 +173,7 @@ export default function AthleteOnboarding() {
 
       {step === 3 && (
         <div>
-          <h1 className="font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             Where do you train?
           </h1>
 
@@ -212,7 +212,7 @@ export default function AthleteOnboarding() {
             ✓
           </p>
 
-          <h1 className="mt-6 font-['Anton'] text-4xl uppercase leading-none text-text-primary md:text-5xl">
+          <h1 className="mt-6 text-2xl font-bold text-text-primary md:text-3xl">
             Welcome to Shakti.
           </h1>
 

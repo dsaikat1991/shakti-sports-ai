@@ -18,19 +18,19 @@ const journeySteps = [
 
 export default function AthleteJourney() {
   return (
-    <section id="athletes" className="bg-[#FFF8F3] py-16 lg:py-20">
+    <section id="athletes" className="bg-surface-sunken py-16 lg:py-20">
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
         <div>
-          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
+          <p className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-[0.2em] text-brand-action">
             For Athletes
           </p>
 
-          <h2 className="mt-3 font-['Anton'] text-4xl uppercase leading-[0.92] tracking-tight text-gray-950 md:text-5xl">
+          <h2 className="mt-3 text-2xl font-bold text-text-primary md:text-3xl">
             Train anywhere.
-            <span className="block text-[#F0600E]">Get discovered everywhere.</span>
+            <span className="block text-brand-action">Get discovered everywhere.</span>
           </h2>
 
-          <p className="mt-4 max-w-xl text-base leading-7 text-gray-600">
+          <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">
             Your talent should not depend on who sees you at one trial. Upload
             training videos, track progress, and become visible to coaches
             looking for athletes like you.
@@ -40,17 +40,17 @@ export default function AthleteJourney() {
             {journeySteps.map((item) => (
               <div
                 key={item.step}
-                className="group flex gap-4 rounded-2xl border border-orange-100 bg-white/80 px-5 py-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-orange-300 hover:bg-white hover:shadow-xl hover:shadow-orange-100"
+                className="group flex gap-4 rounded-2xl border border-brand-action-soft bg-surface-card/80 px-5 py-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-action hover:bg-surface-card hover:shadow-xl hover:shadow-brand-action-soft"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F0600E] font-['JetBrains_Mono'] text-[11px] font-bold text-white">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-action font-['JetBrains_Mono'] text-[11px] font-bold text-white">
                   {item.step}
                 </div>
 
                 <div>
-                  <h3 className="text-base font-bold text-gray-950">
+                  <h3 className="text-base font-bold text-text-primary">
                     {item.title}
                   </h3>
-                  <p className="mt-1 text-sm leading-5 text-gray-600">
+                  <p className="mt-1 text-sm leading-5 text-text-secondary">
                     {item.description}
                   </p>
                 </div>
@@ -58,12 +58,12 @@ export default function AthleteJourney() {
             ))}
           </div>
 
-          <p className="mt-5 text-sm font-semibold text-[#F0600E]">
+          <p className="mt-5 text-sm font-semibold text-brand-action">
             ...and get discovered by coaches across India.
           </p>
         </div>
 
-        <div className="rounded-4xl border border-orange-100 bg-white p-5 shadow-2xl shadow-orange-100">
+        <div className="rounded-4xl border border-brand-action-soft bg-surface-card p-5 shadow-2xl shadow-brand-action-soft">
           <div className="rounded-3xl bg-gray-950 p-5 text-white">
             <div className="flex items-start justify-between border-b border-white/10 pb-4">
               <div>
@@ -86,7 +86,7 @@ export default function AthleteJourney() {
                 <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest text-white/40">
                   AI Score
                 </p>
-                <p className="mt-2 font-['Anton'] text-4xl text-[#F0600E]">
+                <p className="mt-2 text-4xl font-bold text-brand-action">
                   8.9
                 </p>
               </div>
@@ -95,14 +95,14 @@ export default function AthleteJourney() {
                 <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest text-white/40">
                   Coach Views
                 </p>
-                <p className="mt-2 font-['Anton'] text-4xl">24</p>
+                <p className="mt-2 text-4xl font-bold">24</p>
               </div>
 
               <div className="rounded-2xl bg-white/6 p-3">
                 <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest text-white/40">
                   Invites
                 </p>
-                <p className="mt-2 font-['Anton'] text-4xl">3</p>
+                <p className="mt-2 text-4xl font-bold">3</p>
               </div>
             </div>
 
@@ -120,7 +120,7 @@ export default function AthleteJourney() {
                 <path
                   d="M20 96 C70 86, 90 78, 125 72 C160 66, 175 48, 210 54 C260 61, 275 33, 315 28 C350 23, 370 19, 400 15"
                   fill="none"
-                  stroke="#F0600E"
+                  stroke="var(--color-brand-action)"
                   strokeWidth="5"
                   strokeLinecap="round"
                 />
@@ -130,7 +130,7 @@ export default function AthleteJourney() {
                     cx={x}
                     cy={[96, 72, 54, 28, 15][index]}
                     r="5"
-                    fill="#F0600E"
+                    fill="var(--color-brand-action)"
                   />
                 ))}
               </svg>

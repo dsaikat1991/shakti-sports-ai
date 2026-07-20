@@ -31,14 +31,14 @@ const metrics = [
 
 export default function PoseAnalysisCard() {
   return (
-    <div className="relative h-130 overflow-hidden rounded-3xl border border-gray-200 bg-linear-to-b from-orange-50/70 via-white to-white shadow-2xl shadow-gray-200">
-      <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-        <div className="flex items-center gap-2 font-['JetBrains_Mono'] text-xs font-semibold text-orange-700">
-          <span className="h-2 w-2 rounded-full bg-[#F0600E]" />
+    <div className="relative h-130 overflow-hidden rounded-3xl border border-border-default bg-linear-to-b from-brand-action-tint/70 via-surface-card to-surface-card shadow-2xl shadow-border-default">
+      <div className="flex items-center justify-between border-b border-border-default px-5 py-4">
+        <div className="flex items-center gap-2 font-['JetBrains_Mono'] text-xs font-semibold text-brand-action">
+          <span className="h-2 w-2 rounded-full bg-brand-action" />
           ANALYZING
         </div>
 
-        <div className="font-['JetBrains_Mono'] text-xs text-gray-500">
+        <div className="font-['JetBrains_Mono'] text-xs text-text-muted">
           100m_sprint_trial_04.mp4
         </div>
       </div>
@@ -49,20 +49,20 @@ export default function PoseAnalysisCard() {
           viewBox="0 0 400 380"
           preserveAspectRatio="xMidYMid meet"
         >
-          <line x1="0" y1="330" x2="400" y2="330" stroke="#E5E7EB" />
-          <line x1="0" y1="300" x2="400" y2="300" stroke="#E5E7EB" />
+          <line x1="0" y1="330" x2="400" y2="330" stroke="var(--color-border-default)" />
+          <line x1="0" y1="300" x2="400" y2="300" stroke="var(--color-border-default)" />
 
           <g opacity="0.7">
-            <line x1="205" y1="70" x2="200" y2="130" stroke="#111827" strokeWidth="2" />
-            <line x1="200" y1="130" x2="170" y2="160" stroke="#111827" strokeWidth="2" />
-            <line x1="200" y1="130" x2="235" y2="150" stroke="#111827" strokeWidth="2" />
-            <line x1="170" y1="160" x2="150" y2="120" stroke="#111827" strokeWidth="2" />
-            <line x1="235" y1="150" x2="260" y2="190" stroke="#111827" strokeWidth="2" />
-            <line x1="200" y1="130" x2="196" y2="200" stroke="#111827" strokeWidth="2" />
-            <line x1="196" y1="200" x2="150" y2="235" stroke="#111827" strokeWidth="2" />
-            <line x1="150" y1="235" x2="160" y2="290" stroke="#111827" strokeWidth="2" />
-            <line x1="196" y1="200" x2="245" y2="225" stroke="#111827" strokeWidth="2" />
-            <line x1="245" y1="225" x2="225" y2="285" stroke="#111827" strokeWidth="2" />
+            <line x1="205" y1="70" x2="200" y2="130" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="200" y1="130" x2="170" y2="160" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="200" y1="130" x2="235" y2="150" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="170" y1="160" x2="150" y2="120" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="235" y1="150" x2="260" y2="190" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="200" y1="130" x2="196" y2="200" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="196" y1="200" x2="150" y2="235" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="150" y1="235" x2="160" y2="290" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="196" y1="200" x2="245" y2="225" stroke="var(--color-text-primary)" strokeWidth="2" />
+            <line x1="245" y1="225" x2="225" y2="285" stroke="var(--color-text-primary)" strokeWidth="2" />
 
             {[
               ["205", "70", "13"],
@@ -82,7 +82,7 @@ export default function PoseAnalysisCard() {
                 cx={cx}
                 cy={cy}
                 r={r}
-                fill="#F0600E"
+                fill="var(--color-brand-action)"
               />
             ))}
           </g>
@@ -97,26 +97,26 @@ export default function PoseAnalysisCard() {
                 "--float-distance": metric.distance,
               } as React.CSSProperties
             }
-            className={`floating-card absolute rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-xl shadow-gray-200/70 will-change-transform ${metric.className}`}
+            className={`floating-card absolute rounded-xl border border-border-default bg-surface-card px-4 py-3 shadow-xl shadow-border-default/70 will-change-transform ${metric.className}`}
           >
-            <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-wide text-gray-500">
+            <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-wide text-text-muted">
               {metric.label}
             </div>
 
-            <div className="mt-1 font-['JetBrains_Mono'] text-sm font-semibold text-green-700">
+            <div className="mt-1 font-['JetBrains_Mono'] text-sm font-semibold text-success-progress-hover">
               {metric.value}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t border-gray-200 bg-white/90 px-5 py-4">
-        <div className="font-['JetBrains_Mono'] text-xs font-semibold text-green-700">
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t border-border-default bg-surface-card/90 px-5 py-4">
+        <div className="font-['JetBrains_Mono'] text-xs font-semibold text-success-progress-hover">
           FORM SCORE 8.7/10
         </div>
 
-        <div className="h-2 w-24 overflow-hidden rounded-full bg-green-100">
-          <div className="h-full w-[87%] bg-green-700" />
+        <div className="h-2 w-24 overflow-hidden rounded-full bg-success-progress-soft">
+          <div className="h-full w-[87%] bg-success-progress-hover" />
         </div>
       </div>
     </div>

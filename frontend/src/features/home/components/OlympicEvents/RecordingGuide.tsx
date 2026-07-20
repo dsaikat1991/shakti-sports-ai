@@ -31,18 +31,18 @@ export default function RecordingGuide({
         return (
           <div
             key={item.label}
-            className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+            className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-                <Icon className="h-5 w-5 text-[#F0600E]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-action-soft">
+                <Icon className="h-5 w-5 text-brand-action" />
               </div>
 
               <div>
-                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest text-gray-400">
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest text-text-disabled">
                   {item.label}
                 </p>
-                <p className="mt-1 text-sm font-bold text-gray-950">
+                <p className="mt-1 text-sm font-bold text-text-primary">
                   {item.value}
                 </p>
               </div>

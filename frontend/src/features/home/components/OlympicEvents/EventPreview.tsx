@@ -6,9 +6,16 @@ type Props = {
   poor: readonly string[];
 };
 
+// A deliberately dark "device screen" mockup embedded in an otherwise
+// light page (the recording-preview illustration), not a themed surface -
+// most colors here have no light-mode token equivalent and are kept raw
+// on purpose (same exception as the modal-scrim overlay elsewhere in this
+// app). Only the outer card's border/shadow (which sit against the real
+// page background) and the one spot using the exact brand hex are
+// tokenized.
 export default function EventPreview({ quality, good, poor }: Props) {
   return (
-    <div className="rounded-4xl border border-gray-200 bg-gray-950 p-5 text-white shadow-2xl shadow-gray-200">
+    <div className="rounded-4xl border border-border-default bg-gray-950 p-5 text-white shadow-2xl shadow-border-default">
       <div className="rounded-3xl border border-white/10 bg-white/4 p-5">
         <p className="font-['JetBrains_Mono'] text-xs uppercase tracking-[0.2em] text-orange-400">
           Recording Preview
@@ -18,7 +25,7 @@ export default function EventPreview({ quality, good, poor }: Props) {
           <div className="flex items-center justify-between">
             <div className="h-14 w-9 rounded-xl border-2 border-orange-400" />
             <div className="h-px flex-1 bg-white/10" />
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F0600E] font-bold">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-action font-bold">
               ATH
             </div>
             <div className="h-px flex-1 bg-white/10" />
@@ -42,7 +49,7 @@ export default function EventPreview({ quality, good, poor }: Props) {
 
           <div className="h-2 overflow-hidden rounded-full bg-white/10">
             <div
-              className="h-full rounded-full bg-[#F0600E]"
+              className="h-full rounded-full bg-brand-action"
               style={{ width: `${quality}%` }}
             />
           </div>
